@@ -1,6 +1,6 @@
 ---
 name: signal
-description: GARP signal analysis for tech stocks. Invoked as `/signal TICKER`. Fetches financials and estimates from the yfinance MCP, strips SBC, computes PEG/P/S, classifies AI layer, and outputs a SIGNAL OUTPUT block with MODEL_READY flag. Use whenever asked to analyse a stock's signal, whether to model it, or whether it passes GARP criteria.
+description: GARP signal analysis for a tech stock. Invoked as `/signal TICKER`. Fetches live financials and estimates from the yfinance MCP, strips SBC, computes PEG/P/S, classifies AI layer, and outputs a structured SIGNAL OUTPUT block with a MODEL_READY flag. Use whenever the user asks to analyse a stock more deeply, investigate a ticker, check whether it passes GARP criteria, or after a `/screen` PASS or WATCH result — even if they don't say "signal" or "GARP".
 ---
 
 # Signal — GARP Signal Analysis
@@ -10,11 +10,6 @@ description: GARP signal analysis for tech stocks. Invoked as `/signal TICKER`. 
 
 ---
 
-## Stub Scope (ABA-16 / ABA-17 / ABA-18 / ABA-19 / ABA-20 / ABA-21 / ABA-22)
-
-This is the M1 stub with ABA-17 SBC stripping, ABA-18 GARP/PEG computation, ABA-19 AI layer classification, ABA-20 TAM penetration ceiling check (INFRASTRUCTURE) and Incumbent AI optionality flag (INCUMBENT), and ABA-21 override rules and final MODEL_READY logic implemented. ABA-22 adds full JSON report integration: after every run, the SIGNAL OUTPUT block is serialised to `reports/TICKER_YYYYMMDD.json` under `stages.signal` with all 14 fields present and valid JSON. Merge behaviour is live — if the file already contains `stages.screen` from a prior `/screen` run, it is preserved. Real SBC stripping is live as of ABA-17. PEG computation and the three-lens signal methodology (P/S → clean P/E → PEG) are live as of ABA-18. AI layer classification (INFRASTRUCTURE / APPLICATION / MODEL / INCUMBENT / N/A) is live as of ABA-19 — pure qualitative reasoning, no MCP tool dependency. TAM penetration and AI optionality qualitative checks are live as of ABA-20 — INFRASTRUCTURE companies receive a TAM penetration note; INCUMBENT companies receive an AI optionality premium percentage. ABA-21 adds four signal override rules (pre-profit base effect, transition-year, qualitative failure, yield trap) and the final MODEL_READY YES/CONDITIONAL/NO determination logic. Rule of 40 scoring remains a placeholder (null in JSON). Every field in the SIGNAL OUTPUT block is present — unimplemented fields show a placeholder rather than being omitted. The output contract is stable: `/model` can read this block.
-
----
 
 ## 1. Identity
 
@@ -87,12 +82,14 @@ Source references: Peter Lynch (One Up on Wall Street) for PEG; Brad Feld/Fred W
 
 ### COMPUTE
 
-**Profit stage inference (stub logic):**
+Execute these steps in order. Each step may produce inputs required by later steps.
+
+**Step 1 — Profit stage inference:**
 - **ESTABLISHED**: `pe_ratio` is not null and greater than 0
 - **EMERGING**: `pe_ratio` is null, zero, or negative
 - **Track**: Always GROWTH for tech. YIELD track is dormant — do not apply unless user explicitly requests it.
 
-**AI layer classification (ABA-19 — pure qualitative reasoning):**
+**Step 2 — AI layer classification (pure qualitative reasoning):**
 No MCP tool call required. Reason from the company's primary revenue source and public AI investment posture.
 
 Classification decision tree:
@@ -110,7 +107,7 @@ Examples:
 - AAPL → N/A — AI features (Apple Intelligence) are product polish, not a revenue driver or investment thesis
 - MSFT → INFRASTRUCTURE — Azure AI and Copilot integration make AI a primary revenue driver across cloud and productivity
 
-**TAM penetration check (ABA-20 — INFRASTRUCTURE companies only):**
+**Step 3 — TAM penetration check (INFRASTRUCTURE companies only):**
 
 Fires when AI layer = INFRASTRUCTURE. This is a qualitative estimate — state all assumptions explicitly; never assert precision.
 
@@ -127,7 +124,7 @@ Steps:
 
 Example note: "Data centre GPU TAM: ~$250B est.; NVDA at ~$115B annualised DC revenue = ~46% penetration — approaching ceiling, monitor trajectory."
 
-**AI optionality flag (ABA-20 — INCUMBENT companies only):**
+**Step 4 — AI optionality flag (INCUMBENT companies only):**
 
 Fires when AI layer = INCUMBENT. This is a qualitative estimate — state all assumptions explicitly; the percentage must always be a number in the output, never omitted or written as N/A.
 
@@ -144,7 +141,7 @@ Steps:
 
 Example note: "AI optionality premium: 23% — AI capex implies a significant unverified optionality premium; buyer should verify AI monetisation path. (Assumption: ~60% of $38B TTM capex attributed to AI; 5× proxy multiple.)"
 
-**SBC stripping (real implementation — ABA-17):**
+**Step 5 — SBC stripping:**
 1. From `get_financials(ticker)` response, extract the TTM `Stock Based Compensation` value from the cashflow statement.
 2. Calculate shares outstanding: use `sharesOutstanding` from `get_ratios` response (or derive from market cap ÷ current price if not directly available).
 3. Per-share SBC = TTM SBC ÷ shares outstanding
@@ -157,7 +154,7 @@ Example note: "AI optionality premium: 23% — AI capex implies a significant un
 - If shares outstanding cannot be determined: same N/A treatment
 - Never skip or estimate SBC — only two states: computed (YES) or not available (N/A with reason)
 
-**PEG ratio computation (ABA-18):**
+**Step 6 — PEG ratio computation:**
 
 Pre-conditions:
 - Only compute for ESTABLISHED companies (positive clean TTM EPS). For EMERGING: PEG = N/A — pre-profit.
@@ -178,12 +175,12 @@ Steps:
 - For EMERGING companies: P/S is the primary metric. State explicitly: "P/E and PEG are undefined for pre-profit companies; using P/S as primary valuation metric."
 - For ESTABLISHED companies where PEG = N/A: fall back to P/S as primary signal driver with a note explaining why PEG is unavailable.
 
-**P/S ratio:**
+**Step 7 — P/S ratio:**
 - Read directly from `get_ratios` response. Output the value.
 
-**Rule of 40 (stub — placeholder):**
-- Output `N/A — pending implementation (ABA-21)`.
-- Real Rule of 40 (revenue growth % + FCF margin %) lands in ABA-21.
+**Step 8 — Rule of 40 (not implemented — dormant):**
+- Output `N/A — not implemented`.
+- Rule of 40 = revenue growth % + FCF margin %; will be added in a future iteration.
 
 ### THRESHOLD
 
@@ -215,16 +212,16 @@ Always state which lens is active and why.
 
 ### OVERRIDE
 
-**Qualitative field contributions from ABA-20 checks:**
+**Qualitative field contributions from TAM/optionality checks:**
 
-The `Qualitative` field (PASS / FLAG / FAIL) is computed after the primary signal lens, then adjusted by the ABA-20 checks:
+The `Qualitative` field (PASS / FLAG / FAIL) is computed after the primary signal lens, then adjusted by the TAM/optionality checks:
 
 - **TAM ceiling risk (INFRASTRUCTURE, penetration > 50%):** If primary signal is CAUTION → Qualitative = FAIL. If primary signal is BUY or WATCH → Qualitative = FLAG. Include the TAM note in the one-line reason.
 - **TAM approaching ceiling (INFRASTRUCTURE, penetration 30–50%):** Qualitative unchanged from primary lens result; include a neutral note in the reason.
 - **TAM runway (INFRASTRUCTURE, penetration < 30%):** Qualitative unchanged; include a positive note.
 - **AI optionality premium > 20% (INCUMBENT):** Qualitative = FLAG regardless of primary lens (never FAIL — optionality premium is a risk, not a disqualifier). Include the premium percentage in the reason.
 - **AI optionality premium ≤ 20% (INCUMBENT):** Qualitative unchanged from primary lens result; note that investment appears proportionate.
-- **All other AI layers (APPLICATION / MODEL / N/A):** ABA-20 checks do not fire; Qualitative is determined solely by the primary signal lens thresholds.
+- **All other AI layers (APPLICATION / MODEL / N/A):** TAM/optionality checks do not fire; Qualitative is determined solely by the primary signal lens thresholds.
 
 **Override 1 — Pre-profit base effect (EMERGING companies):**
 
@@ -290,7 +287,7 @@ SIGNAL OUTPUT
   SBC stripped:    [YES — SBC adjustment: $X.XX/share | N/A — reason]
   PEG ratio:       [x.x (active lens) | N/A — reason (pre-profit / no consensus / negative growth / forward earnings negative)]
   P/S ratio:       [x.x]
-  Rule of 40:      [N/A — pending implementation (ABA-21)]
+  Rule of 40:      [N/A — not implemented]
 
   Qualitative:     [PASS | FLAG | FAIL] — [one-line reason including TAM/optionality note if applicable]
   TAM/Optionality: [note — only present when AI layer = INFRASTRUCTURE or INCUMBENT; omit line for all other layers]
@@ -302,7 +299,7 @@ SIGNAL OUTPUT
   Condition:       [if CONDITIONAL — what the user must confirm; omit line if YES or NO]
 ```
 
-**MODEL_READY final logic (ABA-21):**
+**MODEL_READY final logic:**
 
 Evaluate after all four override rules have been applied. Precedence: NO > CONDITIONAL > YES — a CAUTION always produces NO, even if other conditions would point to CONDITIONAL.
 
@@ -314,7 +311,7 @@ Evaluate after all four override rules have been applied. Precedence: NO > CONDI
 
 If MODEL_READY = CONDITIONAL, the `Condition` line MUST state what the user needs to confirm before running `/model`. Never leave Condition blank on a CONDITIONAL result.
 
-**Report JSON write (ABA-22):**
+**Report JSON write:**
 Run `mkdir -p reports` before writing.
 Write to `reports/TICKER_YYYYMMDD.json` where YYYYMMDD is today's date.
 
@@ -413,7 +410,7 @@ The 14 JSON fields under `stages.signal` are:
 11. `qualitative` — PASS / FLAG / FAIL only; rationale is in `qualitative_note`
 12. `qualitative_note` — one-line reason string (includes TAM/optionality note when applicable)
 13. `signal` — BUY / WATCH / CAUTION (same value as `verdict`)
-14. `model_ready` — YES / CONDITIONAL / NO; `condition` field is a string when CONDITIONAL, `null` otherwise. Final logic: YES requires Signal ∈ {BUY, WATCH} + Qualitative ≠ FAIL + no transition-year flag + profit_stage = ESTABLISHED. CONDITIONAL requires Signal = WATCH + transition-year flag or pending stubs. NO if Signal = CAUTION or Qualitative = FAIL or profit_stage = EMERGING. Precedence: NO > CONDITIONAL > YES.
+14. `model_ready` — YES / CONDITIONAL / NO; `condition` is a string when CONDITIONAL, `null` otherwise. See MODEL_READY table in the OUTPUT section above.
 
 ---
 
@@ -447,30 +444,15 @@ For multiple tickers, direct the user to `/screen TICKER1, TICKER2` then invoke 
 
 ## 9. Tech-Specific Rules
 
-**SBC stripping (mandatory — implemented in ABA-17):**
+**SBC stripping (mandatory):**
 - SBC is step zero before any earnings calculation. Always retrieve `Stock Based Compensation` from `get_financials` and compute per-share SBC before applying any multiple.
 - Never list SBC alongside other one-offs. It is its own line item in the output.
 - Never skip SBC stripping on grounds that SBC is "immaterial" — always check, always compute or report N/A with reason.
 
-**AI layer classification (implemented in ABA-19 — pure qualitative reasoning):**
-No MCP tool call required. Reason from the company's primary revenue source and public AI investment posture.
+**AI layer classification:**
+See decision tree and examples in Section 4, Step 2. Classification is pure qualitative reasoning — no MCP call required.
 
-Classification decision tree:
-1. Does the company's primary revenue come from AI chips, cloud compute, or data centre hardware? → INFRASTRUCTURE
-2. Is AI embedded in SaaS products as a core differentiator, with subscription-based revenue? → APPLICATION
-3. Is the primary product a foundation model or model API? → MODEL
-4. Is this a large profitable tech company using AI as optionality/defence rather than as a primary product? → INCUMBENT
-5. None of the above / AI is not material to the investment thesis → N/A
-
-Output: one-line rationale explaining the primary reason for the classification.
-
-Examples:
-- NVDA → INFRASTRUCTURE — primary revenue from data centre GPUs that power AI training and inference workloads
-- META → INCUMBENT — core revenue from ad targeting; AI (LLaMA, Reels ranking) is an optionality layer, not the product
-- AAPL → N/A — AI features (Apple Intelligence) are product polish, not a revenue driver or investment thesis
-- MSFT → INFRASTRUCTURE — Azure AI and Copilot integration make AI a primary revenue driver across cloud and productivity
-
-**TAM penetration and AI optionality (ABA-20):**
+**TAM penetration and AI optionality:**
 
 TAM penetration check fires only for INFRASTRUCTURE companies. AI optionality flag fires only for INCUMBENT companies. Neither fires for APPLICATION, MODEL, or N/A layers.
 
@@ -491,14 +473,14 @@ AI optionality rules:
 - Premium ≤ 20%: Qualitative unchanged. Note "AI investment appears proportionate to core business value."
 - Always output the TAM/Optionality line for INCUMBENT companies.
 
-**Three-lens valuation hierarchy (ABA-18):**
+**Three-lens valuation hierarchy:**
 - For ESTABLISHED companies: use PEG as the primary signal lens when available. Fall back to P/S if PEG = N/A. Never silently switch lenses — always state which lens is active and why.
 - For EMERGING companies: P/S is always the primary lens. PEG is never applicable. P/E is never applicable. State this explicitly in the output.
 - The fallback chain is: PEG → P/S. There is no P/E-only lens — P/E only appears as an intermediate step in computing clean forward P/E for the PEG numerator.
 
 **Pre-profit / EMERGING rules:**
 - Never apply P/E or PEG to EMERGING companies — mathematically undefined or misleading.
-- Rule of 40 is the primary supplementary filter for EMERGING SaaS (deferred to ABA-19).
+- Rule of 40 is the primary supplementary filter for EMERGING SaaS (not yet implemented).
 - P/S is the primary ratio for EMERGING at all times.
 
 **Track:**
@@ -509,16 +491,7 @@ AI optionality rules:
 
 ## 10. Override Rules
 
-Qualitative overrides from ABA-20 (TAM penetration and AI optionality) are active — see the OVERRIDE section in the COMPUTE phase above.
-
-Four signal override rules are live as of ABA-21 — see the OVERRIDE section in the COMPUTE phase above:
-
-- **Override 1 — Pre-profit base effect:** All EMERGING companies → Signal = CAUTION, MODEL_READY = NO, Qualitative = FAIL.
-- **Override 2 — Transition year:** First/second profitable year → MODEL_READY = CONDITIONAL (Signal unchanged). Known companies: RDDT.
-- **Override 3 — Qualitative failure:** Qualitative = FAIL → Signal = CAUTION, MODEL_READY = NO.
-- **Override 4 — Yield trap:** YIELD track + high yield + negative revenue growth → Signal = CAUTION, MODEL_READY = NO (dormant for GROWTH tech).
-
-Future overrides (not yet implemented):
+All four active override rules and the qualitative overrides from TAM/optionality checks are defined in the OVERRIDE section of Section 4. This section lists only planned future overrides not yet implemented:
 - AI infrastructure premium: INFRASTRUCTURE companies may sustain higher P/S multiples — lift WATCH threshold from P/S ≤ 25 to P/S ≤ 40 if Rule of 40 ≥ 60 and revenue growth > 30%
 - Rule of 40 excellence: score ≥ 60 may lift CAUTION to WATCH for EMERGING companies
 - Earnings revision momentum: strong upward revision trend may lift WATCH to BUY
@@ -542,7 +515,8 @@ Future overrides (not yet implemented):
 | "A report file already exists for this ticker today, I'll skip writing" | Always write. The user may be re-running with updated data or correcting a prior run. Read-modify-write if the file exists. |
 | "I'll skip merging and just overwrite the whole file" | If `/screen` was run first, the file has `stages.screen`. Overwriting it loses the screen data the UI needs. Always read-modify-write when the file already exists. |
 | "I'll use my training knowledge for ratio values instead of calling the MCP" | Always fetch live data from the yfinance MCP. Training data ratios are stale by definition. |
-| "I'll skip the TAM/optionality check since it's qualitative anyway" | These checks are required for INFRASTRUCTURE and INCUMBENT companies respectively. The QA gate for ABA-20 explicitly asserts that the AI optionality premium percentage is present and non-null for META. Skipping a qualitative check because it's qualitative is the exact failure mode it was designed to prevent. |
+| "SBC per share looks tiny — probably a unit mismatch but I'll proceed anyway" | yfinance returns SBC in raw dollars (not thousands or millions) and shares outstanding in units. Verify the magnitude before dividing — if per-share SBC exceeds $10 for a sub-$500 stock, a unit mismatch is almost certain. Report the raw figures so the user can sanity-check. |
+| "I'll skip the TAM/optionality check since it's qualitative anyway" | These checks are required for INFRASTRUCTURE and INCUMBENT companies respectively. The AI optionality premium percentage must be present and non-null for every INCUMBENT. Skipping a qualitative check because it's qualitative is the exact failure mode it was designed to prevent. |
 | "The AI optionality premium percentage is hard to estimate so I'll write N/A" | The percentage must always be a computed number. Estimate AI capex fraction from context, apply the stated 5× proxy, divide by market cap. State your assumptions. N/A is never acceptable for this field on INCUMBENT companies. |
 | "The TAM estimate is uncertain so I'll omit the TAM/Optionality line" | Uncertainty is exactly why this is a qualitative note rather than a precise metric. State the range ($150–400B), pick a point estimate, state your assumption, and compute the penetration. The output must include the line. |
 | "RDDT has a positive P/E so I'll mark MODEL_READY: YES" | RDDT is in its first profitable year (transition year). Override 2 applies: MODEL_READY = CONDITIONAL with condition stating to confirm 2nd profitable year. The positive P/E establishes ESTABLISHED stage and allows Signal to remain at the threshold verdict — but MODEL_READY is capped at CONDITIONAL until a second profitable year is confirmed. |
