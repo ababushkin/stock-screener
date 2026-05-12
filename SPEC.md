@@ -115,9 +115,18 @@ Future tools (M2+, if yfinance proves sufficient or before adding paid sources):
 
 If yfinance is too fragile or coverage gaps appear, candidates are Finnhub (free tier, 60 req/min) or a paid FMP plan.
 
+**M2 feasibility spike outcome (ABA-47, 2026-05-12).** Probed 10 surfaces × NVDA/META/RDDT. yfinance 1.3.0 covers more than expected — including direct `Stock Based Compensation` rows in cashflow, NTM EPS/revenue consensus, price targets, and multi-year B/S + CF for Piotroski. Three scope changes locked in:
+
+- **SUE/PEAD (ABA-28):** `earnings_history` only returns 4 quarters, not 8. v1 SUE uses 4-quarter window; 8-quarter backfill deferred.
+- **Revision momentum (ABA-29):** `eps_revisions` exposes 7d/30d up/down counts only. v1 uses 7d/30d directly; 60/90d deferred. `upgrades_downgrades` is stale on META (latest 2024-09-30) so it is not used as a primary source.
+- **Revenue segments (ABA-12):** absent from yfinance entirely. Routed to EDGAR; blocked on EDGAR MCP build.
+- **Guidance text (ABA-31):** absent from yfinance. v1 substitutes NTM consensus for guidance; transcript/8-K extraction is Later.
+
+No third-party source needed for v1. Full feasibility table at `mcp/yf/spike/FEASIBILITY.md`.
+
 **`mcp/edgar/` — SEC EDGAR**
 
-Authoritative source for: 10-K, 10-Q, 20-F filings, exact SBC figures, capex, D&A, operating lease obligations, segment data. Used for Piotroski raw data and as verification layer against yfinance numbers.
+Authoritative source for: 10-K, 10-Q, 20-F filings, **revenue segments** (primary — yfinance has no segments surface), operating lease obligations, MD&A and risk-factor text, 8-K guidance press releases. Also used as a cross-check on yfinance SBC/capex/D&A when divergence is material.
 
 Tools to expose:
 - `search_filings(ticker, form_type)` → list of recent filings with accession numbers
@@ -130,11 +139,35 @@ Used only for: earnings call transcripts (Motley Fool, Seeking Alpha free pages)
 
 ### Data Priority Chain
 
+Source priority is **per-field**, not global. Routing below reflects the ABA-47 spike (2026-05-12):
+
 ```
-1. yfinance (pre-computed ratios, TTM)
-2. EDGAR XBRL facts (authoritative for SBC, capex, D&A)
-3. Web search (transcripts, recent news, guidance quotes)
-4. User-provided (last resort — skill asks explicitly)
+Ratios (P/E, P/S, EV/EBITDA, P/FCF, EV/Rev, TTM):
+  1. yfinance  →  2. EDGAR (derived)  →  3. user-provided
+
+SBC, capex, D&A, multi-year B/S + CF (Piotroski inputs), FCF history:
+  1. yfinance (Stock Based Compensation row + cashflow/balance_sheet 4-5y)
+     →  2. EDGAR XBRL facts (cross-check on material divergence)
+
+Revenue segments, operating lease obligations:
+  1. EDGAR XBRL facts (yfinance does not surface segments)  →  2. drop in v1 if EDGAR blocked
+
+Forward / consensus estimates (NTM EPS, NTM revenue, price targets, recs):
+  1. yfinance (earnings_estimate / revenue_estimate / analyst_price_targets / recommendations_summary)
+     →  2. user-provided if degraded
+
+Earnings surprise history (SUE input):
+  1. yfinance earnings_history (4-quarter window — v1 scope)
+
+EPS revision counts (revision momentum input):
+  1. yfinance eps_revisions (7d/30d only — v1 scope)
+     ✗ upgrades_downgrades is unreliable per-ticker (META stale); not used as primary
+
+Guidance text, MD&A, risk factors:
+  1. EDGAR filing text (M2 task)  →  2. web search (transcripts)  →  3. drop and substitute consensus
+
+Transcripts, news, qualitative context:
+  1. Web search  →  2. user-provided
 ```
 
 When a skill cannot resolve an input from sources 1–3, it states the gap, uses the most recent available data as a placeholder, sets `CONFIDENCE = MEDIUM` or `LOW`, and asks the user to confirm before proceeding.

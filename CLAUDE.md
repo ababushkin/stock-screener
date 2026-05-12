@@ -32,3 +32,7 @@ cd mcp/edgar && python server.py
 ## Permissions
 
 `.claude/settings.local.json` pre-allows `rtk ls *` and `rtk read *` — use these instead of bare `ls`/`cat`.
+
+## Git
+
+Do not add `Co-Authored-By` trailers to commit messages.
