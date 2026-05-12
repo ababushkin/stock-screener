@@ -1,12 +1,12 @@
 ---
 name: screen
-description: Fast go/no-go valuation screen for tech stocks. Invoked as `/screen TICKER` or `/screen TICKER1, TICKER2`. Fetches ratios from the FMP MCP, classifies profit stage, applies threshold rules, and writes a structured JSON report to reports/. Use whenever asked to screen a stock, evaluate whether a ticker is worth deeper analysis, or produce a reports/ JSON for the UI. Also use when the user mentions a ticker and asks if it's cheap, overvalued, worth looking at, or whether to buy or investigate it — even if they don't say "screen."
+description: Fast go/no-go valuation screen for tech stocks. Invoked as `/screen TICKER` or `/screen TICKER1, TICKER2`. Fetches ratios from the yfinance MCP, classifies profit stage, applies threshold rules, and writes a structured JSON report to reports/. Use whenever asked to screen a stock, evaluate whether a ticker is worth deeper analysis, or produce a reports/ JSON for the UI. Also use when the user mentions a ticker and asks if it's cheap, overvalued, worth looking at, or whether to buy or investigate it — even if they don't say "screen."
 ---
 
 # Screen — Fast Valuation Screen
 
 **Command:** `/screen TICKER [, TICKER2 ...]`
-**Purpose:** Fast go/no-go screen. Classifies a tech stock as PASS / WATCH / SKIP using valuation ratios from the FMP MCP. Writes output to `reports/TICKER_YYYYMMDD.json`.
+**Purpose:** Fast go/no-go screen. Classifies a tech stock as PASS / WATCH / SKIP using valuation ratios from the yfinance MCP. Writes output to `reports/TICKER_YYYYMMDD.json`.
 
 ---
 
@@ -21,18 +21,18 @@ This is the M1 stub. Thresholds are simple ratio-based rules. The M2 full implem
 ### GATHER
 
 1. Parse the ticker from the command argument. Uppercase it (e.g. `nvda` → `NVDA`). If multiple tickers are provided (comma-separated), process each one in sequence.
-2. Call the FMP MCP `get_ratios` tool with the ticker:
-   - Server: `fmp`, Tool: `get_ratios`
+2. Call the yfinance MCP `get_ratios` tool with the ticker:
+   - Server: `yf`, Tool: `get_ratios`
    - Input: `{ "ticker": "NVDA" }`
-   - Returns: `pe_ratio`, `ps_ratio`, `ev_ebitda`, `pfcf`, `ev_revenue`, `period`, `date`
+   - Returns: `pe_ratio`, `ps_ratio`, `ev_ebitda`, `pfcf`, `ev_revenue`, `period` (always `"TTM"`), `date`
 3. If the tool call fails:
-   - **Per-ticker gating (HTTP 402 / "FMP free tier does not serve")**: report the failure for this ticker. If it's a known dual-class share (e.g. `GOOG`/`GOOGL`, `BRK.B`/`BRK.A`), suggest the sibling class to the user as a single-line follow-up — but **do not auto-run it**. The user decides whether the sibling is an acceptable proxy.
-   - **Other failures (FMPNoDataError, network)**: report the failure for this ticker.
+   - **YFNoDataError**: yfinance returned an empty `info` payload — the ticker may be delisted, mistyped, or Yahoo's endpoint changed. Report the failure for this ticker.
+   - **Other failures (network, server not connected)**: report the failure for this ticker.
    - In all cases: do not write a partial report, and continue processing any remaining tickers in the list.
 
 ### VALIDATE
 
-Confirm ratios were retrieved. At minimum, `ps_ratio` must be non-null and greater than 0 for the screen to proceed — P/S is the one ratio available for both profitable and pre-profit companies, so without it there's no basis for any verdict. If `ps_ratio` is null or zero, stop and report that FMP returned no usable data for this ticker.
+Confirm ratios were retrieved. At minimum, `ps_ratio` must be non-null and greater than 0 for the screen to proceed — P/S is the one ratio available for both profitable and pre-profit companies, so without it there's no basis for any verdict. If `ps_ratio` is null or zero, stop and report that yfinance returned no usable data for this ticker. (Note: the MCP server raises `YFNoDataError` itself when `ps_ratio` is missing, so this path mainly guards against an unexpected zero.)
 
 ### COMPUTE — Infer profit stage and track
 
@@ -128,18 +128,18 @@ NVDA — WATCH | ESTABLISHED | P/E 37.7, P/S 20.9
 
 | Rationalisation | Rebuttal |
 |---|---|
-| "P/E is negative but this company clearly has earnings" | If FMP returns a negative P/E, classify as EMERGING. Don't second-guess the data — a negative P/E signals something unusual and the pre-profit path is the safe default. |
+| "P/E is negative but this company clearly has earnings" | If yfinance returns a negative or null P/E, classify as EMERGING. Don't second-guess the data — a negative P/E signals something unusual and the pre-profit path is the safe default. |
 | "The P/E field exists so I'll use it for this EMERGING company" | Pre-profit P/E is mathematically undefined or misleading. Only P/S applies to EMERGING companies. Mixing methods produces nonsense verdicts. |
 | "A report file already exists for this ticker today, I'll skip writing" | Always overwrite. The user may be re-running with updated data or correcting a prior run. |
-| "I'll round the ratios to 2 decimal places in the JSON" | Preserve full FMP precision in the file. Rounding belongs in display layers, not in the source data that the report viewer reads. |
+| "I'll round the ratios to 2 decimal places in the JSON" | Preserve full yfinance precision in the file. Rounding belongs in display layers, not in the source data that the report viewer reads. |
 | "I'll continue past a null ps_ratio and use other ratios instead" | P/S is the one ratio available for both profitable and pre-profit companies. Without it there's no basis for any verdict. Stop and report. |
-| "GOOG failed, GOOGL is basically the same company, I'll just run that and write the report under GOOG" | Don't substitute tickers silently. Class A and Class C trade at different prices so ratios differ marginally. Report the GOOG failure, suggest GOOGL as a follow-up, let the user re-invoke. |
+| "YFNoDataError means I should retry with a different ticker spelling" | Don't guess at ticker variants. Report the failure with the exact ticker the user supplied and let them re-invoke with a different one. |
 
 ---
 
 ## Dependencies
 
-- **FMP MCP server** must be connected. It is registered in `.claude/settings.json`. If `get_ratios` is not available as a tool, tell the user to restart the Claude Code session so the MCP server is reloaded.
+- **yfinance MCP server** must be connected. It is registered in `.mcp.json`. If `get_ratios` is not available as a tool, tell the user to restart the Claude Code session so the MCP server is reloaded.
 
 ---
 

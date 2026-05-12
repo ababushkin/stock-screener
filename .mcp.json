@@ -1,8 +1,8 @@
 {
   "mcpServers": {
-    "fmp": {
-      "command": "mcp/fmp/.venv/bin/python",
-      "args": ["mcp/fmp/server.py"]
+    "yf": {
+      "command": "mcp/yf/.venv/bin/python",
+      "args": ["mcp/yf/server.py"]
     }
   }
 }

@@ -61,11 +61,11 @@ Router infers both from user phrasing and available data. States its inference. 
 ├── reports/                   # Generated report data
 │   └── TICKER_YYYYMMDD.json   # One file per analysis run
 └── mcp/
-    ├── fmp/                   # Financial Modeling Prep MCP server
+    ├── yf/                    # yfinance MCP server (M1 ratios)
     │   ├── server.py
     │   ├── tools.py           # Tool definitions
     │   └── requirements.txt
-    └── edgar/                 # SEC EDGAR MCP server
+    └── edgar/                 # SEC EDGAR MCP server (M2 deep fundamentals)
         ├── server.py
         ├── tools.py
         └── requirements.txt
@@ -100,21 +100,24 @@ Each skill file (`skills/*.md`) follows the structure defined in the project bri
 
 ### MCP Servers
 
-**`mcp/fmp/` — Financial Modeling Prep**
+**`mcp/yf/` — yfinance (Yahoo Finance)**
 
-Primary source for: income statements, balance sheets, cash flow statements, financial ratios, analyst estimates and price targets, earnings surprises, EV multiples, NTM revenue estimates, SBC line items, segment data.
+Primary source for M1 valuation ratios. Free, no API key. Returns TTM ratios via `Ticker.info`.
 
-Tools to expose:
-- `get_financials(ticker, period)` → annual/TTM income, balance sheet, cashflow
-- `get_ratios(ticker)` → P/E, EV/EBITDA, P/FCF, P/S, EV/Revenue
-- `get_estimates(ticker)` → consensus EPS/revenue for NTM, analyst count
-- `get_earnings_history(ticker, n)` → last n quarters: reported vs estimate, surprise %
-- `get_analyst_targets(ticker)` → price target distribution, buy/hold/sell counts
-- `get_revenue_segments(ticker)` → segment breakdown where available
+Tools exposed:
+- `get_ratios(ticker)` → P/E, P/S, EV/EBITDA, P/FCF, EV/Revenue (TTM)
+
+Future tools (M2+, if yfinance proves sufficient or before adding paid sources):
+- `get_financials(ticker, period)` → income / balance sheet / cashflow
+- `get_estimates(ticker)` → analyst EPS / revenue consensus
+- `get_earnings_history(ticker, n)` → surprises
+- `get_analyst_targets(ticker)` → buy/hold/sell distribution
+
+If yfinance is too fragile or coverage gaps appear, candidates are Finnhub (free tier, 60 req/min) or a paid FMP plan.
 
 **`mcp/edgar/` — SEC EDGAR**
 
-Authoritative source for: 10-K and 10-Q filings, exact SBC figures, capex, D&A, operating lease obligations. Used for Piotroski raw data and as verification layer against FMP.
+Authoritative source for: 10-K, 10-Q, 20-F filings, exact SBC figures, capex, D&A, operating lease obligations, segment data. Used for Piotroski raw data and as verification layer against yfinance numbers.
 
 Tools to expose:
 - `search_filings(ticker, form_type)` → list of recent filings with accession numbers
@@ -128,7 +131,7 @@ Used only for: earnings call transcripts (Motley Fool, Seeking Alpha free pages)
 ### Data Priority Chain
 
 ```
-1. FMP API (pre-computed, updated)
+1. yfinance (pre-computed ratios, TTM)
 2. EDGAR XBRL facts (authoritative for SBC, capex, D&A)
 3. Web search (transcripts, recent news, guidance quotes)
 4. User-provided (last resort — skill asks explicitly)
@@ -236,7 +239,7 @@ cd ui && npm run dev
 cd ui && npm run build
 
 # MCP server startup (for testing)
-cd mcp/fmp && python server.py
+cd mcp/yf && python server.py
 cd mcp/edgar && python server.py
 ```
 
@@ -286,9 +289,9 @@ No automated test runner is mandated. Tests are skill-invocation runs with expec
 
 ## Implementation Order
 
-1. **MCP servers** — FMP and EDGAR. Skills can't run without data.
+1. **MCP servers** — yfinance and EDGAR. Skills can't run without data.
 2. **Signal skill** — most complex; v1 draft exists per the brief. Implement tech-specific extensions (SBC, AI layer, TAM check).
-3. **Screen skill** — both variants. Depends only on FMP data.
+3. **Screen skill** — both variants. Depends only on yfinance data.
 4. **Timing skill** — lightest data requirement; fastest to implement.
 5. **Model skill** — both variants. Depends on Signal output contract.
 6. **Router skill** — implement last; requires all sub-skills to be stable.

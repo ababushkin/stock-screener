@@ -12,7 +12,7 @@ Tasks and milestones live in Linear: https://linear.app/ababushkin/project/ai-eq
 
 | Component | Build with |
 |-----------|-----------|
-| FMP MCP server | `/pde:design-doc` → `agent-skills:build` |
+| yfinance MCP server | `/pde:design-doc` → `agent-skills:build` |
 | EDGAR MCP server | `/pde:design-doc` → `agent-skills:build` |
 | `/signal`, `/screen`, `/timing`, `/model`, `/equity` skills | `skill-creator:skill-creator` |
 | Report UI (Vite + React) | `agent-skills:build` |
@@ -25,7 +25,7 @@ cd ui && npm run dev        # localhost:5173
 cd ui && npm run build
 
 # MCP servers
-cd mcp/fmp && python server.py
+cd mcp/yf && python server.py
 cd mcp/edgar && python server.py
 ```
 
