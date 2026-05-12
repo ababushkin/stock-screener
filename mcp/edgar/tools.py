@@ -1,3 +1,5 @@
+import html as _html_mod
+import re
 import sys
 from datetime import date
 
@@ -109,3 +111,112 @@ def get_filing_facts(ticker: str, concept: str) -> dict:
         "form": best["form"],
         "filed": best["filed"],
     }
+
+
+# ---------------------------------------------------------------------------
+# get_filing_text
+# ---------------------------------------------------------------------------
+
+# Common section name aliases → regex patterns searched against raw HTML text.
+_SECTION_ALIASES: dict[str, list[str]] = {
+    "md&a": [
+        r"management.{0,20}s?\s+discussion.{0,50}analysis",
+    ],
+    "risk factors": [
+        r"item\s+1a\b.{0,30}risk\s+factors",
+        r"risk\s+factors",
+    ],
+    "business": [
+        r"item\s+1\b(?![ab]).{0,20}business",
+    ],
+    "financial statements": [
+        r"item\s+8\b.{0,30}financial\s+statements",
+    ],
+}
+
+# Pattern that marks the start of ANY numbered item — used to find the end of a section.
+_ITEM_BOUNDARY_RE = re.compile(r"\bitem\s+\d+[a-z]?\b", re.IGNORECASE)
+
+_MAX_SECTION_CHARS = 50_000
+
+
+def _html_to_text(raw: str) -> str:
+    text = re.sub(r"<[^>]+>", " ", raw)
+    text = _html_mod.unescape(text)
+    return re.sub(r"[ \t]+", " ", text)
+
+
+def _extract_section(html_text: str, section: str) -> str:
+    """Find the named section in filing HTML; return stripped plain text.
+
+    Disambiguation between TOC entries and actual section body: the TOC entry
+    has very little content before the next Item marker; the actual body has
+    thousands of characters.  We pick the match with the longest span.
+    """
+    key = section.strip().lower()
+    patterns = _SECTION_ALIASES.get(key, [re.escape(section)])
+
+    best_start: int | None = None
+    best_end: int = 0
+    best_span: int = -1
+
+    for pattern in patterns:
+        for m in re.finditer(pattern, html_text, re.IGNORECASE):
+            # Look for the NEXT item boundary, skipping a small offset so we
+            # don't immediately re-match the same item number.
+            next_b = _ITEM_BOUNDARY_RE.search(html_text, m.end() + 200)
+            end = next_b.start() if next_b else m.start() + _MAX_SECTION_CHARS
+            span = end - m.start()
+            if span > best_span:
+                best_span = span
+                best_start = m.start()
+                best_end = end
+
+    if best_start is None:
+        raise EDGARNoDataError(f"section {section!r} not found in filing")
+
+    raw = html_text[best_start : min(best_end, best_start + _MAX_SECTION_CHARS)]
+    return re.sub(r"\s+", " ", _html_to_text(raw)).strip()
+
+
+def _primary_doc_url(accession_number: str) -> str:
+    """Return the URL of the primary document for a given accession number.
+
+    Extracts CIK from the accession number (first numeric segment) and fetches
+    the EDGAR directory index.json to locate the 10-K primary document.
+    """
+    cik = str(int(accession_number.split("-")[0]))
+    accn_nodash = accession_number.replace("-", "")
+    index_url = (
+        f"https://www.sec.gov/Archives/edgar/data/{cik}/{accn_nodash}/index.json"
+    )
+    resp = requests.get(index_url, headers=_HEADERS)
+    resp.raise_for_status()
+    items = resp.json().get("directory", {}).get("item", [])
+
+    # Prefer item explicitly typed as 10-K/10-K/A; fall back to first .htm file.
+    for item in items:
+        if item.get("type") in ("10-K", "10-K/A"):
+            return (
+                f"https://www.sec.gov/Archives/edgar/data/{cik}"
+                f"/{accn_nodash}/{item['name']}"
+            )
+    for item in items:
+        if item["name"].lower().endswith((".htm", ".html")):
+            return (
+                f"https://www.sec.gov/Archives/edgar/data/{cik}"
+                f"/{accn_nodash}/{item['name']}"
+            )
+    raise EDGARNoDataError(f"no primary document found for {accession_number}")
+
+
+def get_filing_text(accession_number: str, section: str) -> str:
+    """Return plain text of a named section from an EDGAR filing.
+
+    accession_number: EDGAR accession number, e.g. "0001045810-24-000010".
+    section: section name — "MD&A", "Risk Factors", "Business", etc.
+    """
+    doc_url = _primary_doc_url(accession_number)
+    resp = requests.get(doc_url, headers=_HEADERS)
+    resp.raise_for_status()
+    return _extract_section(resp.text, section)
