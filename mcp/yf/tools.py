@@ -180,6 +180,7 @@ def get_analyst_targets(ticker: str) -> dict:
     return {
         "ticker": ticker,
         "avg_target": float(targets["mean"]),
+        "median_target": float(targets["median"]) if targets.get("median") else None,
         "high_target": float(targets["high"]),
         "low_target": float(targets["low"]),
         "buy_count": buy_count,

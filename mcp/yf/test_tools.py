@@ -258,7 +258,7 @@ class TestGetAnalystTargets:
         with patch("tools.yf.Ticker", return_value=_mock_targets_ticker()):
             result = get_analyst_targets("META")
 
-        required = {"ticker", "avg_target", "high_target", "low_target", "buy_count", "hold_count", "sell_count"}
+        required = {"ticker", "avg_target", "median_target", "high_target", "low_target", "buy_count", "hold_count", "sell_count"}
         assert required <= set(result.keys())
 
     def test_price_target_values(self):
@@ -266,6 +266,7 @@ class TestGetAnalystTargets:
             result = get_analyst_targets("META")
 
         assert result["avg_target"] == pytest.approx(269.16544, rel=1e-4)
+        assert result["median_target"] == pytest.approx(265.0, rel=1e-4)
         assert result["high_target"] == pytest.approx(380.0, rel=1e-4)
         assert result["low_target"] == pytest.approx(140.0, rel=1e-4)
 
