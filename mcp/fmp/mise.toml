@@ -1,0 +1,14 @@
+[tasks.install]
+description = "Create venv and install dependencies"
+run = """
+python3 -m venv .venv
+.venv/bin/pip install -q -r requirements.txt
+"""
+
+[tasks.server]
+description = "Run FMP MCP server"
+run = ".venv/bin/python server.py"
+
+[tasks.pip-check]
+description = "Verify installed dependencies"
+run = ".venv/bin/pip show mcp httpx python-dotenv | grep Name"
