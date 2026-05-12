@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "fmp": {
+      "command": "mcp/fmp/.venv/bin/python",
+      "args": ["mcp/fmp/server.py"]
+    }
+  }
+}
