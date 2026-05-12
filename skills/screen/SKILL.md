@@ -103,17 +103,65 @@ Compose a one-sentence rationale citing the Piotroski score, which signals drove
 
 ---
 
-#### EMERGING path (P/S only — unchanged)
+#### EMERGING path: Rule of 40 + Gross Margin Gate + EV/NTM Revenue
 
-P/E is invalid for pre-profit companies — never apply it to EMERGING tickers. Do not call `get_financials` for EMERGING tickers.
+P/E is invalid for pre-profit companies — never apply it to EMERGING tickers.
+
+For EMERGING tickers, call **three** yfinance MCP tools:
+- `mcp__yf__get_ratios` — for `ev_revenue` and valuation context
+- `mcp__yf__get_financials` — for TTM/annual revenue, gross profit, operating income, free cash flow
+- `mcp__yf__get_estimates` — for `ntm_revenue` (NTM consensus revenue estimate)
+
+##### Step 1 — Gross Margin Gate (hard gate, runs first)
+
+Gross Margin = Gross Profit / Revenue (most recent annual period from `get_financials`)
+
+**If Gross Margin < 60%: verdict = SKIP immediately.**
+- Do not compute Rule of 40 or EV/NTM Revenue.
+- Rationale must include "gross margin gate" explicitly.
+- This is a hard gate — no exceptions.
+
+If Gross Margin ≥ 60%: proceed to Step 2.
+
+##### Step 2 — Rule of 40
+
+Rule of 40 Score = Revenue Growth Rate (%) + FCF Margin (%)
+
+- **Revenue Growth Rate** = (Revenue_y0 − Revenue_y1) / |Revenue_y1| × 100
+  - y0 = most recent annual period, y1 = prior annual period (from `get_financials`)
+  - If only one year of data: use the `get_estimates` NTM revenue growth as a fallback — set `growth_source: "ntm_estimate"` in the output
+- **FCF Margin** = Free Cash Flow / Revenue × 100 (most recent annual period)
+  - If FCF is null or unavailable: substitute Operating Income / Revenue × 100 and set `fcf_note: "used operating income as FCF proxy"`
+
+| Rule of 40 Score | Tier |
+|-----------------|------|
+| ≥ 40 | STRONG |
+| 20–39 | ADEQUATE |
+| < 20 | WEAK |
+
+##### Step 3 — EV/NTM Revenue Position
+
+EV/NTM Revenue = `ev_revenue` from `get_ratios` (Yahoo computes this as EV / TTM revenue; use it as a proxy for NTM if ntm_revenue unavailable)
+
+Preferred: recompute as EV / ntm_revenue where:
+- EV = market_cap + total_debt − cash (from `get_ratios` and `get_financials`)
+- ntm_revenue from `get_estimates`
+
+| EV/NTM Rev | Label |
+|------------|-------|
+| < 5× | CHEAP |
+| 5–15× | FAIR |
+| > 15× | RICH |
+
+##### Step 4 — Combine into verdict
 
 | Verdict | Condition |
 |---------|-----------|
-| PASS    | P/S ≤ 8 |
-| WATCH   | P/S ≤ 20 |
-| SKIP    | P/S > 20 |
+| PASS    | Rule of 40 ≥ 40 AND EV/NTM ≤ 15× |
+| WATCH   | Rule of 40 ≥ 20 OR EV/NTM ≤ 15× (but not both PASS conditions met) |
+| SKIP    | Rule of 40 < 20 AND EV/NTM > 15×, OR gross margin gate triggered |
 
-Compose a one-sentence rationale citing P/S and the decisive threshold.
+Compose a one-sentence rationale citing the gross margin, Rule of 40 score, and EV/NTM Revenue, with the decisive factor.
 
 ---
 
