@@ -1,0 +1,25 @@
+{
+  "ticker": "GOOGL",
+  "company": null,
+  "date": "2026-05-12",
+  "stages": {
+    "screen": {
+      "verdict": "WATCH",
+      "profit_stage": "ESTABLISHED",
+      "ratios": {
+        "pe_ratio": 28.692653400923053,
+        "ps_ratio": 9.411057590895442,
+        "ev_ebitda": 21.231654460386082,
+        "pfcf": 51.76081674992493,
+        "ev_revenue": 9.481989661581833
+      },
+      "rationale": "P/E of 28.7 exceeds the 25 PASS threshold but sits within the 45 WATCH bound; P/S of 9.4 exceeds the 8 PASS threshold but sits within the 25 WATCH bound."
+    }
+  },
+  "meta": {
+    "profit_stage": "ESTABLISHED",
+    "track": "GROWTH",
+    "ai_layer": null,
+    "confidence": "HIGH"
+  }
+}

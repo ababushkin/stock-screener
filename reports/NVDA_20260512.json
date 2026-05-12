@@ -1,0 +1,25 @@
+{
+  "ticker": "NVDA",
+  "company": null,
+  "date": "2026-05-12",
+  "stages": {
+    "screen": {
+      "verdict": "WATCH",
+      "profit_stage": "ESTABLISHED",
+      "ratios": {
+        "pe_ratio": 37.74531619845587,
+        "ps_ratio": 20.98735229556632,
+        "ev_ebitda": 31.35739304886823,
+        "pfcf": 46.87788985891017,
+        "ev_revenue": 20.9910894793876
+      },
+      "rationale": "P/E of 37.7 exceeds the 25 PASS threshold but sits within the 45 WATCH bound; P/S of 21.0 is within the 25 WATCH bound."
+    }
+  },
+  "meta": {
+    "profit_stage": "ESTABLISHED",
+    "track": "GROWTH",
+    "ai_layer": null,
+    "confidence": "HIGH"
+  }
+}
