@@ -37,7 +37,7 @@ cd mcp/edgar && python server.py
 
 When working on a Linear issue:
 1. **On start** — set the issue status to **In Progress** using `mcp__linear-server__save_issue`
-2. **On complete** — set the issue status to **Done** using `mcp__linear-server__save_issue`
+2. **On complete** — set the issue status to **Done** using `mcp__linear-server__save_issue` only after changes have been committed and pushed
 
 Always update Linear status. Do not leave issues in the wrong state.
 

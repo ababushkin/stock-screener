@@ -266,8 +266,12 @@ def _parse_segment_revenues(text: str) -> list[dict]:
     results = []
     for m in pattern.finditer(text):
         label = m.group(1).strip().rstrip()
-        # Skip "Total" rows and header artifacts
-        if re.search(r"\bTotal\b|\bYear\b|\bIn millions\b|\bJun\b|^\s*\d", label, re.IGNORECASE):
+        # Skip "Total" rows, header artifacts, and percentage-change context rows
+        if re.search(
+            r"\bTotal\b|\bYear\b|\bIn millions\b|\bJun\b|^\s*\d"
+            r"|\bPercent|\bChange\b|\bConsolidat|\bCorporat|\bElimin",
+            label, re.IGNORECASE,
+        ):
             continue
         # Clean residual whitespace/punctuation
         label = re.sub(r"\s+", " ", label).strip(" .")
@@ -335,7 +339,9 @@ def get_revenue_segments(ticker: str) -> list[dict]:
     except Exception:
         pass
 
-    # --- Try 2: Parse segment note from the 10-K filing HTML ---
+    # --- Try 2: Parse segment revenue table from the full 10-K filing HTML ---
+    # _extract_section can pick an MD&A reference instead of the actual note, so
+    # we run _parse_segment_revenues on the entire plain-text document instead.
     try:
         filings = search_filings(ticker, "10-K")
         if not filings:
@@ -344,11 +350,9 @@ def get_revenue_segments(ticker: str) -> list[dict]:
         doc_url = _primary_doc_url(accn, cik)
         resp = requests.get(doc_url, headers=_HEADERS)
         resp.raise_for_status()
-        section_text = _extract_section(resp.text, "segment information")
-        results = _parse_segment_revenues(section_text)
+        full_text = re.sub(r"\s+", " ", _html_to_text(resp.text))
+        results = _parse_segment_revenues(full_text)
         return results
-    except EDGARNoDataError:
-        return []
     except Exception:
         return []
 
