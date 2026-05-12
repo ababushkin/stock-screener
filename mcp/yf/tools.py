@@ -112,6 +112,40 @@ def get_financials(ticker: str, period: str = "annual") -> dict:
     return {"ticker": ticker, "period": period, "years": years}
 
 
+def get_earnings_history(ticker: str, n: int = 4) -> list[dict]:
+    """Return the last n quarters of EPS actuals, estimates, and surprise.
+
+    Args:
+        ticker: Stock ticker symbol.
+        n: Number of quarters to return (max 4; yfinance caps at 4).
+
+    Returns:
+        List of dicts ordered oldest-to-newest, each with:
+            quarter (YYYY-MM-DD), reported_eps, estimated_eps, surprise_pct.
+        surprise_pct is the raw yfinance fraction (e.g. 0.08 = 8% surprise).
+    """
+    t = yf.Ticker(ticker)
+    eh = t.earnings_history
+
+    if eh is None or (hasattr(eh, "empty") and eh.empty):
+        raise YFNoDataError(
+            f"yfinance returned no earnings history for {ticker}. "
+            "Ticker may be delisted, mistyped, or lack reported earnings."
+        )
+
+    rows = []
+    for ts, row in eh.sort_index().iterrows():
+        quarter = ts.strftime("%Y-%m-%d") if hasattr(ts, "strftime") else str(ts)[:10]
+        rows.append({
+            "quarter": quarter,
+            "reported_eps": float(row["epsActual"]),
+            "estimated_eps": float(row["epsEstimate"]),
+            "surprise_pct": float(row["surprisePercent"]),
+        })
+
+    return rows[-n:] if n < len(rows) else rows
+
+
 def get_analyst_targets(ticker: str) -> dict:
     """Return analyst price targets and buy/hold/sell recommendation counts.
 

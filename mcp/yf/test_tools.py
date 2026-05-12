@@ -7,7 +7,7 @@ import pandas as pd
 import pytest
 
 sys.path.insert(0, "/Users/anton/src/stock-review/mcp/yf")
-from tools import YFNoDataError, get_analyst_targets, get_estimates, get_financials
+from tools import YFNoDataError, get_analyst_targets, get_earnings_history, get_estimates, get_financials
 
 
 def _make_earnings_estimate(avg, analysts):
@@ -312,3 +312,94 @@ class TestGetAnalystTargets:
         with patch("tools.yf.Ticker", return_value=m):
             with pytest.raises(YFNoDataError):
                 get_analyst_targets("FAKE")
+
+
+# ---------------------------------------------------------------------------
+# Helpers for get_earnings_history tests
+# ---------------------------------------------------------------------------
+
+_EH_DATES = pd.to_datetime(["2025-04-30", "2025-07-31", "2025-10-31", "2026-01-31"])
+
+
+def _make_earnings_history_df():
+    """earnings_history DataFrame matching yfinance shape (4 rows × 4 cols)."""
+    df = pd.DataFrame(
+        {
+            "epsActual":       [0.81, 1.05, 1.30, 1.62],
+            "epsEstimate":     [0.74988, 1.00867, 1.25647, 1.53812],
+            "epsDifference":   [0.06, 0.04, 0.04, 0.08],
+            "surprisePercent": [0.0802, 0.0410, 0.0346, 0.0532],
+        },
+        index=pd.DatetimeIndex(_EH_DATES, name="quarter"),
+    )
+    return df
+
+
+def _mock_eh_ticker():
+    m = MagicMock()
+    m.earnings_history = _make_earnings_history_df()
+    return m
+
+
+class TestGetEarningsHistory:
+    def test_returns_list_of_four_dicts(self):
+        with patch("tools.yf.Ticker", return_value=_mock_eh_ticker()):
+            result = get_earnings_history("AAPL", 4)
+
+        assert isinstance(result, list)
+        assert len(result) == 4
+
+    def test_each_dict_has_required_keys(self):
+        required = {"quarter", "reported_eps", "estimated_eps", "surprise_pct"}
+        with patch("tools.yf.Ticker", return_value=_mock_eh_ticker()):
+            result = get_earnings_history("AAPL", 4)
+
+        for row in result:
+            assert required <= set(row.keys()), f"Missing keys in {row}"
+
+    def test_no_null_values(self):
+        with patch("tools.yf.Ticker", return_value=_mock_eh_ticker()):
+            result = get_earnings_history("AAPL", 4)
+
+        for row in result:
+            for k, v in row.items():
+                assert v is not None, f"Null value for key {k!r} in {row}"
+
+    def test_values_match_source_data(self):
+        with patch("tools.yf.Ticker", return_value=_mock_eh_ticker()):
+            result = get_earnings_history("AAPL", 4)
+
+        first = result[0]
+        assert first["quarter"] == "2025-04-30"
+        assert first["reported_eps"] == pytest.approx(0.81, rel=1e-4)
+        assert first["estimated_eps"] == pytest.approx(0.74988, rel=1e-4)
+        assert first["surprise_pct"] == pytest.approx(0.0802, rel=1e-4)
+
+    def test_n_limits_rows_returned(self):
+        with patch("tools.yf.Ticker", return_value=_mock_eh_ticker()):
+            result = get_earnings_history("AAPL", 2)
+
+        assert len(result) == 2
+
+    def test_rows_ordered_oldest_to_newest(self):
+        with patch("tools.yf.Ticker", return_value=_mock_eh_ticker()):
+            result = get_earnings_history("AAPL", 4)
+
+        quarters = [r["quarter"] for r in result]
+        assert quarters == sorted(quarters)
+
+    def test_raises_when_earnings_history_none(self):
+        m = MagicMock()
+        m.earnings_history = None
+
+        with patch("tools.yf.Ticker", return_value=m):
+            with pytest.raises(YFNoDataError):
+                get_earnings_history("FAKE", 4)
+
+    def test_raises_when_earnings_history_empty(self):
+        m = MagicMock()
+        m.earnings_history = pd.DataFrame()
+
+        with patch("tools.yf.Ticker", return_value=m):
+            with pytest.raises(YFNoDataError):
+                get_earnings_history("FAKE", 4)
