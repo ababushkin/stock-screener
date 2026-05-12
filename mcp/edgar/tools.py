@@ -210,6 +210,77 @@ def _primary_doc_url(accession_number: str) -> str:
     raise EDGARNoDataError(f"no primary document found for {accession_number}")
 
 
+_REVENUE_CONCEPTS = [
+    "RevenueFromContractWithCustomerExcludingAssessedTax",
+    "Revenues",
+    "SalesRevenueNet",
+    "RevenueFromContractWithCustomerIncludingAssessedTax",
+]
+
+_SEGMENT_AXIS = "srt:StatementBusinessSegmentsAxis"
+
+
+def _clean_segment_name(raw: str) -> str:
+    """Convert XBRL member string to human-readable segment name."""
+    if ":" in raw:
+        raw = raw.split(":", 1)[1]
+    for suffix in ("Member", "Segment"):
+        if raw.endswith(suffix):
+            raw = raw[: -len(suffix)]
+    return re.sub(r"([A-Z])", r" \1", raw).strip()
+
+
+def get_revenue_segments(ticker: str) -> list[dict]:
+    """Return revenue breakdown by business segment from EDGAR XBRL facts.
+
+    Returns a list of {'name': str, 'revenue': int} dicts sorted by revenue
+    descending.  Returns an empty list when no segment-tagged data exists
+    (e.g. single-segment companies) — never raises for missing segments.
+    """
+    cik = _get_cik(ticker)
+    url = f"{EDGAR_BASE}/api/xbrl/companyfacts/CIK{cik}.json"
+    resp = requests.get(url, headers=_HEADERS)
+    resp.raise_for_status()
+    data = resp.json()
+
+    us_gaap = data.get("facts", {}).get("us-gaap", {})
+
+    # Try revenue concepts in priority order; stop at the first that has
+    # segment-tagged annual entries.
+    segmented: list[dict] = []
+    for concept in _REVENUE_CONCEPTS:
+        if concept not in us_gaap:
+            continue
+        usd_entries = us_gaap[concept].get("units", {}).get("USD", [])
+        for entry in usd_entries:
+            if entry.get("form") not in _ANNUAL_FORMS:
+                continue
+            seg = entry.get("segment")
+            if not seg or seg.get("dimension") != _SEGMENT_AXIS:
+                continue
+            segmented.append(entry)
+        if segmented:
+            break
+
+    if not segmented:
+        return []
+
+    latest_end = max(e["end"] for e in segmented)
+    latest = [e for e in segmented if e["end"] == latest_end]
+
+    # Deduplicate by segment value; prefer most recently filed.
+    by_seg: dict[str, dict] = {}
+    for entry in latest:
+        key = entry["segment"]["value"]
+        if key not in by_seg or entry["filed"] > by_seg[key]["filed"]:
+            by_seg[key] = entry
+
+    return [
+        {"name": _clean_segment_name(v), "revenue": e["val"]}
+        for v, e in sorted(by_seg.items(), key=lambda x: -x[1]["val"])
+    ]
+
+
 def get_filing_text(accession_number: str, section: str) -> str:
     """Return plain text of a named section from an EDGAR filing.
 

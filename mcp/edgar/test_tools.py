@@ -5,7 +5,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 sys.path.insert(0, "/Users/anton/src/stock-review/mcp/edgar")
-from tools import EDGARNoDataError, get_filing_facts, get_filing_text, search_filings
+from tools import EDGARNoDataError, get_filing_facts, get_filing_text, get_revenue_segments, search_filings
 
 
 # ---------------------------------------------------------------------------
@@ -310,3 +310,212 @@ class TestGetFilingText:
 
         doc_urls = [u for u in fetched_urls if u.endswith(".htm")]
         assert any(_FT_DOC in u for u in doc_urls)
+
+
+# ---------------------------------------------------------------------------
+# get_revenue_segments fixtures
+# ---------------------------------------------------------------------------
+
+_MSFT_CIK = 789019
+_MSFT_SEGMENT_AXIS = "srt:StatementBusinessSegmentsAxis"
+
+_MSFT_FACTS_WITH_SEGMENTS = {
+    "cik": _MSFT_CIK,
+    "entityName": "Microsoft Corp.",
+    "facts": {
+        "us-gaap": {
+            "RevenueFromContractWithCustomerExcludingAssessedTax": {
+                "label": "Revenue from Contract with Customer",
+                "units": {
+                    "USD": [
+                        # Consolidated total — no segment tag, should be ignored
+                        {
+                            "accn": "0000789019-24-000001",
+                            "end": "2024-06-30",
+                            "val": 245_122_000_000,
+                            "form": "10-K",
+                            "filed": "2024-07-30",
+                        },
+                        # Segment: Intelligent Cloud
+                        {
+                            "accn": "0000789019-24-000001",
+                            "end": "2024-06-30",
+                            "val": 87_907_000_000,
+                            "form": "10-K",
+                            "filed": "2024-07-30",
+                            "segment": {
+                                "dimension": _MSFT_SEGMENT_AXIS,
+                                "value": "msft:IntelligentCloudMember",
+                            },
+                        },
+                        # Segment: More Personal Computing
+                        {
+                            "accn": "0000789019-24-000001",
+                            "end": "2024-06-30",
+                            "val": 59_655_000_000,
+                            "form": "10-K",
+                            "filed": "2024-07-30",
+                            "segment": {
+                                "dimension": _MSFT_SEGMENT_AXIS,
+                                "value": "msft:MorePersonalComputingMember",
+                            },
+                        },
+                        # Segment: Productivity and Business Processes
+                        {
+                            "accn": "0000789019-24-000001",
+                            "end": "2024-06-30",
+                            "val": 97_560_000_000,
+                            "form": "10-K",
+                            "filed": "2024-07-30",
+                            "segment": {
+                                "dimension": _MSFT_SEGMENT_AXIS,
+                                "value": "msft:ProductivityAndBusinessProcessesMember",
+                            },
+                        },
+                        # Prior year segment — should be excluded (older end date)
+                        {
+                            "accn": "0000789019-23-000001",
+                            "end": "2023-06-30",
+                            "val": 60_000_000_000,
+                            "form": "10-K",
+                            "filed": "2023-07-27",
+                            "segment": {
+                                "dimension": _MSFT_SEGMENT_AXIS,
+                                "value": "msft:IntelligentCloudMember",
+                            },
+                        },
+                        # 10-Q segment entry — must be excluded
+                        {
+                            "accn": "0000789019-24-000099",
+                            "end": "2024-09-30",
+                            "val": 25_000_000_000,
+                            "form": "10-Q",
+                            "filed": "2024-10-30",
+                            "segment": {
+                                "dimension": _MSFT_SEGMENT_AXIS,
+                                "value": "msft:IntelligentCloudMember",
+                            },
+                        },
+                    ]
+                },
+            }
+        }
+    },
+}
+
+_RDDT_CIK = 1713445
+_RDDT_FACTS_NO_SEGMENTS = {
+    "cik": _RDDT_CIK,
+    "entityName": "Reddit Inc.",
+    "facts": {
+        "us-gaap": {
+            "RevenueFromContractWithCustomerExcludingAssessedTax": {
+                "label": "Revenue from Contract with Customer",
+                "units": {
+                    "USD": [
+                        # Only consolidated total, no segment breakdown
+                        {
+                            "accn": "0001713445-24-000001",
+                            "end": "2023-12-31",
+                            "val": 804_000_000,
+                            "form": "10-K",
+                            "filed": "2024-03-01",
+                        },
+                    ]
+                },
+            }
+        }
+    },
+}
+
+_SEGMENT_COMPANY_TICKERS = {
+    "0": {"cik_str": _MSFT_CIK, "ticker": "MSFT", "title": "Microsoft Corp."},
+    "1": {"cik_str": _RDDT_CIK, "ticker": "RDDT", "title": "Reddit Inc."},
+}
+
+
+def _mock_get_segments(url, **kwargs):
+    resp = MagicMock()
+    resp.raise_for_status = MagicMock()
+    if "company_tickers.json" in url:
+        resp.json.return_value = _SEGMENT_COMPANY_TICKERS
+    elif f"CIK{str(_MSFT_CIK).zfill(10)}" in url:
+        resp.json.return_value = _MSFT_FACTS_WITH_SEGMENTS
+    elif f"CIK{str(_RDDT_CIK).zfill(10)}" in url:
+        resp.json.return_value = _RDDT_FACTS_NO_SEGMENTS
+    else:
+        resp.json.return_value = {}
+    return resp
+
+
+# ---------------------------------------------------------------------------
+# get_revenue_segments tests
+# ---------------------------------------------------------------------------
+
+
+class TestGetRevenueSegments:
+    def test_msft_returns_list(self):
+        with patch("tools.requests.get", side_effect=_mock_get_segments):
+            result = get_revenue_segments("MSFT")
+        assert isinstance(result, list)
+
+    def test_msft_each_entry_has_name_and_revenue(self):
+        with patch("tools.requests.get", side_effect=_mock_get_segments):
+            result = get_revenue_segments("MSFT")
+        assert len(result) > 0
+        for entry in result:
+            assert "name" in entry
+            assert "revenue" in entry
+
+    def test_msft_correct_segment_count(self):
+        """Should return exactly 3 segments for the latest fiscal year."""
+        with patch("tools.requests.get", side_effect=_mock_get_segments):
+            result = get_revenue_segments("MSFT")
+        assert len(result) == 3
+
+    def test_msft_excludes_consolidated_total(self):
+        """Entries without a segment tag (consolidated total) must not appear."""
+        with patch("tools.requests.get", side_effect=_mock_get_segments):
+            result = get_revenue_segments("MSFT")
+        revenues = [e["revenue"] for e in result]
+        assert 245_122_000_000 not in revenues
+
+    def test_msft_uses_latest_annual_period(self):
+        """Prior-year segment values must not appear in results."""
+        with patch("tools.requests.get", side_effect=_mock_get_segments):
+            result = get_revenue_segments("MSFT")
+        revenues = [e["revenue"] for e in result]
+        assert 60_000_000_000 not in revenues
+
+    def test_msft_excludes_10q_entries(self):
+        """Quarterly filings must be excluded."""
+        with patch("tools.requests.get", side_effect=_mock_get_segments):
+            result = get_revenue_segments("MSFT")
+        revenues = [e["revenue"] for e in result]
+        assert 25_000_000_000 not in revenues
+
+    def test_msft_segment_revenues_sum_correctly(self):
+        with patch("tools.requests.get", side_effect=_mock_get_segments):
+            result = get_revenue_segments("MSFT")
+        total = sum(e["revenue"] for e in result)
+        assert total == pytest.approx(87_907_000_000 + 59_655_000_000 + 97_560_000_000)
+
+    def test_msft_segment_names_are_readable(self):
+        """Names should be human-readable, not raw XBRL member strings."""
+        with patch("tools.requests.get", side_effect=_mock_get_segments):
+            result = get_revenue_segments("MSFT")
+        names = [e["name"] for e in result]
+        for name in names:
+            assert "Member" not in name
+            assert "msft:" not in name
+
+    def test_rddt_returns_empty_list(self):
+        """Tickers with no segment breakdown should return [] not raise."""
+        with patch("tools.requests.get", side_effect=_mock_get_segments):
+            result = get_revenue_segments("RDDT")
+        assert result == []
+
+    def test_raises_on_unknown_ticker(self):
+        with patch("tools.requests.get", side_effect=_mock_get_segments):
+            with pytest.raises(EDGARNoDataError, match="ticker"):
+                get_revenue_segments("ZZZZNOTREAL")

@@ -7,6 +7,7 @@ from tools import (
     EDGARNoDataError,
     get_filing_facts as _get_filing_facts,
     get_filing_text as _get_filing_text,
+    get_revenue_segments as _get_revenue_segments,
     search_filings as _search_filings,
 )
 
@@ -36,6 +37,17 @@ def get_filing_text(accession_number: str, section: str) -> str:
     section: "MD&A", "Risk Factors", "Business", or "Financial Statements".
     """
     return _get_filing_text(accession_number, section)
+
+
+@mcp.tool()
+def get_revenue_segments(ticker: str) -> list:
+    """Revenue breakdown by business segment from EDGAR XBRL facts.
+
+    Returns a list of {'name': str, 'revenue': int} dicts sorted by revenue
+    descending.  Returns [] for single-segment companies — never raises for
+    missing segment data.
+    """
+    return _get_revenue_segments(ticker)
 
 
 if __name__ == "__main__":
