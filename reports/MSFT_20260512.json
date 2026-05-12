@@ -1,0 +1,44 @@
+{
+  "ticker": "MSFT",
+  "company": null,
+  "date": "2026-05-12",
+  "stages": {
+    "screen": {
+      "verdict": "SKIP",
+      "profit_stage": "ESTABLISHED",
+      "ratios": {
+        "pe_ratio": 24.563097,
+        "ps_ratio": 9.631412,
+        "ev_ebitda": 16.875,
+        "pfcf": 82.82395188109717,
+        "ev_revenue": 9.78
+      },
+      "piotroski": {
+        "score": 4,
+        "signals": {
+          "f1_roa_positive": true,
+          "f2_ocf_positive": true,
+          "f3_roa_improving": false,
+          "f4_accruals_negative": false,
+          "f5_leverage_decreasing": true,
+          "f6_current_ratio_improving": true,
+          "f7_no_new_shares": false,
+          "f8_gross_margin_improving": false,
+          "f9_asset_turnover_improving": false
+        }
+      },
+      "magic_formula": {
+        "earnings_yield": 0.04071,
+        "roic": 0.3754,
+        "flag": "WATCH"
+      },
+      "rationale": "Piotroski F-Score of 4 (<=4 threshold) triggers SKIP regardless of Magic Formula; ROA declined YoY (0.165 vs 0.172) and accruals were positive, suggesting earnings quality concerns; gross margin compressed as Azure/AI investment costs rose; slight share issuance flagged F7."
+    }
+  },
+  "meta": {
+    "profit_stage": "ESTABLISHED",
+    "track": "GROWTH",
+    "ai_layer": null,
+    "confidence": "HIGH"
+  }
+}

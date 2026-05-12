@@ -230,6 +230,7 @@ def get_ratios(ticker: str) -> dict:
 
     return {
         "ticker": ticker,
+        "company_name": info.get("longName") or info.get("shortName"),
         "pe_ratio": info.get("trailingPE"),
         "ps_ratio": ps_ratio,
         "ev_ebitda": info.get("enterpriseToEbitda"),

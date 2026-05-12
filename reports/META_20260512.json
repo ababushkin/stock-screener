@@ -1,30 +1,44 @@
 {
   "ticker": "META",
-  "company": "Meta Platforms",
+  "company": null,
   "date": "2026-05-12",
   "stages": {
-    "signal": {
-      "verdict": "WATCH",
+    "screen": {
+      "verdict": "SKIP",
       "profit_stage": "ESTABLISHED",
-      "track": "GROWTH",
-      "ai_layer": "INCUMBENT",
-      "clean_eps_ttm": 15.72,
-      "sbc_stripped": true,
-      "sbc_adjustment_per_share": 7.17,
-      "peg_ratio": 1.05,
-      "ps_ratio": 7.07,
-      "rule_of_40": null,
-      "qualitative": "FLAG",
-      "qualitative_note": "AI optionality premium 9.6% \u2014 below 20% threshold but AI monetisation path warrants monitoring.",
-      "signal": "WATCH",
-      "model_ready": "YES",
-      "condition": null
+      "ratios": {
+        "pe_ratio": 21.784649,
+        "ps_ratio": 7.071729,
+        "ev_ebitda": 13.958,
+        "pfcf": 59.478255016541375,
+        "ev_revenue": 7.098
+      },
+      "piotroski": {
+        "score": 4,
+        "signals": {
+          "f1_roa_positive": true,
+          "f2_ocf_positive": true,
+          "f3_roa_improving": false,
+          "f4_accruals_negative": false,
+          "f5_leverage_decreasing": false,
+          "f6_current_ratio_improving": false,
+          "f7_no_new_shares": true,
+          "f8_gross_margin_improving": true,
+          "f9_asset_turnover_improving": false
+        }
+      },
+      "magic_formula": {
+        "earnings_yield": 0.05554,
+        "roic": 0.2943,
+        "flag": "WATCH"
+      },
+      "rationale": "Piotroski F-Score of 4 (<=4 threshold) triggers SKIP regardless of Magic Formula; ROA declined YoY (0.165 vs 0.226), long-term debt ratio rose (0.161 vs 0.104) as META issued bonds, and current ratio deteriorated — only profitability existence and gross margin expansion held up."
     }
   },
   "meta": {
     "profit_stage": "ESTABLISHED",
     "track": "GROWTH",
-    "ai_layer": "INCUMBENT",
+    "ai_layer": null,
     "confidence": "HIGH"
   }
 }

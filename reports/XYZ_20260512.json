@@ -1,0 +1,30 @@
+{
+  "ticker": "XYZ",
+  "company": "XYZ",
+  "date": "2026-05-12",
+  "stages": {
+    "signal": {
+      "verdict": "BUY",
+      "profit_stage": "ESTABLISHED",
+      "track": "GROWTH",
+      "ai_layer": "N/A",
+      "clean_eps_ttm": -0.99,
+      "sbc_stripped": true,
+      "sbc_adjustment_per_share": 2.27,
+      "peg_ratio": null,
+      "ps_ratio": 1.78,
+      "rule_of_40": null,
+      "qualitative": "PASS",
+      "qualitative_note": "P/S 1.78 in BUY band; no TAM/optionality overrides (AI layer N/A); caution: SBC $2.27/share exceeds reported TTM EPS $1.28, clean EPS is negative (-$0.99); revenue growth near-zero (+0.3% FY24→FY25); transition-year flag set (first material profit year FY2024).",
+      "signal": "BUY",
+      "model_ready": "CONDITIONAL",
+      "condition": "Confirm 2nd profitable year and verify clean earnings path before running Model — clean EPS is negative after SBC stripping (-$0.99); FY2023 near-zero profit, FY2024 first material profitable year; earnings history too short for reliable DCF inputs."
+    }
+  },
+  "meta": {
+    "profit_stage": "ESTABLISHED",
+    "track": "GROWTH",
+    "ai_layer": "N/A",
+    "confidence": "MEDIUM"
+  }
+}

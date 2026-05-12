@@ -1,0 +1,44 @@
+{
+  "ticker": "AAPL",
+  "company": null,
+  "date": "2026-05-12",
+  "stages": {
+    "screen": {
+      "verdict": "WATCH",
+      "profit_stage": "ESTABLISHED",
+      "ratios": {
+        "pe_ratio": 35.476364,
+        "ps_ratio": 9.522142,
+        "ev_ebitda": 26.972,
+        "pfcf": 42.523132930243555,
+        "ev_revenue": 9.558
+      },
+      "piotroski": {
+        "score": 9,
+        "signals": {
+          "f1_roa_positive": true,
+          "f2_ocf_positive": true,
+          "f3_roa_improving": true,
+          "f4_accruals_negative": true,
+          "f5_leverage_decreasing": true,
+          "f6_current_ratio_improving": true,
+          "f7_no_new_shares": true,
+          "f8_gross_margin_improving": true,
+          "f9_asset_turnover_improving": true
+        }
+      },
+      "magic_formula": {
+        "earnings_yield": 0.03051,
+        "roic": 0.6872,
+        "flag": "WATCH"
+      },
+      "rationale": "Piotroski F-Score of 9 (perfect score) but Magic Formula flag is WATCH — all three tickers tied at combined rank 4 in this batch, so no ticker reaches top-25% uniquely; AAPL's EY of 3.05% is the lowest in the batch due to its premium multiple."
+    }
+  },
+  "meta": {
+    "profit_stage": "ESTABLISHED",
+    "track": "GROWTH",
+    "ai_layer": null,
+    "confidence": "HIGH"
+  }
+}
