@@ -7,7 +7,7 @@ import pandas as pd
 import pytest
 
 sys.path.insert(0, "/Users/anton/src/stock-review/mcp/yf")
-from tools import YFNoDataError, get_estimates, get_financials
+from tools import YFNoDataError, get_analyst_targets, get_estimates, get_financials
 
 
 def _make_earnings_estimate(avg, analysts):
@@ -215,3 +215,100 @@ class TestGetFinancials:
         with patch("tools.yf.Ticker", return_value=_mock_ticker()):
             with pytest.raises(ValueError, match="period"):
                 get_financials("META", "quarterly")
+
+
+# ---------------------------------------------------------------------------
+# Helpers for get_analyst_targets tests
+# ---------------------------------------------------------------------------
+
+def _make_recommendations_summary():
+    """4-month rolling recommendations DataFrame matching yfinance shape."""
+    return pd.DataFrame(
+        {
+            "period":    ["0m", "-1m", "-2m", "-3m"],
+            "strongBuy": [9,    9,     9,     12],
+            "buy":       [48,   48,    48,    48],
+            "hold":      [2,    2,     2,     2],
+            "sell":      [1,    1,     1,     1],
+            "strongSell":[0,    0,     0,     0],
+        }
+    )
+
+
+def _make_analyst_price_targets():
+    """analyst_price_targets dict matching yfinance shape."""
+    return {
+        "current": 219.44,
+        "high": 380.0,
+        "low": 140.0,
+        "mean": 269.16544,
+        "median": 265.0,
+    }
+
+
+def _mock_targets_ticker():
+    m = MagicMock()
+    m.analyst_price_targets = _make_analyst_price_targets()
+    m.recommendations_summary = _make_recommendations_summary()
+    return m
+
+
+class TestGetAnalystTargets:
+    def test_returns_required_keys(self):
+        with patch("tools.yf.Ticker", return_value=_mock_targets_ticker()):
+            result = get_analyst_targets("META")
+
+        required = {"ticker", "avg_target", "high_target", "low_target", "buy_count", "hold_count", "sell_count"}
+        assert required <= set(result.keys())
+
+    def test_price_target_values(self):
+        with patch("tools.yf.Ticker", return_value=_mock_targets_ticker()):
+            result = get_analyst_targets("META")
+
+        assert result["avg_target"] == pytest.approx(269.16544, rel=1e-4)
+        assert result["high_target"] == pytest.approx(380.0, rel=1e-4)
+        assert result["low_target"] == pytest.approx(140.0, rel=1e-4)
+
+    def test_buy_count_merges_strong_buy(self):
+        """buy_count = strongBuy + buy from the 0m period row."""
+        with patch("tools.yf.Ticker", return_value=_mock_targets_ticker()):
+            result = get_analyst_targets("META")
+
+        assert result["buy_count"] == 57  # 9 strongBuy + 48 buy
+
+    def test_sell_count_merges_strong_sell(self):
+        """sell_count = sell + strongSell from the 0m period row."""
+        with patch("tools.yf.Ticker", return_value=_mock_targets_ticker()):
+            result = get_analyst_targets("META")
+
+        assert result["sell_count"] == 1  # 1 sell + 0 strongSell
+
+    def test_hold_count(self):
+        with patch("tools.yf.Ticker", return_value=_mock_targets_ticker()):
+            result = get_analyst_targets("META")
+
+        assert result["hold_count"] == 2
+
+    def test_ticker_passed_through(self):
+        with patch("tools.yf.Ticker", return_value=_mock_targets_ticker()):
+            result = get_analyst_targets("META")
+
+        assert result["ticker"] == "META"
+
+    def test_raises_when_price_targets_missing(self):
+        m = MagicMock()
+        m.analyst_price_targets = {}
+        m.recommendations_summary = _make_recommendations_summary()
+
+        with patch("tools.yf.Ticker", return_value=m):
+            with pytest.raises(YFNoDataError):
+                get_analyst_targets("FAKE")
+
+    def test_raises_when_recommendations_empty(self):
+        m = MagicMock()
+        m.analyst_price_targets = _make_analyst_price_targets()
+        m.recommendations_summary = pd.DataFrame()
+
+        with patch("tools.yf.Ticker", return_value=m):
+            with pytest.raises(YFNoDataError):
+                get_analyst_targets("FAKE")

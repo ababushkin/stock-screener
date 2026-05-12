@@ -3,9 +3,15 @@ import sys
 print("[yf] yfinance MCP server ready", file=sys.stderr)
 
 from mcp.server.fastmcp import FastMCP
-from tools import YFNoDataError, get_estimates as _get_estimates, get_financials as _get_financials, get_ratios as _get_ratios
+from tools import YFNoDataError, get_analyst_targets as _get_analyst_targets, get_estimates as _get_estimates, get_financials as _get_financials, get_ratios as _get_ratios
 
 mcp = FastMCP("yf")
+
+
+@mcp.tool()
+def get_analyst_targets(ticker: str) -> dict:
+    """Analyst price targets and buy/hold/sell counts: avg_target, high_target, low_target, buy_count, hold_count, sell_count."""
+    return _get_analyst_targets(ticker)
 
 
 @mcp.tool()

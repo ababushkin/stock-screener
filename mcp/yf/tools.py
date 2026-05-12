@@ -112,6 +112,46 @@ def get_financials(ticker: str, period: str = "annual") -> dict:
     return {"ticker": ticker, "period": period, "years": years}
 
 
+def get_analyst_targets(ticker: str) -> dict:
+    """Return analyst price targets and buy/hold/sell recommendation counts.
+
+    Uses Ticker.analyst_price_targets for price target distribution and
+    Ticker.recommendations_summary for the current-month (0m) counts.
+    strongBuy+buy → buy_count; sell+strongSell → sell_count.
+    """
+    t = yf.Ticker(ticker)
+    targets = t.analyst_price_targets or {}
+    recs = t.recommendations_summary
+
+    if not targets.get("mean"):
+        raise YFNoDataError(
+            f"yfinance returned no analyst price targets for {ticker}. "
+            "Ticker may be delisted, mistyped, or lack analyst coverage."
+        )
+    if recs is None or (hasattr(recs, "empty") and recs.empty):
+        raise YFNoDataError(
+            f"yfinance returned no recommendations summary for {ticker}. "
+            "Ticker may be delisted, mistyped, or lack analyst coverage."
+        )
+
+    # Use the 0m (current month) row — first row in the DataFrame
+    row = recs.iloc[0]
+    buy_count = int(row.get("strongBuy", 0)) + int(row.get("buy", 0))
+    hold_count = int(row.get("hold", 0))
+    sell_count = int(row.get("sell", 0)) + int(row.get("strongSell", 0))
+
+    return {
+        "ticker": ticker,
+        "avg_target": float(targets["mean"]),
+        "high_target": float(targets["high"]),
+        "low_target": float(targets["low"]),
+        "buy_count": buy_count,
+        "hold_count": hold_count,
+        "sell_count": sell_count,
+        "date": date.today().isoformat(),
+    }
+
+
 def get_ratios(ticker: str) -> dict:
     """Return valuation ratios for a ticker from Yahoo Finance (TTM).
 
