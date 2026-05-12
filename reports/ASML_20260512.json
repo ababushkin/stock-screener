@@ -1,6 +1,6 @@
 {
   "ticker": "ASML",
-  "company": null,
+  "company": "ASML Holding N.V.",
   "date": "2026-05-12",
   "stages": {
     "screen": {
@@ -14,12 +14,29 @@
         "ev_revenue": 17.742
       },
       "rationale": "P/E of 51.3 exceeds the 45 WATCH ceiling, triggering a SKIP verdict despite P/S of 17.9 sitting within the WATCH range."
+    },
+    "signal": {
+      "verdict": "CAUTION",
+      "profit_stage": "ESTABLISHED",
+      "track": "GROWTH",
+      "ai_layer": "INFRASTRUCTURE",
+      "clean_eps_ttm": 24.12,
+      "sbc_stripped": true,
+      "sbc_adjustment_per_share": 0.52,
+      "peg_ratio": 2.90,
+      "ps_ratio": 17.91,
+      "rule_of_40": null,
+      "qualitative": "FAIL",
+      "qualitative_note": "TAM ceiling risk: ASML estimated ~78% penetration of advanced-logic lithography equipment TAM; combined with CAUTION signal from PEG 2.90 → FAIL",
+      "signal": "CAUTION",
+      "model_ready": "NO",
+      "condition": null
     }
   },
   "meta": {
     "profit_stage": "ESTABLISHED",
     "track": "GROWTH",
-    "ai_layer": null,
-    "confidence": "HIGH"
+    "ai_layer": "INFRASTRUCTURE",
+    "confidence": "MEDIUM"
   }
 }

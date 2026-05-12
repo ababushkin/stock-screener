@@ -1,10 +1,28 @@
+import os
 import sys
 import time
 from datetime import date
 from typing import Optional
 
 import pandas as pd
+import requests
 import yfinance as yf
+from requests.adapters import HTTPAdapter
+
+YF_TIMEOUT = int(os.environ.get("YF_TIMEOUT", "30"))  # seconds per request
+
+
+class _TimeoutAdapter(HTTPAdapter):
+    def send(self, request, **kwargs):
+        kwargs.setdefault("timeout", YF_TIMEOUT)
+        return super().send(request, **kwargs)
+
+
+def _session() -> requests.Session:
+    s = requests.Session()
+    s.mount("https://", _TimeoutAdapter())
+    s.mount("http://", _TimeoutAdapter())
+    return s
 
 
 class YFNoDataError(Exception):
@@ -17,9 +35,11 @@ def get_estimates(ticker: str) -> dict:
     Uses the +1y row from yfinance earnings_estimate / revenue_estimate as the
     NTM proxy (next fiscal year is the standard analyst convention).
     """
-    t = yf.Ticker(ticker)
+    start = time.monotonic()
+    t = yf.Ticker(ticker, session=_session())
     ee = t.earnings_estimate
     re = t.revenue_estimate
+    print(f"[yf] get_estimates({ticker}) → {time.monotonic() - start:.2f}s", file=sys.stderr)
 
     if ee is None or ee.empty or "+1y" not in ee.index:
         raise YFNoDataError(
@@ -81,10 +101,12 @@ def get_financials(ticker: str, period: str = "annual") -> dict:
     if period != "annual":
         raise ValueError(f"Unsupported period {period!r}. Only 'annual' is supported in v1.")
 
-    t = yf.Ticker(ticker)
+    start = time.monotonic()
+    t = yf.Ticker(ticker, session=_session())
     fin = t.financials
     cf = t.cashflow
     bs = t.balance_sheet
+    print(f"[yf] get_financials({ticker}) → {time.monotonic() - start:.2f}s", file=sys.stderr)
 
     if fin is None or fin.empty:
         raise YFNoDataError(
@@ -127,7 +149,7 @@ def get_earnings_history(ticker: str, n: int = 4) -> list[dict]:
             quarter (YYYY-MM-DD), reported_eps, estimated_eps, surprise_pct.
         surprise_pct is the raw yfinance fraction (e.g. 0.08 = 8% surprise).
     """
-    t = yf.Ticker(ticker)
+    t = yf.Ticker(ticker, session=_session())
     eh = t.earnings_history
 
     if eh is None or (hasattr(eh, "empty") and eh.empty):
@@ -156,7 +178,7 @@ def get_analyst_targets(ticker: str) -> dict:
     Ticker.recommendations_summary for the current-month (0m) counts.
     strongBuy+buy → buy_count; sell+strongSell → sell_count.
     """
-    t = yf.Ticker(ticker)
+    t = yf.Ticker(ticker, session=_session())
     targets = t.analyst_price_targets or {}
     recs = t.recommendations_summary
 
@@ -198,9 +220,9 @@ def get_ratios(ticker: str) -> dict:
     free cash flow since yfinance doesn't expose it pre-computed.
     """
     start = time.monotonic()
-    info = yf.Ticker(ticker).info or {}
+    info = yf.Ticker(ticker, session=_session()).info or {}
     elapsed = time.monotonic() - start
-    print(f"[yf] Ticker({ticker}).info → {len(info)} keys in {elapsed:.2f}s", file=sys.stderr)
+    print(f"[yf] get_ratios({ticker}).info → {len(info)} keys in {elapsed:.2f}s", file=sys.stderr)
 
     ps_ratio = info.get("priceToSalesTrailing12Months")
     if not ps_ratio:
