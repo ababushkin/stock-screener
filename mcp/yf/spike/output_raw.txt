@@ -1,0 +1,375 @@
+
+======================================================================
+TICKER: NVDA
+======================================================================
+
+--- 1. SBC (cashflow) :: OK
+    shape=(56, 5) cols=[Timestamp('2026-01-31 00:00:00'), Timestamp('2025-01-31 00:00:00'), Timestamp('2024-01-31 00:00:00'), Timestamp('2023-01-31 00:00:00'), Timestamp('2022-01-31 00:00:00')]
+    index=['Free Cash Flow', 'Repurchase Of Capital Stock', 'Repayment Of Debt', 'Issuance Of Debt', 'Capital Expenditure', 'Interest Paid Supplemental Data', 'Income Tax Paid Supplemental Data', 'End Cash Position']
+                               2026-01-31    2025-01-31    2024-01-31    2023-01-31    2022-01-31
+Free Cash Flow               9.667600e+10  6.085300e+10  2.702100e+10  3.808000e+09           NaN
+Repurchase Of Capital Stock -4.008600e+10 -3.370600e+10 -9.533000e+09 -1.003900e+10           NaN
+Repayment Of Debt            0.000000e+00 -1.250000e+09 -1.250000e+09  0.000000e+00           NaN
+Issuance Of Debt                      NaN           NaN  0.000000e+00  0.000000e+00  4.977000e+09
+
+--- 1b. SBC (financials) :: OK
+    shape=(43, 5) cols=[Timestamp('2026-01-31 00:00:00'), Timestamp('2025-01-31 00:00:00'), Timestamp('2024-01-31 00:00:00'), Timestamp('2023-01-31 00:00:00'), Timestamp('2022-01-31 00:00:00')]
+    index=['Tax Effect Of Unusual Items', 'Tax Rate For Calcs', 'Normalized EBITDA', 'Total Unusual Items', 'Total Unusual Items Excluding Goodwill', 'Net Income From Continuing Operation Net Minority Interest', 'Reconciled Depreciation', 'Reconciled Cost Of Revenue']
+                               2026-01-31    2025-01-31    2024-01-31    2023-01-31  2022-01-31
+Tax Effect Of Unusual Items  0.000000e+00  0.000000e+00  0.000000e+00 -2.841300e+08         NaN
+Tax Rate For Calcs           1.511700e-01  1.326490e-01  1.200000e-01  2.100000e-01         NaN
+Normalized EBITDA            1.445520e+11  8.613700e+10  3.558300e+10  7.339000e+09         NaN
+Total Unusual Items                   NaN  0.000000e+00  0.000000e+00 -1.353000e+09         0.0
+
+--- 2. earnings_estimate :: OK
+    shape=(4, 7) cols=['avg', 'low', 'high', 'yearAgoEps', 'numberOfAnalysts', 'growth']
+    index=['0q', '+1q', '0y', '+1y']
+             avg   low   high  yearAgoEps  numberOfAnalysts  growth currency
+period                                                                      
+0q       1.77461  1.69   1.99     0.81000                38  1.1909      USD
++1q      1.95182  1.83   2.24     1.05000                37  0.8589      USD
+0y       8.34076  7.68   9.40     4.77000                46  0.7486      USD
++1y     11.28592  8.23  14.80     8.34076                46  0.3531      USD
+
+--- 3. revenue_estimate :: OK
+    shape=(4, 7) cols=['avg', 'low', 'high', 'numberOfAnalysts', 'yearAgoRevenue', 'growth']
+    index=['0q', '+1q', '0y', '+1y']
+                 avg           low          high  numberOfAnalysts  yearAgoRevenue  growth currency
+period                                                                                             
+0q       78785307760   77896000000   85512000000                41     44062000000  0.7881      USD
++1q      86642155140   82114000000   96655000000                40     46743000000  0.8536      USD
+0y      370911753560  332925000000  444361500000                52    215938000000  0.7177      USD
++1y     485834707830  307277000000  625912800000                54    370911753560  0.3098      USD
+
+--- 4. earnings_history :: OK
+    shape=(4, 4) cols=['epsActual', 'epsEstimate', 'epsDifference', 'surprisePercent']
+    index=[Timestamp('2025-04-30 00:00:00'), Timestamp('2025-07-31 00:00:00'), Timestamp('2025-10-31 00:00:00'), Timestamp('2026-01-31 00:00:00')]
+            epsActual  epsEstimate  epsDifference  surprisePercent
+quarter                                                           
+2025-04-30       0.81      0.74988           0.06           0.0802
+2025-07-31       1.05      1.00867           0.04           0.0410
+2025-10-31       1.30      1.25647           0.04           0.0346
+2026-01-31       1.62      1.53812           0.08           0.0532
+
+--- 5. eps_revisions :: OK
+    shape=(4, 5) cols=['upLast7days', 'upLast30days', 'downLast30days', 'downLast7Days', 'currency']
+    index=['0q', '+1q', '0y', '+1y']
+        upLast7days  upLast30days  downLast30days  downLast7Days currency
+period                                                                   
+0q                1             2               1              0      USD
++1q               1             3               1              0      USD
+0y                1             4               0              0      USD
++1y               3             9               0              0      USD
+
+--- 5b. upgrades_downgrades :: OK
+    shape=(981, 7) cols=['Firm', 'ToGrade', 'FromGrade', 'Action', 'priceTargetAction', 'currentPriceTarget']
+    index=[Timestamp('2026-03-31 05:55:57'), Timestamp('2026-03-23 14:28:45'), Timestamp('2026-03-23 12:47:43'), Timestamp('2026-03-19 09:51:56'), Timestamp('2026-03-18 16:26:28'), Timestamp('2026-03-18 12:06:41'), Timestamp('2026-03-18 10:43:31'), Timestamp('2026-03-17 14:40:29')]
+                                  Firm     ToGrade   FromGrade Action priceTargetAction  currentPriceTarget  priorPriceTarget
+GradeDate                                                                                                                    
+2026-03-31 05:55:57          Benchmark         Buy         Buy   reit         Maintains               250.0             250.0
+2026-03-23 14:28:45         Rosenblatt         Buy         Buy   main         Maintains               325.0             325.0
+2026-03-23 12:47:43  Cantor Fitzgerald  Overweight  Overweight   reit         Maintains               300.0             300.0
+2026-03-19 09:51:56      Raymond James  Strong Buy  Strong Buy   main            Raises               323.0             291.0
+
+--- 6. analyst_price_targets :: OK
+    dict keys=['current', 'high', 'low', 'mean', 'median']
+      current: 219.44
+      high: 380.0
+      low: 140.0
+      mean: 269.16544
+      median: 265.0
+
+--- 6b. recommendations_summary :: OK
+    shape=(4, 6) cols=['period', 'strongBuy', 'buy', 'hold', 'sell', 'strongSell']
+    index=[0, 1, 2, 3]
+  period  strongBuy  buy  hold  sell  strongSell
+0     0m          9   48     2     1           0
+1    -1m          9   48     2     1           0
+2    -2m          9   48     2     1           0
+3    -3m         12   48     2     1           0
+
+--- 7. revenue segments :: OK
+    type=str value=-
+
+--- 8. balance_sheet :: OK
+    shape=(80, 5) cols=[Timestamp('2026-01-31 00:00:00'), Timestamp('2025-01-31 00:00:00'), Timestamp('2024-01-31 00:00:00'), Timestamp('2023-01-31 00:00:00'), Timestamp('2022-01-31 00:00:00')]
+    index=['Ordinary Shares Number', 'Share Issued', 'Net Debt', 'Total Debt', 'Tangible Book Value', 'Invested Capital', 'Working Capital', 'Net Tangible Assets']
+                          2026-01-31    2025-01-31    2024-01-31    2023-01-31    2022-01-31
+Ordinary Shares Number  2.430400e+10  2.447700e+10  2.464000e+10  2.466137e+10           NaN
+Share Issued            2.430400e+10  2.447700e+10  2.464000e+10  2.466137e+10           NaN
+Net Debt                         NaN           NaN  2.429000e+09  7.564000e+09  8.956000e+09
+Total Debt              1.104000e+10  9.982000e+09  1.105600e+10  1.203100e+10           NaN
+
+--- 8b. cashflow (multi-yr) :: OK
+    shape=(56, 5) cols=[Timestamp('2026-01-31 00:00:00'), Timestamp('2025-01-31 00:00:00'), Timestamp('2024-01-31 00:00:00'), Timestamp('2023-01-31 00:00:00'), Timestamp('2022-01-31 00:00:00')]
+    index=['Free Cash Flow', 'Repurchase Of Capital Stock', 'Repayment Of Debt', 'Issuance Of Debt', 'Capital Expenditure', 'Interest Paid Supplemental Data', 'Income Tax Paid Supplemental Data', 'End Cash Position']
+                               2026-01-31    2025-01-31    2024-01-31    2023-01-31    2022-01-31
+Free Cash Flow               9.667600e+10  6.085300e+10  2.702100e+10  3.808000e+09           NaN
+Repurchase Of Capital Stock -4.008600e+10 -3.370600e+10 -9.533000e+09 -1.003900e+10           NaN
+Repayment Of Debt            0.000000e+00 -1.250000e+09 -1.250000e+09  0.000000e+00           NaN
+Issuance Of Debt                      NaN           NaN  0.000000e+00  0.000000e+00  4.977000e+09
+
+--- 9. 5y cashflow FCF :: OK
+    shape=(56, 5) cols=[Timestamp('2026-01-31 00:00:00'), Timestamp('2025-01-31 00:00:00'), Timestamp('2024-01-31 00:00:00'), Timestamp('2023-01-31 00:00:00'), Timestamp('2022-01-31 00:00:00')]
+    index=['Free Cash Flow', 'Repurchase Of Capital Stock', 'Repayment Of Debt', 'Issuance Of Debt', 'Capital Expenditure', 'Interest Paid Supplemental Data', 'Income Tax Paid Supplemental Data', 'End Cash Position']
+                               2026-01-31    2025-01-31    2024-01-31    2023-01-31    2022-01-31
+Free Cash Flow               9.667600e+10  6.085300e+10  2.702100e+10  3.808000e+09           NaN
+Repurchase Of Capital Stock -4.008600e+10 -3.370600e+10 -9.533000e+09 -1.003900e+10           NaN
+Repayment Of Debt            0.000000e+00 -1.250000e+09 -1.250000e+09  0.000000e+00           NaN
+Issuance Of Debt                      NaN           NaN  0.000000e+00  0.000000e+00  4.977000e+09
+
+--- 10. info.longBusinessSummary (guidance proxy) :: OK
+    type=str value=NVIDIA Corporation operates as a data center scale AI infrastructure company. The company operates through two segments, Compute & Networking, and Graphics segments. The Compute & Networking segment provides data center accelerated computing and networking platforms and artificial intelligence solutions and software, and automotive platforms and autonomous and electric vehicle solutions, including software. The Graphics segment offers GeForce GPUs for gaming and PCs; Quadro/NVIDIA RTX GPUs for e
+
+>> SBC candidate rows in cashflow: ['Repurchase Of Capital Stock', 'Proceeds From Stock Option Exercised', 'Common Stock Dividend Paid', 'Net Common Stock Issuance', 'Common Stock Payments', 'Stock Based Compensation']
+>> Capex candidate rows: ['Repurchase Of Capital Stock', 'Capital Expenditure', 'Net Investment Purchase And Sale', 'Purchase Of Investment', 'Net Business Purchase And Sale', 'Purchase Of Business', 'Net PPE Purchase And Sale', 'Purchase Of PPE', 'Change In Working Capital']
+
+======================================================================
+TICKER: META
+======================================================================
+
+--- 1. SBC (cashflow) :: OK
+    shape=(57, 5) cols=[Timestamp('2025-12-31 00:00:00'), Timestamp('2024-12-31 00:00:00'), Timestamp('2023-12-31 00:00:00'), Timestamp('2022-12-31 00:00:00'), Timestamp('2021-12-31 00:00:00')]
+    index=['Free Cash Flow', 'Repurchase Of Capital Stock', 'Repayment Of Debt', 'Issuance Of Debt', 'Capital Expenditure', 'Interest Paid Supplemental Data', 'Income Tax Paid Supplemental Data', 'End Cash Position']
+                               2025-12-31    2024-12-31    2023-12-31    2022-12-31  2021-12-31
+Free Cash Flow               4.610900e+10  5.407200e+10  4.406800e+10  1.928900e+10         NaN
+Repurchase Of Capital Stock -2.624800e+10 -3.012500e+10 -1.977400e+10 -2.795600e+10         NaN
+Repayment Of Debt           -2.524000e+09 -1.969000e+09 -1.058000e+09 -8.500000e+08         NaN
+Issuance Of Debt             2.990600e+10  1.043200e+10  8.455000e+09  9.921000e+09         NaN
+
+--- 1b. SBC (financials) :: OK
+    shape=(47, 5) cols=[Timestamp('2025-12-31 00:00:00'), Timestamp('2024-12-31 00:00:00'), Timestamp('2023-12-31 00:00:00'), Timestamp('2022-12-31 00:00:00'), Timestamp('2021-12-31 00:00:00')]
+    index=['Tax Effect Of Unusual Items', 'Tax Rate For Calcs', 'Normalized EBITDA', 'Total Unusual Items', 'Total Unusual Items Excluding Goodwill', 'Net Income From Continuing Operation Net Minority Interest', 'Reconciled Depreciation', 'Reconciled Cost Of Revenue']
+                               2025-12-31    2024-12-31    2023-12-31    2022-12-31  2021-12-31
+Tax Effect Of Unusual Items  1.043482e+08 -8.107595e+07 -6.441600e+07 -1.579500e+07         NaN
+Tax Rate For Calcs           2.964440e-01  1.175010e-01  1.760000e-01  1.950000e-01         NaN
+Normalized EBITDA            1.053610e+11  8.756600e+10  5.941800e+10  3.777100e+10         NaN
+Total Unusual Items          3.520000e+08 -6.900000e+08 -3.660000e+08 -8.100000e+07         NaN
+
+--- 2. earnings_estimate :: OK
+    shape=(4, 7) cols=['avg', 'low', 'high', 'yearAgoEps', 'numberOfAnalysts', 'growth']
+    index=['0q', '+1q', '0y', '+1y']
+             avg    low   high  yearAgoEps  numberOfAnalysts  growth currency
+period                                                                       
+0q       7.22480   5.76   8.55     7.14000                46  0.0119      USD
++1q      7.05325   6.05   8.99     1.05000                44  5.7174      USD
+0y      32.81202  29.61  38.62    23.49000                52  0.3969      USD
++1y     34.73745  30.22  40.86    32.81202                53  0.0587      USD
+
+--- 3. revenue_estimate :: OK
+    shape=(4, 7) cols=['avg', 'low', 'high', 'numberOfAnalysts', 'yearAgoRevenue', 'growth']
+    index=['0q', '+1q', '0y', '+1y']
+                 avg           low          high  numberOfAnalysts  yearAgoRevenue  growth currency
+period                                                                                             
+0q       60195733560   59132000000   62812000000                48     47516000000  0.2669      USD
++1q      63171322520   61674000000   65477000000                46     51242000000  0.2328      USD
+0y      252996477670  249553000000  261221000000                56    200966000000  0.2589      USD
++1y     301559475610  277000000000  321133000000                58    252996477670  0.1920      USD
+
+--- 4. earnings_history :: OK
+    shape=(4, 4) cols=['epsActual', 'epsEstimate', 'epsDifference', 'surprisePercent']
+    index=[Timestamp('2025-06-30 00:00:00'), Timestamp('2025-09-30 00:00:00'), Timestamp('2025-12-31 00:00:00'), Timestamp('2026-03-31 00:00:00')]
+            epsActual  epsEstimate  epsDifference  surprisePercent
+quarter                                                           
+2025-06-30       7.14      5.90298           1.24           0.2096
+2025-09-30       1.05      6.70696          -5.66          -0.8434
+2025-12-31       8.88      8.22253           0.66           0.0800
+2026-03-31      10.44      6.65872           3.78           0.5679
+
+--- 5. eps_revisions :: OK
+    shape=(4, 5) cols=['upLast7days', 'upLast30days', 'downLast30days', 'downLast7Days', 'currency']
+    index=['0q', '+1q', '0y', '+1y']
+        upLast7days  upLast30days  downLast30days  downLast7Days currency
+period                                                                   
+0q               20            21              13             13      USD
++1q               9            10              21             16      USD
+0y               42            44               3              1      USD
++1y              21            24              18             19      USD
+
+--- 5b. upgrades_downgrades :: OK
+    shape=(413, 7) cols=['Firm', 'ToGrade', 'FromGrade', 'Action', 'priceTargetAction', 'currentPriceTarget']
+    index=[Timestamp('2024-09-30 16:25:24'), Timestamp('2024-09-30 11:52:05'), Timestamp('2024-09-26 18:09:36'), Timestamp('2024-09-26 15:57:52'), Timestamp('2024-09-26 15:35:55'), Timestamp('2024-09-26 13:08:22'), Timestamp('2024-09-26 11:20:02'), Timestamp('2024-09-26 11:09:58')]
+                                       Firm     ToGrade   FromGrade Action priceTargetAction  currentPriceTarget  priorPriceTarget
+GradeDate                                                                                                                         
+2024-09-30 16:25:24       Cantor Fitzgerald  Overweight  Overweight   reit         Maintains               660.0             660.0
+2024-09-30 11:52:05  Monness, Crespi, Hardt         Buy         Buy   main            Raises               620.0             570.0
+2024-09-26 18:09:36              Rosenblatt         Buy         Buy   main            Raises               811.0             643.0
+2024-09-26 15:57:52       B of A Securities         Buy         Buy   main            Raises               630.0             563.0
+
+--- 6. analyst_price_targets :: OK
+    dict keys=['current', 'high', 'low', 'mean', 'median']
+      current: 598.86
+      high: 1015.0
+      low: 614.0
+      mean: 826.69104
+      median: 825.0
+
+--- 6b. recommendations_summary :: OK
+    shape=(4, 6) cols=['period', 'strongBuy', 'buy', 'hold', 'sell', 'strongSell']
+    index=[0, 1, 2, 3]
+  period  strongBuy  buy  hold  sell  strongSell
+0     0m          8   48     7     0           0
+1    -1m          9   47     7     0           0
+2    -2m         11   50     6     0           0
+3    -3m         11   51     5     0           0
+
+--- 7. revenue segments :: OK
+    type=str value=US30303M1027
+
+--- 8. balance_sheet :: OK
+    shape=(71, 5) cols=[Timestamp('2025-12-31 00:00:00'), Timestamp('2024-12-31 00:00:00'), Timestamp('2023-12-31 00:00:00'), Timestamp('2022-12-31 00:00:00'), Timestamp('2021-12-31 00:00:00')]
+    index=['Treasury Shares Number', 'Ordinary Shares Number', 'Share Issued', 'Net Debt', 'Total Debt', 'Tangible Book Value', 'Invested Capital', 'Working Capital']
+                          2025-12-31    2024-12-31    2023-12-31    2022-12-31  2021-12-31
+Treasury Shares Number           NaN           NaN  0.000000e+00           NaN         NaN
+Ordinary Shares Number  2.529638e+09  2.534488e+09  2.561000e+09  2.614000e+09         NaN
+Share Issued            2.529638e+09  2.534488e+09  2.561000e+09  2.614000e+09         NaN
+Net Debt                2.287100e+10           NaN           NaN           NaN         NaN
+
+--- 8b. cashflow (multi-yr) :: OK
+    shape=(57, 5) cols=[Timestamp('2025-12-31 00:00:00'), Timestamp('2024-12-31 00:00:00'), Timestamp('2023-12-31 00:00:00'), Timestamp('2022-12-31 00:00:00'), Timestamp('2021-12-31 00:00:00')]
+    index=['Free Cash Flow', 'Repurchase Of Capital Stock', 'Repayment Of Debt', 'Issuance Of Debt', 'Capital Expenditure', 'Interest Paid Supplemental Data', 'Income Tax Paid Supplemental Data', 'End Cash Position']
+                               2025-12-31    2024-12-31    2023-12-31    2022-12-31  2021-12-31
+Free Cash Flow               4.610900e+10  5.407200e+10  4.406800e+10  1.928900e+10         NaN
+Repurchase Of Capital Stock -2.624800e+10 -3.012500e+10 -1.977400e+10 -2.795600e+10         NaN
+Repayment Of Debt           -2.524000e+09 -1.969000e+09 -1.058000e+09 -8.500000e+08         NaN
+Issuance Of Debt             2.990600e+10  1.043200e+10  8.455000e+09  9.921000e+09         NaN
+
+--- 9. 5y cashflow FCF :: OK
+    shape=(57, 5) cols=[Timestamp('2025-12-31 00:00:00'), Timestamp('2024-12-31 00:00:00'), Timestamp('2023-12-31 00:00:00'), Timestamp('2022-12-31 00:00:00'), Timestamp('2021-12-31 00:00:00')]
+    index=['Free Cash Flow', 'Repurchase Of Capital Stock', 'Repayment Of Debt', 'Issuance Of Debt', 'Capital Expenditure', 'Interest Paid Supplemental Data', 'Income Tax Paid Supplemental Data', 'End Cash Position']
+                               2025-12-31    2024-12-31    2023-12-31    2022-12-31  2021-12-31
+Free Cash Flow               4.610900e+10  5.407200e+10  4.406800e+10  1.928900e+10         NaN
+Repurchase Of Capital Stock -2.624800e+10 -3.012500e+10 -1.977400e+10 -2.795600e+10         NaN
+Repayment Of Debt           -2.524000e+09 -1.969000e+09 -1.058000e+09 -8.500000e+08         NaN
+Issuance Of Debt             2.990600e+10  1.043200e+10  8.455000e+09  9.921000e+09         NaN
+
+--- 10. info.longBusinessSummary (guidance proxy) :: OK
+    type=str value=Meta Platforms, Inc. engages in the development of products that enable people to connect and share with friends and family through mobile devices, personal computers, virtual reality (VR) headsets, and AI glasses in the United States, Canada, Europe, Asia-Pacific, and internationally. It operates through two segments, Family of Apps (FoA) and Reality Labs (RL). The FoA segment offers Facebook, which enables people to build community through feed, reels, stories, groups, marketplace, and other; 
+
+>> SBC candidate rows in cashflow: ['Repurchase Of Capital Stock', 'Common Stock Dividend Paid', 'Net Common Stock Issuance', 'Common Stock Payments', 'Stock Based Compensation']
+>> Capex candidate rows: ['Repurchase Of Capital Stock', 'Capital Expenditure', 'Net Investment Purchase And Sale', 'Purchase Of Investment', 'Net Business Purchase And Sale', 'Purchase Of Business', 'Net PPE Purchase And Sale', 'Purchase Of PPE', 'Change In Working Capital', 'Change In Other Working Capital']
+
+======================================================================
+TICKER: RDDT
+======================================================================
+
+--- 1. SBC (cashflow) :: OK
+    shape=(50, 5) cols=[Timestamp('2025-12-31 00:00:00'), Timestamp('2024-12-31 00:00:00'), Timestamp('2023-12-31 00:00:00'), Timestamp('2022-12-31 00:00:00'), Timestamp('2021-12-31 00:00:00')]
+    index=['Free Cash Flow', 'Repurchase Of Capital Stock', 'Issuance Of Capital Stock', 'Capital Expenditure', 'Income Tax Paid Supplemental Data', 'End Cash Position', 'Beginning Cash Position', 'Changes In Cash']
+                              2025-12-31   2024-12-31  2023-12-31   2022-12-31  2021-12-31
+Free Cash Flow               684169000.0  215820000.0 -84838000.0 -100254000.0         NaN
+Repurchase Of Capital Stock          NaN          NaN         NaN          0.0 -95186000.0
+Issuance Of Capital Stock            0.0  600022000.0         0.0          0.0         NaN
+Capital Expenditure           -6706000.0   -6248000.0  -9724000.0   -6233000.0         NaN
+
+--- 1b. SBC (financials) :: OK
+    shape=(36, 4) cols=[Timestamp('2025-12-31 00:00:00'), Timestamp('2024-12-31 00:00:00'), Timestamp('2023-12-31 00:00:00'), Timestamp('2022-12-31 00:00:00')]
+    index=['Tax Effect Of Unusual Items', 'Tax Rate For Calcs', 'Normalized EBITDA', 'Net Income From Continuing Operation Net Minority Interest', 'Reconciled Depreciation', 'Reconciled Cost Of Revenue', 'EBITDA', 'EBIT']
+                                                              2025-12-31    2024-12-31    2023-12-31    2022-12-31
+Tax Effect Of Unusual Items                                 0.000000e+00  0.000000e+00  0.000000e+00  0.000000e+00
+Tax Rate For Calcs                                          2.100000e-01  1.000000e-03  2.100000e-01  2.100000e-01
+Normalized EBITDA                                           4.579320e+08 -5.449250e+08 -1.264590e+08 -1.641620e+08
+Net Income From Continuing Operation Net Minority Interest  5.297210e+08 -4.842760e+08 -9.082400e+07 -1.585500e+08
+
+--- 2. earnings_estimate :: OK
+    shape=(4, 7) cols=['avg', 'low', 'high', 'yearAgoEps', 'numberOfAnalysts', 'growth']
+    index=['0q', '+1q', '0y', '+1y']
+            avg   low  high  yearAgoEps  numberOfAnalysts  growth currency
+period                                                                    
+0q      0.96181  0.80  1.26     0.45000                21  1.1374      USD
++1q     1.26007  1.04  1.54     0.80000                21  0.5751      USD
+0y      4.91989  4.20  5.77     2.62000                25  0.8778      USD
++1y     6.44407  4.10  7.90     4.91989                26  0.3098      USD
+
+--- 3. revenue_estimate :: OK
+    shape=(4, 7) cols=['avg', 'low', 'high', 'numberOfAnalysts', 'yearAgoRevenue', 'growth']
+    index=['0q', '+1q', '0y', '+1y']
+               avg         low        high  numberOfAnalysts  yearAgoRevenue  growth currency
+period                                                                                       
+0q       730543760   720000000   782799000                26       499627000  0.4622      USD
++1q      827699640   769052000   884823000                25       584911000  0.4151      USD
+0y      3227163160  3089953000  3387460000                29      2202506000  0.4652      USD
++1y     4250567220  3881000000  5052000000                31      3227163160  0.3171      USD
+
+--- 4. earnings_history :: OK
+    shape=(4, 4) cols=['epsActual', 'epsEstimate', 'epsDifference', 'surprisePercent']
+    index=[Timestamp('2025-06-30 00:00:00'), Timestamp('2025-09-30 00:00:00'), Timestamp('2025-12-31 00:00:00'), Timestamp('2026-03-31 00:00:00')]
+            epsActual  epsEstimate  epsDifference  surprisePercent
+quarter                                                           
+2025-06-30       0.45      0.18879           0.26           1.3836
+2025-09-30       0.80      0.52015           0.28           0.5380
+2025-12-31       1.24      0.93136           0.31           0.3314
+2026-03-31       1.01      0.56388           0.45           0.7912
+
+--- 5. eps_revisions :: OK
+    shape=(4, 5) cols=['upLast7days', 'upLast30days', 'downLast30days', 'downLast7Days', 'currency']
+    index=['0q', '+1q', '0y', '+1y']
+        upLast7days  upLast30days  downLast30days  downLast7Days currency
+period                                                                   
+0q               13            13               2              2      USD
++1q              13            13               2              2      USD
+0y               22            22               0              0      USD
++1y              21            20               1              1      USD
+
+--- 5b. upgrades_downgrades :: OK
+    shape=(193, 7) cols=['Firm', 'ToGrade', 'FromGrade', 'Action', 'priceTargetAction', 'currentPriceTarget']
+    index=[Timestamp('2026-05-01 15:27:22'), Timestamp('2026-05-01 14:41:55'), Timestamp('2026-05-01 14:41:23'), Timestamp('2026-05-01 14:06:01'), Timestamp('2026-05-01 13:26:16'), Timestamp('2026-05-01 13:13:44'), Timestamp('2026-05-01 11:18:46'), Timestamp('2026-04-22 13:06:41')]
+                                  Firm            ToGrade          FromGrade Action priceTargetAction  currentPriceTarget  priorPriceTarget
+GradeDate                                                                                                                                  
+2026-05-01 15:27:22      Piper Sandler         Overweight         Overweight   reit            Raises               215.0             205.0
+2026-05-01 14:41:55        Wells Fargo       Equal-Weight       Equal-Weight   main            Raises               176.0             149.0
+2026-05-01 14:41:23  Cantor Fitzgerald            Neutral            Neutral   main            Raises               180.0             170.0
+2026-05-01 14:06:01           Citizens  Market Outperform  Market Outperform   main            Lowers               240.0             250.0
+
+--- 6. analyst_price_targets :: OK
+    dict keys=['current', 'high', 'low', 'mean', 'median']
+      current: 159.51
+      high: 300.0
+      low: 110.0
+      mean: 223.62903
+      median: 225.0
+
+--- 6b. recommendations_summary :: OK
+    shape=(4, 6) cols=['period', 'strongBuy', 'buy', 'hold', 'sell', 'strongSell']
+    index=[0, 1, 2, 3]
+  period  strongBuy  buy  hold  sell  strongSell
+0     0m          6   14    11     1           0
+1    -1m          6   15    10     1           0
+2    -2m          6   15    10     1           0
+3    -3m          6   16    10     1           0
+
+--- 7. revenue segments :: OK
+    type=str value=-
+
+--- 8. balance_sheet :: OK
+    shape=(69, 5) cols=[Timestamp('2025-12-31 00:00:00'), Timestamp('2024-12-31 00:00:00'), Timestamp('2023-12-31 00:00:00'), Timestamp('2022-12-31 00:00:00'), Timestamp('2021-12-31 00:00:00')]
+    index=['Ordinary Shares Number', 'Share Issued', 'Total Debt', 'Tangible Book Value', 'Invested Capital', 'Working Capital', 'Net Tangible Assets', 'Capital Lease Obligations']
+                          2025-12-31    2024-12-31   2023-12-31   2022-12-31  2021-12-31
+Ordinary Shares Number  1.908921e+08  1.803160e+08  158993090.0  158993090.0         NaN
+Share Issued            1.908921e+08  1.803160e+08  158993090.0  158993090.0         NaN
+Total Debt              2.321400e+07  2.670200e+07   25747000.0   19492000.0         NaN
+Tangible Book Value     2.871368e+09  2.063166e+09 -469541000.0 -446600000.0         NaN
+
+--- 8b. cashflow (multi-yr) :: OK
+    shape=(50, 5) cols=[Timestamp('2025-12-31 00:00:00'), Timestamp('2024-12-31 00:00:00'), Timestamp('2023-12-31 00:00:00'), Timestamp('2022-12-31 00:00:00'), Timestamp('2021-12-31 00:00:00')]
+    index=['Free Cash Flow', 'Repurchase Of Capital Stock', 'Issuance Of Capital Stock', 'Capital Expenditure', 'Income Tax Paid Supplemental Data', 'End Cash Position', 'Beginning Cash Position', 'Changes In Cash']
+                              2025-12-31   2024-12-31  2023-12-31   2022-12-31  2021-12-31
+Free Cash Flow               684169000.0  215820000.0 -84838000.0 -100254000.0         NaN
+Repurchase Of Capital Stock          NaN          NaN         NaN          0.0 -95186000.0
+Issuance Of Capital Stock            0.0  600022000.0         0.0          0.0         NaN
+Capital Expenditure           -6706000.0   -6248000.0  -9724000.0   -6233000.0         NaN
+
+--- 9. 5y cashflow FCF :: OK
+    shape=(50, 5) cols=[Timestamp('2025-12-31 00:00:00'), Timestamp('2024-12-31 00:00:00'), Timestamp('2023-12-31 00:00:00'), Timestamp('2022-12-31 00:00:00'), Timestamp('2021-12-31 00:00:00')]
+    index=['Free Cash Flow', 'Repurchase Of Capital Stock', 'Issuance Of Capital Stock', 'Capital Expenditure', 'Income Tax Paid Supplemental Data', 'End Cash Position', 'Beginning Cash Position', 'Changes In Cash']
+                              2025-12-31   2024-12-31  2023-12-31   2022-12-31  2021-12-31
+Free Cash Flow               684169000.0  215820000.0 -84838000.0 -100254000.0         NaN
+Repurchase Of Capital Stock          NaN          NaN         NaN          0.0 -95186000.0
+Issuance Of Capital Stock            0.0  600022000.0         0.0          0.0         NaN
+Capital Expenditure           -6706000.0   -6248000.0  -9724000.0   -6233000.0         NaN
+
+--- 10. info.longBusinessSummary (guidance proxy) :: OK
+    type=str value=Reddit, Inc. operates a digital community in the United States and internationally. The company's platform enables user to engage in conversations, explore passions, research new hobbies, exchange goods and services, create new communities and experiences, share laughs, and find belonging. It also organizes communities based on specific interests that enable users to engage in conversations by sharing experiences, submitting links, uploading images and videos, and replying to one another. Reddit
+
+>> SBC candidate rows in cashflow: ['Repurchase Of Capital Stock', 'Issuance Of Capital Stock', 'Proceeds From Stock Option Exercised', 'Net Preferred Stock Issuance', 'Preferred Stock Issuance', 'Net Common Stock Issuance', 'Common Stock Payments', 'Common Stock Issuance', 'Stock Based Compensation']
+>> Capex candidate rows: ['Repurchase Of Capital Stock', 'Issuance Of Capital Stock', 'Capital Expenditure', 'Net Investment Purchase And Sale', 'Purchase Of Investment', 'Net Business Purchase And Sale', 'Purchase Of Business', 'Net Intangibles Purchase And Sale', 'Purchase Of Intangibles', 'Net PPE Purchase And Sale', 'Purchase Of PPE', 'Change In Working Capital', 'Change In Other Working Capital']

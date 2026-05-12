@@ -1,6 +1,6 @@
 {
   "ticker": "NVDA",
-  "company": null,
+  "company": "Nvidia",
   "date": "2026-05-12",
   "stages": {
     "screen": {
@@ -14,12 +14,29 @@
         "ev_revenue": 20.9910894793876
       },
       "rationale": "P/E of 37.7 exceeds the 25 PASS threshold but sits within the 45 WATCH bound; P/S of 21.0 is within the 25 WATCH bound."
+    },
+    "signal": {
+      "verdict": "WATCH",
+      "profit_stage": "ESTABLISHED",
+      "track": "GROWTH",
+      "ai_layer": "INFRASTRUCTURE",
+      "clean_eps_ttm": 4.62,
+      "sbc_stripped": true,
+      "sbc_adjustment_per_share": 0.26,
+      "peg_ratio": 1.01,
+      "ps_ratio": 24.70,
+      "rule_of_40": null,
+      "qualitative": "FLAG",
+      "qualitative_note": "TAM ceiling risk: NVDA data centre revenue ~$190B vs ~$250B DC GPU TAM; ~76% penetration implies ceiling risk at current growth trajectory.",
+      "signal": "WATCH",
+      "model_ready": "YES",
+      "condition": null
     }
   },
   "meta": {
     "profit_stage": "ESTABLISHED",
     "track": "GROWTH",
-    "ai_layer": null,
+    "ai_layer": "INFRASTRUCTURE",
     "confidence": "HIGH"
   }
 }

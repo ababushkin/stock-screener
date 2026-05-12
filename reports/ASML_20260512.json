@@ -1,0 +1,25 @@
+{
+  "ticker": "ASML",
+  "company": null,
+  "date": "2026-05-12",
+  "stages": {
+    "screen": {
+      "verdict": "SKIP",
+      "profit_stage": "ESTABLISHED",
+      "ratios": {
+        "pe_ratio": 51.287586,
+        "ps_ratio": 17.911621,
+        "ev_ebitda": 47.054,
+        "pfcf": 73.21008890229939,
+        "ev_revenue": 17.742
+      },
+      "rationale": "P/E of 51.3 exceeds the 45 WATCH ceiling, triggering SKIP despite P/S of 17.9 sitting within the 25 WATCH bound."
+    }
+  },
+  "meta": {
+    "profit_stage": "ESTABLISHED",
+    "track": "GROWTH",
+    "ai_layer": null,
+    "confidence": "HIGH"
+  }
+}

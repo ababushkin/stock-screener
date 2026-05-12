@@ -1,0 +1,30 @@
+{
+  "ticker": "META",
+  "company": "Meta Platforms",
+  "date": "2026-05-12",
+  "stages": {
+    "signal": {
+      "verdict": "WATCH",
+      "profit_stage": "ESTABLISHED",
+      "track": "GROWTH",
+      "ai_layer": "INCUMBENT",
+      "clean_eps_ttm": 15.72,
+      "sbc_stripped": true,
+      "sbc_adjustment_per_share": 7.17,
+      "peg_ratio": 1.05,
+      "ps_ratio": 7.07,
+      "rule_of_40": null,
+      "qualitative": "FLAG",
+      "qualitative_note": "AI optionality premium 9.6% \u2014 below 20% threshold but AI monetisation path warrants monitoring.",
+      "signal": "WATCH",
+      "model_ready": "YES",
+      "condition": null
+    }
+  },
+  "meta": {
+    "profit_stage": "ESTABLISHED",
+    "track": "GROWTH",
+    "ai_layer": "INCUMBENT",
+    "confidence": "HIGH"
+  }
+}

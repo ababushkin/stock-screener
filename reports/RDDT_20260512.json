@@ -1,0 +1,25 @@
+{
+  "ticker": "RDDT",
+  "company": null,
+  "date": "2026-05-12",
+  "stages": {
+    "screen": {
+      "verdict": "SKIP",
+      "profit_stage": "ESTABLISHED",
+      "ratios": {
+        "pe_ratio": 45.70487,
+        "ps_ratio": 12.414159,
+        "ev_ebitda": 43.877,
+        "pfcf": 54.436105191537216,
+        "ev_revenue": 11.303
+      },
+      "rationale": "P/E of 45.7 exceeds the 45 WATCH ceiling, triggering SKIP even though P/S of 12.4 sits within the 25 WATCH bound."
+    }
+  },
+  "meta": {
+    "profit_stage": "ESTABLISHED",
+    "track": "GROWTH",
+    "ai_layer": null,
+    "confidence": "HIGH"
+  }
+}

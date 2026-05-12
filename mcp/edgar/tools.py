@@ -132,6 +132,10 @@ _SECTION_ALIASES: dict[str, list[str]] = {
     "financial statements": [
         r"item\s+8\b.{0,30}financial\s+statements",
     ],
+    "segment information": [
+        r"segment\s+information(?:\s+and\s+geographic\s+data)?",
+        r"note\s+\w+\s*.{0,10}segment",
+    ],
 }
 
 # Pattern that marks the start of ANY numbered item — used to find the end of a section.
@@ -179,34 +183,47 @@ def _extract_section(html_text: str, section: str) -> str:
     return re.sub(r"\s+", " ", _html_to_text(raw)).strip()
 
 
-def _primary_doc_url(accession_number: str) -> str:
+def _primary_doc_url(accession_number: str, cik: str | None = None) -> str:
     """Return the URL of the primary document for a given accession number.
 
-    Extracts CIK from the accession number (first numeric segment) and fetches
-    the EDGAR directory index.json to locate the 10-K primary document.
+    Uses the EDGAR submissions endpoint (same source as search_filings) so
+    the primaryDocument field is always correct. Falls back to the directory
+    index filtered to skip index headers, XBRL viewer, and exhibit files.
     """
-    cik = str(int(accession_number.split("-")[0]))
     accn_nodash = accession_number.replace("-", "")
-    index_url = (
-        f"https://www.sec.gov/Archives/edgar/data/{cik}/{accn_nodash}/index.json"
-    )
-    resp = requests.get(index_url, headers=_HEADERS)
-    resp.raise_for_status()
-    items = resp.json().get("directory", {}).get("item", [])
+    # cik_path is the unpadded CIK used in EDGAR archive URLs.
+    # When cik is provided (zero-padded 10-digit string from _get_cik), strip
+    # leading zeros; otherwise derive from the accession's first segment.
+    cik_padded = cik if cik is not None else accession_number.split("-")[0].zfill(10)
+    cik_path = str(int(cik_padded))  # strip leading zeros for URL path
 
-    # Prefer item explicitly typed as 10-K/10-K/A; fall back to first .htm file.
-    for item in items:
-        if item.get("type") in ("10-K", "10-K/A"):
+    # Primary path: look up the accession number in the submissions feed.
+    sub_url = f"{EDGAR_BASE}/submissions/CIK{cik_padded}.json"
+    resp = requests.get(sub_url, headers=_HEADERS)
+    resp.raise_for_status()
+    recent = resp.json().get("filings", {}).get("recent", {})
+    for accn, doc in zip(recent.get("accessionNumber", []), recent.get("primaryDocument", [])):
+        if accn.replace("-", "") == accn_nodash:
             return (
-                f"https://www.sec.gov/Archives/edgar/data/{cik}"
-                f"/{accn_nodash}/{item['name']}"
+                f"https://www.sec.gov/Archives/edgar/data/{cik_path}"
+                f"/{accn_nodash}/{doc}"
             )
+
+    # Fallback: directory index, skipping non-primary files.
+    index_url = f"https://www.sec.gov/Archives/edgar/data/{cik_path}/{accn_nodash}/index.json"
+    resp2 = requests.get(index_url, headers=_HEADERS)
+    resp2.raise_for_status()
+    items = resp2.json().get("directory", {}).get("item", [])
     for item in items:
-        if item["name"].lower().endswith((".htm", ".html")):
-            return (
-                f"https://www.sec.gov/Archives/edgar/data/{cik}"
-                f"/{accn_nodash}/{item['name']}"
-            )
+        name = item["name"]
+        name_l = name.lower()
+        if (name_l.startswith(accn_nodash.lower()[:10])   # accession-prefixed index
+                or re.match(r"^r\d+\.html?$", name_l)     # XBRL viewer R*.htm
+                or re.search(r"ex\d", name_l)):            # exhibit files
+            continue
+        if name_l.endswith((".htm", ".html")):
+            return f"https://www.sec.gov/Archives/edgar/data/{cik_path}/{accn_nodash}/{name}"
+
     raise EDGARNoDataError(f"no primary document found for {accession_number}")
 
 
@@ -230,55 +247,110 @@ def _clean_segment_name(raw: str) -> str:
     return re.sub(r"([A-Z])", r" \1", raw).strip()
 
 
-def get_revenue_segments(ticker: str) -> list[dict]:
-    """Return revenue breakdown by business segment from EDGAR XBRL facts.
+def _parse_segment_revenues(text: str) -> list[dict]:
+    """Extract segment revenues from the plain-text segment note.
 
-    Returns a list of {'name': str, 'revenue': int} dicts sorted by revenue
-    descending.  Returns an empty list when no segment-tagged data exists
-    (e.g. single-segment companies) — never raises for missing segments.
+    Looks for patterns of the form:
+      <Segment Name> ... Revenue $ AMOUNT1 $ AMOUNT2 ...
+    where AMOUNT1 is the most-recent year's figure (in millions).
+    Skips the "Total" consolidated row.
+
+    Returns [] if no segment revenue pattern is found.
+    """
+    # Match: (segment label)(optional text)(Revenue $ AMOUNT) on the same run of text.
+    # The segment label is a multi-word title-cased phrase without $ or digits.
+    pattern = re.compile(
+        r"([A-Z][A-Za-z &,()'-]{4,80}?)\s+"
+        r"Revenue\s+\$\s*([\d,]+)",
+    )
+    results = []
+    for m in pattern.finditer(text):
+        label = m.group(1).strip().rstrip()
+        # Skip "Total" rows and header artifacts
+        if re.search(r"\bTotal\b|\bYear\b|\bIn millions\b|\bJun\b|^\s*\d", label, re.IGNORECASE):
+            continue
+        # Clean residual whitespace/punctuation
+        label = re.sub(r"\s+", " ", label).strip(" .")
+        if len(label) < 3:
+            continue
+        revenue_str = m.group(2).replace(",", "")
+        try:
+            revenue = int(revenue_str) * 1_000_000  # note: values are in millions
+        except ValueError:
+            continue
+        results.append({"name": label, "revenue": revenue})
+
+    # Deduplicate by name (keep highest revenue, i.e., most recent year typically)
+    seen: dict[str, dict] = {}
+    for r in results:
+        if r["name"] not in seen or r["revenue"] > seen[r["name"]]["revenue"]:
+            seen[r["name"]] = r
+
+    return sorted(seen.values(), key=lambda x: -x["revenue"])
+
+
+def get_revenue_segments(ticker: str) -> list[dict]:
+    """Return revenue breakdown by business segment.
+
+    First tries the EDGAR companyfacts API (works for companies that tag
+    segment revenue with srt:StatementBusinessSegmentsAxis). Falls back to
+    parsing the segment note from the 10-K filing HTML.
+
+    Returns [] for single-segment companies — never raises for missing segments.
     """
     cik = _get_cik(ticker)
-    url = f"{EDGAR_BASE}/api/xbrl/companyfacts/CIK{cik}.json"
-    resp = requests.get(url, headers=_HEADERS)
-    resp.raise_for_status()
-    data = resp.json()
 
-    us_gaap = data.get("facts", {}).get("us-gaap", {})
+    # --- Try 1: EDGAR companyfacts API (dimensional XBRL) ---
+    try:
+        cf_url = f"{EDGAR_BASE}/api/xbrl/companyfacts/CIK{cik}.json"
+        resp = requests.get(cf_url, headers=_HEADERS)
+        resp.raise_for_status()
+        us_gaap = resp.json().get("facts", {}).get("us-gaap", {})
 
-    # Try revenue concepts in priority order; stop at the first that has
-    # segment-tagged annual entries.
-    segmented: list[dict] = []
-    for concept in _REVENUE_CONCEPTS:
-        if concept not in us_gaap:
-            continue
-        usd_entries = us_gaap[concept].get("units", {}).get("USD", [])
-        for entry in usd_entries:
-            if entry.get("form") not in _ANNUAL_FORMS:
+        segmented: list[dict] = []
+        for concept in _REVENUE_CONCEPTS:
+            if concept not in us_gaap:
                 continue
-            seg = entry.get("segment")
-            if not seg or seg.get("dimension") != _SEGMENT_AXIS:
-                continue
-            segmented.append(entry)
+            for entry in us_gaap[concept].get("units", {}).get("USD", []):
+                if entry.get("form") not in _ANNUAL_FORMS:
+                    continue
+                seg = entry.get("segment")
+                if seg and seg.get("dimension") == _SEGMENT_AXIS:
+                    segmented.append(entry)
+            if segmented:
+                break
+
         if segmented:
-            break
+            latest_end = max(e["end"] for e in segmented)
+            latest = [e for e in segmented if e["end"] == latest_end]
+            by_seg: dict[str, dict] = {}
+            for entry in latest:
+                key = entry["segment"]["value"]
+                if key not in by_seg or entry["filed"] > by_seg[key]["filed"]:
+                    by_seg[key] = entry
+            return [
+                {"name": _clean_segment_name(v), "revenue": e["val"]}
+                for v, e in sorted(by_seg.items(), key=lambda x: -x[1]["val"])
+            ]
+    except Exception:
+        pass
 
-    if not segmented:
+    # --- Try 2: Parse segment note from the 10-K filing HTML ---
+    try:
+        filings = search_filings(ticker, "10-K")
+        if not filings:
+            return []
+        accn = filings[0]["accession_number"]
+        doc_url = _primary_doc_url(accn, cik)
+        resp = requests.get(doc_url, headers=_HEADERS)
+        resp.raise_for_status()
+        section_text = _extract_section(resp.text, "segment information")
+        results = _parse_segment_revenues(section_text)
+        return results
+    except EDGARNoDataError:
         return []
-
-    latest_end = max(e["end"] for e in segmented)
-    latest = [e for e in segmented if e["end"] == latest_end]
-
-    # Deduplicate by segment value; prefer most recently filed.
-    by_seg: dict[str, dict] = {}
-    for entry in latest:
-        key = entry["segment"]["value"]
-        if key not in by_seg or entry["filed"] > by_seg[key]["filed"]:
-            by_seg[key] = entry
-
-    return [
-        {"name": _clean_segment_name(v), "revenue": e["val"]}
-        for v, e in sorted(by_seg.items(), key=lambda x: -x[1]["val"])
-    ]
+    except Exception:
+        return []
 
 
 def get_filing_text(accession_number: str, section: str) -> str:

@@ -1,0 +1,27 @@
+
+===== NVDA =====
+segment-like attrs: []
+SBC row (annual): {Timestamp('2026-01-31 00:00:00'): 6386000000.0, Timestamp('2025-01-31 00:00:00'): 4737000000.0, Timestamp('2024-01-31 00:00:00'): 3549000000.0, Timestamp('2023-01-31 00:00:00'): 2709000000.0, Timestamp('2022-01-31 00:00:00'): nan}
+SBC quarterly cols: [Timestamp('2026-01-31 00:00:00'), Timestamp('2025-10-31 00:00:00'), Timestamp('2025-07-31 00:00:00'), Timestamp('2025-04-30 00:00:00'), Timestamp('2025-01-31 00:00:00'), Timestamp('2024-10-31 00:00:00')]
+SBC quarterly: {Timestamp('2026-01-31 00:00:00'): 1633000000.0, Timestamp('2025-10-31 00:00:00'): 1654000000.0, Timestamp('2025-07-31 00:00:00'): 1625000000.0, Timestamp('2025-04-30 00:00:00'): 1474000000.0, Timestamp('2025-01-31 00:00:00'): 1321000000.0, Timestamp('2024-10-31 00:00:00'): nan}
+earnings_history rows: 4
+upgrades_downgrades latest: 2026-03-31 05:55:57, count: 981
+info seg/guidance keys: []
+
+===== META =====
+segment-like attrs: []
+SBC row (annual): {Timestamp('2025-12-31 00:00:00'): 20427000000.0, Timestamp('2024-12-31 00:00:00'): 16690000000.0, Timestamp('2023-12-31 00:00:00'): 14027000000.0, Timestamp('2022-12-31 00:00:00'): 11992000000.0, Timestamp('2021-12-31 00:00:00'): nan}
+SBC quarterly cols: [Timestamp('2026-03-31 00:00:00'), Timestamp('2025-12-31 00:00:00'), Timestamp('2025-09-30 00:00:00'), Timestamp('2025-06-30 00:00:00'), Timestamp('2025-03-31 00:00:00'), Timestamp('2024-12-31 00:00:00'), Timestamp('2024-09-30 00:00:00')]
+SBC quarterly: {Timestamp('2026-03-31 00:00:00'): 6032000000.0, Timestamp('2025-12-31 00:00:00'): 5890000000.0, Timestamp('2025-09-30 00:00:00'): 5556000000.0, Timestamp('2025-06-30 00:00:00'): 4834000000.0, Timestamp('2025-03-31 00:00:00'): 4147000000.0, Timestamp('2024-12-31 00:00:00'): nan, Timestamp('2024-09-30 00:00:00'): nan}
+earnings_history rows: 4
+upgrades_downgrades latest: 2024-09-30 16:25:24, count: 413
+info seg/guidance keys: []
+
+===== RDDT =====
+segment-like attrs: []
+SBC row (annual): {Timestamp('2025-12-31 00:00:00'): 343180000.0, Timestamp('2024-12-31 00:00:00'): 801646000.0, Timestamp('2023-12-31 00:00:00'): 47598000.0, Timestamp('2022-12-31 00:00:00'): 55310000.0, Timestamp('2021-12-31 00:00:00'): nan}
+SBC quarterly cols: [Timestamp('2026-03-31 00:00:00'), Timestamp('2025-12-31 00:00:00'), Timestamp('2025-09-30 00:00:00'), Timestamp('2025-06-30 00:00:00'), Timestamp('2025-03-31 00:00:00'), Timestamp('2024-12-31 00:00:00'), Timestamp('2024-09-30 00:00:00')]
+SBC quarterly: {Timestamp('2026-03-31 00:00:00'): 68336000.0, Timestamp('2025-12-31 00:00:00'): 85178000.0, Timestamp('2025-09-30 00:00:00'): 83518000.0, Timestamp('2025-06-30 00:00:00'): 89070000.0, Timestamp('2025-03-31 00:00:00'): 85414000.0, Timestamp('2024-12-31 00:00:00'): nan, Timestamp('2024-09-30 00:00:00'): nan}
+earnings_history rows: 4
+upgrades_downgrades latest: 2026-05-01 15:27:22, count: 193
+info seg/guidance keys: []

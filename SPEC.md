@@ -215,10 +215,61 @@ Every skill appends or creates a report file at `reports/TICKER_YYYYMMDD.json`. 
   "company": "Nvidia",
   "date": "2026-05-12",
   "stages": {
-    "screen": { ... },
-    "signal": { ... },
-    "model": { ... },
-    "timing": { ... }
+    "screen": {
+      "verdict": "WATCH",
+      "profit_stage": "ESTABLISHED",
+      "ratios": {
+        "pe_ratio": 37.7,
+        "ps_ratio": 20.9,
+        "ev_ebitda": 25.1,
+        "pfcf": 42.3,
+        "ev_revenue": 19.8
+      },
+      "rationale": "P/E of 37.7 exceeds the 25 PASS threshold but sits within the 45 WATCH bound; P/S of 20.9 is within the 25 WATCH bound."
+    },
+    "signal": {
+      "verdict": "WATCH",
+      "profit_stage": "ESTABLISHED",
+      "track": "GROWTH",
+      "ai_layer": "INFRASTRUCTURE",
+      "clean_eps_ttm": 2.42,
+      "sbc_stripped": true,
+      "sbc_adjustment_per_share": 0.18,
+      "peg_ratio": 1.8,
+      "ps_ratio": 20.9,
+      "rule_of_40": null,
+      "qualitative": "PASS",
+      "qualitative_note": "No governance flags; AI infrastructure tailwind.",
+      "signal": "WATCH",
+      "model_ready": "YES",
+      "condition": null
+    },
+    "model": {
+      "verdict": "BUY",
+      "profit_stage": "ESTABLISHED",
+      "dcf_intrinsic_value": 142.50,
+      "current_price": 137.20,
+      "upside_pct": 3.9,
+      "wacc": 0.09,
+      "terminal_growth": 0.03,
+      "revenue_cagr_5y": 0.22,
+      "sensitivity": {
+        "bear": 98.0,
+        "base": 142.5,
+        "bull": 201.0
+      },
+      "position_sizing": "2-3% of portfolio",
+      "confidence": "HIGH"
+    },
+    "timing": {
+      "verdict": "WAIT_FOR_CATALYST",
+      "current_price": 137.20,
+      "entry_range_low": 125.0,
+      "entry_range_high": 140.0,
+      "catalyst": "Earnings report 2026-05-28",
+      "technical_note": "Trading near 52-week high; wait for pullback.",
+      "confidence": "MEDIUM"
+    }
   },
   "meta": {
     "profit_stage": "ESTABLISHED",

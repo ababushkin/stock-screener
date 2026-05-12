@@ -98,7 +98,7 @@ def get_financials(ticker: str, period: str = "annual") -> dict:
     years = []
     for col in sorted(valid_cols, reverse=True):  # newest first
         fy = col.strftime("%Y-%m-%d") if hasattr(col, "strftime") else str(col)[:10]
-        years.append({
+        year_data = {
             "fiscal_year": fy,
             "revenue": _row(fin, "Total Revenue", col),
             "operating_income": _row(fin, "Operating Income", col),
@@ -107,7 +107,10 @@ def get_financials(ticker: str, period: str = "annual") -> dict:
             "stock_based_compensation": _row(cf, "Stock Based Compensation", col) if cf is not None else None,
             "total_debt": _row(bs, "Total Debt", col) if bs is not None else None,
             "cash": _row(bs, "Cash And Cash Equivalents", col) if bs is not None else None,
-        })
+        }
+        # Drop years where every financial field is None (partial NaN columns)
+        if any(v is not None for k, v in year_data.items() if k != "fiscal_year"):
+            years.append(year_data)
 
     return {"ticker": ticker, "period": period, "years": years}
 

@@ -33,6 +33,14 @@ cd mcp/edgar && python server.py
 
 `.claude/settings.local.json` pre-allows `rtk ls *` and `rtk read *` — use these instead of bare `ls`/`cat`.
 
+## Linear workflow
+
+When working on a Linear issue:
+1. **On start** — set the issue status to **In Progress** using `mcp__linear-server__save_issue`
+2. **On complete** — set the issue status to **Done** using `mcp__linear-server__save_issue`
+
+Always update Linear status. Do not leave issues in the wrong state.
+
 ## Git
 
 Do not add `Co-Authored-By` trailers to commit messages.
