@@ -28,7 +28,12 @@ def _get(endpoint: str, params: dict) -> list | dict:
     print(f"[fmp] GET {log_url} → HTTP {resp.status_code} in {elapsed:.2f}s", file=sys.stderr)
 
     if resp.status_code == 402:
-        raise FMPPremiumError(f"{endpoint} requires a premium FMP subscription")
+        symbol = params.get("symbol", "?")
+        raise FMPPremiumError(
+            f"FMP free tier does not serve {symbol} on /{endpoint} (HTTP 402). "
+            f"This is a per-ticker restriction, not an account-wide one — most tickers work. "
+            f"For dual-class shares, try the sibling class (e.g. GOOG → GOOGL)."
+        )
     resp.raise_for_status()
 
     return resp.json()

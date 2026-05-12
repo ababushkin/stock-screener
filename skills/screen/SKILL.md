@@ -25,7 +25,10 @@ This is the M1 stub. Thresholds are simple ratio-based rules. The M2 full implem
    - Server: `fmp`, Tool: `get_ratios`
    - Input: `{ "ticker": "NVDA" }`
    - Returns: `pe_ratio`, `ps_ratio`, `ev_ebitda`, `pfcf`, `ev_revenue`, `period`, `date`
-3. If the tool call fails (FMPNoDataError or network error), report the failure clearly for that ticker, do not write a partial report for it, and continue processing any remaining tickers in the list.
+3. If the tool call fails:
+   - **Per-ticker gating (HTTP 402 / "FMP free tier does not serve")**: report the failure for this ticker. If it's a known dual-class share (e.g. `GOOG`/`GOOGL`, `BRK.B`/`BRK.A`), suggest the sibling class to the user as a single-line follow-up — but **do not auto-run it**. The user decides whether the sibling is an acceptable proxy.
+   - **Other failures (FMPNoDataError, network)**: report the failure for this ticker.
+   - In all cases: do not write a partial report, and continue processing any remaining tickers in the list.
 
 ### VALIDATE
 
@@ -130,6 +133,7 @@ NVDA — WATCH | ESTABLISHED | P/E 37.7, P/S 20.9
 | "A report file already exists for this ticker today, I'll skip writing" | Always overwrite. The user may be re-running with updated data or correcting a prior run. |
 | "I'll round the ratios to 2 decimal places in the JSON" | Preserve full FMP precision in the file. Rounding belongs in display layers, not in the source data that the report viewer reads. |
 | "I'll continue past a null ps_ratio and use other ratios instead" | P/S is the one ratio available for both profitable and pre-profit companies. Without it there's no basis for any verdict. Stop and report. |
+| "GOOG failed, GOOGL is basically the same company, I'll just run that and write the report under GOOG" | Don't substitute tickers silently. Class A and Class C trade at different prices so ratios differ marginally. Report the GOOG failure, suggest GOOGL as a follow-up, let the user re-invoke. |
 
 ---
 
