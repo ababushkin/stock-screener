@@ -1,6 +1,6 @@
 ---
 name: screen
-description: Fast go/no-go valuation screen for tech stocks. Invoked as `/screen TICKER` or `/screen TICKER1, TICKER2`. Fetches ratios from the FMP MCP, classifies profit stage, applies threshold rules, and writes a structured JSON report to reports/. Use whenever asked to screen a stock, evaluate whether a ticker is worth deeper analysis, or produce a reports/ JSON for the UI.
+description: Fast go/no-go valuation screen for tech stocks. Invoked as `/screen TICKER` or `/screen TICKER1, TICKER2`. Fetches ratios from the FMP MCP, classifies profit stage, applies threshold rules, and writes a structured JSON report to reports/. Use whenever asked to screen a stock, evaluate whether a ticker is worth deeper analysis, or produce a reports/ JSON for the UI. Also use when the user mentions a ticker and asks if it's cheap, overvalued, worth looking at, or whether to buy or investigate it — even if they don't say "screen."
 ---
 
 # Screen — Fast Valuation Screen
@@ -25,17 +25,17 @@ This is the M1 stub. Thresholds are simple ratio-based rules. The M2 full implem
    - Server: `fmp`, Tool: `get_ratios`
    - Input: `{ "ticker": "NVDA" }`
    - Returns: `pe_ratio`, `ps_ratio`, `ev_ebitda`, `pfcf`, `ev_revenue`, `period`, `date`
-3. If the tool call fails (FMPNoDataError or network error), stop and report the failure clearly. Do not write a partial report.
+3. If the tool call fails (FMPNoDataError or network error), report the failure clearly for that ticker, do not write a partial report for it, and continue processing any remaining tickers in the list.
 
 ### VALIDATE
 
-Confirm ratios were retrieved. At minimum, `ps_ratio` must be non-null and greater than 0 for the screen to proceed. If `ps_ratio` is null, stop and report that FMP returned no usable data for this ticker.
+Confirm ratios were retrieved. At minimum, `ps_ratio` must be non-null and greater than 0 for the screen to proceed — P/S is the one ratio available for both profitable and pre-profit companies, so without it there's no basis for any verdict. If `ps_ratio` is null or zero, stop and report that FMP returned no usable data for this ticker.
 
 ### COMPUTE — Infer profit stage and track
 
 - **ESTABLISHED**: `pe_ratio` is not null and greater than 0
 - **EMERGING**: `pe_ratio` is null, zero, or negative
-- **Track**: Always GROWTH for tech. The YIELD track is dormant — do not apply it unless the user explicitly requests it.
+- **Track**: Always GROWTH for tech. The YIELD track is dormant — do not apply it unless the user explicitly requests it. (The dividend yield framework is a separate methodology not yet implemented.)
 
 ### THRESHOLD — Apply screening rules
 
@@ -118,6 +118,18 @@ NVDA — WATCH | ESTABLISHED | P/E 37.7, P/S 20.9
 /screen RDDT
 /screen AAPL, NVDA, META     ← screen multiple tickers in sequence
 ```
+
+---
+
+## Common rationalisations
+
+| Rationalisation | Rebuttal |
+|---|---|
+| "P/E is negative but this company clearly has earnings" | If FMP returns a negative P/E, classify as EMERGING. Don't second-guess the data — a negative P/E signals something unusual and the pre-profit path is the safe default. |
+| "The P/E field exists so I'll use it for this EMERGING company" | Pre-profit P/E is mathematically undefined or misleading. Only P/S applies to EMERGING companies. Mixing methods produces nonsense verdicts. |
+| "A report file already exists for this ticker today, I'll skip writing" | Always overwrite. The user may be re-running with updated data or correcting a prior run. |
+| "I'll round the ratios to 2 decimal places in the JSON" | Preserve full FMP precision in the file. Rounding belongs in display layers, not in the source data that the report viewer reads. |
+| "I'll continue past a null ps_ratio and use other ratios instead" | P/S is the one ratio available for both profitable and pre-profit companies. Without it there's no basis for any verdict. Stop and report. |
 
 ---
 
