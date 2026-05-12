@@ -263,12 +263,117 @@ Run `mkdir -p reports` before writing. Write the report file at `reports/TICKER_
 - `ai_layer` is `null` (AI layer classification is a Signal-phase concern)
 - Preserve full yfinance precision in numeric fields — rounding belongs in display layers
 
-After writing each file, print a one-line summary:
+After writing each per-ticker file, print a one-line summary:
 
 ```
 Wrote: reports/META_20260512.json
 META — PASS | ESTABLISHED | Piotroski 7, MF PASS (EY 6.2%, ROIC 28%)
 ```
+
+#### Batch consolidated report (multi-ticker runs only)
+
+When the input contains **two or more tickers**, also write a single consolidated batch file at `reports/SCREEN_YYYYMMDD.json`. This file is what downstream tools and the UI use to read a full screening pass — the per-ticker files remain authoritative for individual ticker drilldown.
+
+**Path:** `reports/SCREEN_YYYYMMDD.json` (uppercase `SCREEN` prefix; same date stamp as the per-ticker files in this run).
+
+**Required JSON structure:**
+
+```json
+{
+  "date": "2026-05-12",
+  "tickers": ["META", "MSFT", "AAPL", "RDDT", "CRWV"],
+  "stages": {
+    "screen": [
+      {
+        "ticker": "META",
+        "verdict": "PASS",
+        "profit_stage": "ESTABLISHED",
+        "ratios": {
+          "pe_ratio": 24.1,
+          "ps_ratio": 8.3,
+          "ev_ebitda": 16.2,
+          "pfcf": 28.4,
+          "ev_revenue": 7.9
+        },
+        "piotroski": {
+          "score": 7,
+          "signals": { "f1_roa_positive": true, "f2_ocf_positive": true, "f3_roa_improving": true, "f4_accruals_negative": true, "f5_leverage_decreasing": false, "f6_current_ratio_improving": true, "f7_no_new_shares": false, "f8_gross_margin_improving": true, "f9_asset_turnover_improving": true }
+        },
+        "magic_formula": {
+          "earnings_yield": 0.062,
+          "roic": 0.28,
+          "flag": "PASS",
+          "rank": 1
+        },
+        "rule_of_40": null,
+        "gross_margin": null,
+        "ev_ntm_revenue": null,
+        "rationale": "Piotroski 7 with Magic Formula PASS (EY 6.2%, ROIC 28%); top of batch on combined rank."
+      },
+      {
+        "ticker": "RDDT",
+        "verdict": "SKIP",
+        "profit_stage": "EMERGING",
+        "ratios": {
+          "pe_ratio": null,
+          "ps_ratio": 12.4,
+          "ev_ebitda": null,
+          "pfcf": null,
+          "ev_revenue": 11.8
+        },
+        "piotroski": null,
+        "magic_formula": null,
+        "rule_of_40": { "score": 18, "tier": "WEAK", "revenue_growth_pct": 22.0, "fcf_margin_pct": -4.0 },
+        "gross_margin": 0.54,
+        "ev_ntm_revenue": { "value": 9.2, "label": "FAIR" },
+        "rationale": "Gross margin 54% below 60% floor — gross margin gate triggered."
+      }
+    ]
+  },
+  "meta": {
+    "batch_size": 5,
+    "established_count": 3,
+    "emerging_count": 2,
+    "pass_count": 1,
+    "watch_count": 2,
+    "skip_count": 2,
+    "track": "GROWTH",
+    "confidence": "HIGH"
+  }
+}
+```
+
+**Batch JSON rules:**
+- The `stages.screen` value is an **array**, one entry per ticker, ordered to match the input order. Each element is the per-ticker payload with the ticker as a sibling field (not a key), so it merges cleanly with the per-ticker `reports/TICKER_YYYYMMDD.json` shape.
+- ESTABLISHED entries: populate `piotroski` and `magic_formula`; leave `rule_of_40`, `gross_margin`, `ev_ntm_revenue` as `null`.
+- EMERGING entries: populate `rule_of_40`, `gross_margin`, `ev_ntm_revenue`; leave `piotroski` and `magic_formula` as `null`.
+- For ESTABLISHED batches with ≥2 tickers, include the Magic Formula `rank` (1 = best) inside `magic_formula` so the UI can render the ranking column without recomputing.
+- `meta.confidence` is `HIGH` when every ticker's data was retrieved cleanly; `MEDIUM` when one or more tickers had missing ratios or missing financials that degraded a signal; `LOW` when ≥1 ticker failed entirely.
+- If a ticker errored during fetch, include it in the array with `verdict: null`, `rationale: "<error description>"`, and all signal fields `null`. Do not omit failed tickers — preserving the input order keeps row alignment with any UI table.
+- Write the batch file **after** all per-ticker files have been written, so a failure during a single-ticker write does not leave a stale batch file referencing it.
+
+#### Inline ranked table (multi-ticker runs only)
+
+After all writes, print a single ranked table to the conversation so the user sees the full batch in one block:
+
+```
+SCREEN BATCH — 2026-05-12 (5 tickers)
+
+Rank  Ticker  Stage         Verdict  Score / Signal
+----  ------  ------------  -------  -----------------------------------------
+  1   META    ESTABLISHED   PASS     Piotroski 7, MF PASS (EY 6.2%, ROIC 28%)
+  2   MSFT    ESTABLISHED   PASS     Piotroski 7, MF PASS (EY 5.8%, ROIC 26%)
+  3   AAPL    ESTABLISHED   WATCH    Piotroski 6, MF WATCH (EY 4.1%, ROIC 35%)
+  4   CRWV    EMERGING      WATCH    R40 42 STRONG, EV/NTM 13.1× FAIR, GM 72%
+  5   RDDT    EMERGING      SKIP     Gross margin 54% < 60% gate — auto SKIP
+
+Batch summary: 2 PASS, 2 WATCH, 1 SKIP
+Wrote: reports/SCREEN_20260512.json
+```
+
+**Ranking rule:** Sort within the table by verdict (PASS → WATCH → SKIP), then within each verdict by profit stage's primary signal (ESTABLISHED: Magic Formula combined rank; EMERGING: Rule of 40 score descending). The `Rank` column reflects the inline display order — it is NOT the Magic Formula rank, which is reported inside the `Score / Signal` cell. This ordering is for display only; the JSON `stages.screen` array preserves input order so downstream consumers can re-sort as they wish.
+
+For single-ticker runs, the inline ranked table is not emitted and the consolidated batch file is not written — only the per-ticker file and its one-line summary appear.
 
 ---
 
@@ -296,6 +401,10 @@ META — PASS | ESTABLISHED | Piotroski 7, MF PASS (EY 6.2%, ROIC 28%)
 | "All three tickers have the same Piotroski score" | Check that YoY deltas are computed correctly using two distinct annual periods. META, MSFT, and AAPL have meaningfully different capital structures and efficiency trends — identical scores indicate a data or computation error. |
 | "Single-ticker run: I'll skip Magic Formula because there's no peer group to rank" | For single-ticker ESTABLISHED runs, use absolute thresholds: Earnings Yield > 5% AND ROIC > 15% → flag = PASS. Ranking requires a batch; thresholds are the correct fallback for single tickers. |
 | "I'll call get_financials for EMERGING tickers too, just in case" | EMERGING tickers skip the financials fetch entirely — Piotroski and Magic Formula are undefined for pre-profit companies. Only call get_financials for ESTABLISHED tickers. |
+| "One ticker errored, I'll skip writing the batch SCREEN_YYYYMMDD.json entirely" | Write the batch file with the errored ticker present (verdict null, rationale set to the error message). A consumer reading the batch must see every requested ticker in the array — omitting one silently makes failure invisible. |
+| "I'll write the batch SCREEN_YYYYMMDD.json before the per-ticker files for speed" | Always write per-ticker files first, then the batch file. If a per-ticker write fails, the batch file would otherwise reference data that doesn't exist on disk. |
+| "Single-ticker run: I'll still write a SCREEN_YYYYMMDD.json with one entry" | The batch file is only written for runs with two or more tickers. Single-ticker runs produce only the per-ticker TICKER_YYYYMMDD.json. The batch path is reserved for actual batches. |
+| "The batch array should be sorted by verdict so the consumer doesn't have to" | The JSON array preserves input order — that's the contract. Sorting belongs in the inline display table, not the data file. Consumers re-sort as needed. |
 
 ---
 
@@ -312,3 +421,4 @@ META — PASS | ESTABLISHED | Piotroski 7, MF PASS (EY 6.2%, ROIC 28%)
 - `company` is `null`; do not guess or hardcode the company name
 - Do not add fields not listed in the output schema above
 - For multi-ticker batches, collect all ticker data before computing Magic Formula ranks — ranking requires the full batch
+- For multi-ticker batches, write both per-ticker `reports/TICKER_YYYYMMDD.json` files AND a consolidated `reports/SCREEN_YYYYMMDD.json` batch file; never one without the other
