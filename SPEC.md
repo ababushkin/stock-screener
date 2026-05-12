@@ -350,6 +350,24 @@ No automated test runner is mandated. Tests are skill-invocation runs with expec
 
 ## Boundaries
 
+### Non-equity instruments
+
+This pack covers **equities only**. ETFs, commodity funds, fixed income, and derivatives are out of scope for v1 and v2.
+
+**GLDM (and similar commodity ETFs)** require a fundamentally different methodology — no earnings, no DCF, no P/E or PEG. Valuation is driven by gold price vs. macro factors (real rates, dollar strength, inflation expectations) and fund-level metrics (expense ratio, AUM, tracking error). Adding support would require a new instrument type routing dimension at the `/equity` router level and a separate methodology track. Explicitly deferred to a future milestone; if added, GLDM is the reference case.
+
+If a user passes a non-equity ticker, the router should detect the instrument type (ETF, closed-end fund, etc.) and state that the pack does not support it rather than running equity methodology on it.
+
+### Leading indicator enrichment (Later scope — /model only)
+
+For companies where current-period ratios are lagging indicators, `/model` will add optional enrichment steps that fetch leading indicators before locking in DCF growth rate inputs. Three enrichment paths are planned:
+
+- **Segment revenue trend** (ABA-65): for AMZN, GOOGL, NVDA, RDDT — fetch segment data from EDGAR, compare segment growth to blended NTM estimate
+- **Engagement KPIs** (ABA-66): for META, NFLX, RDDT, GOOGL — fetch DAU/ARPU/subscriber metrics from earnings press releases via web search
+- **Bookings/backlog** (ABA-67): for INFRASTRUCTURE capital equipment companies (ASML reference case) — fetch net bookings and backlog from earnings press releases via web search
+
+These enrichments do not affect `/signal` verdicts or PEG computation. They are `/model`-only and are implemented when `/model` is built.
+
 ### Always do
 - Strip SBC before any earnings calculation in every skill
 - State data sources and assumptions in every output

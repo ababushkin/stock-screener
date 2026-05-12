@@ -1,28 +1,10 @@
-import os
 import sys
 import time
 from datetime import date
 from typing import Optional
 
 import pandas as pd
-import requests
 import yfinance as yf
-from requests.adapters import HTTPAdapter
-
-YF_TIMEOUT = int(os.environ.get("YF_TIMEOUT", "30"))  # seconds per request
-
-
-class _TimeoutAdapter(HTTPAdapter):
-    def send(self, request, **kwargs):
-        kwargs.setdefault("timeout", YF_TIMEOUT)
-        return super().send(request, **kwargs)
-
-
-def _session() -> requests.Session:
-    s = requests.Session()
-    s.mount("https://", _TimeoutAdapter())
-    s.mount("http://", _TimeoutAdapter())
-    return s
 
 
 class YFNoDataError(Exception):
@@ -36,7 +18,7 @@ def get_estimates(ticker: str) -> dict:
     NTM proxy (next fiscal year is the standard analyst convention).
     """
     start = time.monotonic()
-    t = yf.Ticker(ticker, session=_session())
+    t = yf.Ticker(ticker)
     ee = t.earnings_estimate
     re = t.revenue_estimate
     print(f"[yf] get_estimates({ticker}) → {time.monotonic() - start:.2f}s", file=sys.stderr)
@@ -51,11 +33,22 @@ def get_estimates(ticker: str) -> dict:
     analyst_count = int(ee.loc["+1y", "numberOfAnalysts"])
     ntm_revenue = float(re.loc["+1y", "avg"]) if (re is not None and not re.empty and "+1y" in re.index) else None
 
+    # LTG (Long-Term Growth) from growth_estimates — 5-year EPS CAGR proxy
+    eps_growth_5y = None
+    try:
+        ge = t.growth_estimates
+        if ge is not None and not ge.empty and "LTG" in ge.index:
+            v = ge.loc["LTG", "stockTrend"]
+            eps_growth_5y = float(v) if pd.notna(v) else None
+    except Exception:
+        pass
+
     return {
         "ticker": ticker,
         "ntm_eps": ntm_eps,
         "ntm_revenue": ntm_revenue,
         "analyst_count": analyst_count,
+        "eps_growth_5y": eps_growth_5y,
         "period": "NTM",
         "date": date.today().isoformat(),
     }
@@ -102,7 +95,7 @@ def get_financials(ticker: str, period: str = "annual") -> dict:
         raise ValueError(f"Unsupported period {period!r}. Only 'annual' is supported in v1.")
 
     start = time.monotonic()
-    t = yf.Ticker(ticker, session=_session())
+    t = yf.Ticker(ticker)
     fin = t.financials
     cf = t.cashflow
     bs = t.balance_sheet
@@ -149,7 +142,7 @@ def get_earnings_history(ticker: str, n: int = 4) -> list[dict]:
             quarter (YYYY-MM-DD), reported_eps, estimated_eps, surprise_pct.
         surprise_pct is the raw yfinance fraction (e.g. 0.08 = 8% surprise).
     """
-    t = yf.Ticker(ticker, session=_session())
+    t = yf.Ticker(ticker)
     eh = t.earnings_history
 
     if eh is None or (hasattr(eh, "empty") and eh.empty):
@@ -178,7 +171,7 @@ def get_analyst_targets(ticker: str) -> dict:
     Ticker.recommendations_summary for the current-month (0m) counts.
     strongBuy+buy → buy_count; sell+strongSell → sell_count.
     """
-    t = yf.Ticker(ticker, session=_session())
+    t = yf.Ticker(ticker)
     targets = t.analyst_price_targets or {}
     recs = t.recommendations_summary
 
@@ -220,7 +213,7 @@ def get_ratios(ticker: str) -> dict:
     free cash flow since yfinance doesn't expose it pre-computed.
     """
     start = time.monotonic()
-    info = yf.Ticker(ticker, session=_session()).info or {}
+    info = yf.Ticker(ticker).info or {}
     elapsed = time.monotonic() - start
     print(f"[yf] get_ratios({ticker}).info → {len(info)} keys in {elapsed:.2f}s", file=sys.stderr)
 
@@ -242,6 +235,10 @@ def get_ratios(ticker: str) -> dict:
         "ev_ebitda": info.get("enterpriseToEbitda"),
         "pfcf": pfcf,
         "ev_revenue": info.get("enterpriseToRevenue"),
+        "eps_ttm": info.get("trailingEps"),
+        "sharesOutstanding": info.get("sharesOutstanding"),
+        "currentPrice": info.get("currentPrice") or info.get("regularMarketPrice"),
+        "marketCap": market_cap,
         "period": "TTM",
         "date": date.today().isoformat(),
     }

@@ -1,6 +1,6 @@
 {
   "ticker": "GOOGL",
-  "company": null,
+  "company": "Alphabet Inc.",
   "date": "2026-05-12",
   "stages": {
     "screen": {
@@ -14,12 +14,29 @@
         "ev_revenue": 9.481989661581833
       },
       "rationale": "P/E of 28.7 exceeds the 25 PASS threshold but sits within the 45 WATCH bound; P/S of 9.4 exceeds the 8 PASS threshold but sits within the 25 WATCH bound."
+    },
+    "signal": {
+      "verdict": "CAUTION",
+      "profit_stage": "ESTABLISHED",
+      "track": "GROWTH",
+      "ai_layer": "INCUMBENT",
+      "clean_eps_ttm": 8.81,
+      "sbc_stripped": true,
+      "sbc_adjustment_per_share": 4.29,
+      "peg_ratio": 3.79,
+      "ps_ratio": 11.14,
+      "rule_of_40": null,
+      "qualitative": "PASS",
+      "qualitative_note": "AI optionality premium 6.3% (≤ 20%); AI investment appears proportionate to core business value. Assumption: ~65% of $91.4B FY2025 capex attributed to AI; 5× proxy multiple.",
+      "signal": "CAUTION",
+      "model_ready": "NO",
+      "condition": null
     }
   },
   "meta": {
     "profit_stage": "ESTABLISHED",
     "track": "GROWTH",
-    "ai_layer": null,
-    "confidence": "HIGH"
+    "ai_layer": "INCUMBENT",
+    "confidence": "MEDIUM"
   }
 }
