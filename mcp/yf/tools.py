@@ -9,6 +9,36 @@ class YFNoDataError(Exception):
     """yfinance returned no usable data for this ticker."""
 
 
+def get_estimates(ticker: str) -> dict:
+    """Return NTM consensus EPS, revenue, and analyst count for a ticker.
+
+    Uses the +1y row from yfinance earnings_estimate / revenue_estimate as the
+    NTM proxy (next fiscal year is the standard analyst convention).
+    """
+    t = yf.Ticker(ticker)
+    ee = t.earnings_estimate
+    re = t.revenue_estimate
+
+    if ee is None or ee.empty or "+1y" not in ee.index:
+        raise YFNoDataError(
+            f"yfinance returned no estimates for {ticker}. "
+            "Ticker may be delisted, mistyped, or lack analyst coverage."
+        )
+
+    ntm_eps = float(ee.loc["+1y", "avg"])
+    analyst_count = int(ee.loc["+1y", "numberOfAnalysts"])
+    ntm_revenue = float(re.loc["+1y", "avg"]) if (re is not None and not re.empty and "+1y" in re.index) else None
+
+    return {
+        "ticker": ticker,
+        "ntm_eps": ntm_eps,
+        "ntm_revenue": ntm_revenue,
+        "analyst_count": analyst_count,
+        "period": "NTM",
+        "date": date.today().isoformat(),
+    }
+
+
 def get_ratios(ticker: str) -> dict:
     """Return valuation ratios for a ticker from Yahoo Finance (TTM).
 
