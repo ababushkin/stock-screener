@@ -1,4 +1,5 @@
 """Tests for yfinance MCP tools."""
+import math
 import sys
 from unittest.mock import MagicMock, patch
 
@@ -6,7 +7,7 @@ import pandas as pd
 import pytest
 
 sys.path.insert(0, "/Users/anton/src/stock-review/mcp/yf")
-from tools import YFNoDataError, get_estimates
+from tools import YFNoDataError, get_estimates, get_financials
 
 
 def _make_earnings_estimate(avg, analysts):
@@ -74,3 +75,143 @@ class TestGetEstimates:
             result = get_estimates("META")
 
         assert result["ticker"] == "META"
+
+
+# ---------------------------------------------------------------------------
+# Helpers for get_financials tests
+# ---------------------------------------------------------------------------
+
+_DATES_4Y = pd.to_datetime(["2025-12-31", "2024-12-31", "2023-12-31", "2022-12-31"])
+_DATES_5Y = pd.to_datetime(
+    ["2025-12-31", "2024-12-31", "2023-12-31", "2022-12-31", "2021-12-31"]
+)
+
+
+def _make_financials_df(with_nan_col: bool = False):
+    """Income statement DataFrame (rows=metrics, cols=dates, newest first)."""
+    dates = _DATES_5Y if with_nan_col else _DATES_4Y
+    data = {
+        "Total Revenue":    [163e9, 140e9, 134e9, 116e9] + ([float("nan")] if with_nan_col else []),
+        "Operating Income": [69e9,  59e9,  46e9,  28e9]  + ([float("nan")] if with_nan_col else []),
+        "Net Income":       [62e9,  50e9,  39e9,  23e9]  + ([float("nan")] if with_nan_col else []),
+    }
+    return pd.DataFrame(data, index=dates).T
+
+
+def _make_cashflow_df(with_nan_col: bool = False):
+    dates = _DATES_5Y if with_nan_col else _DATES_4Y
+    data = {
+        "Free Cash Flow":            [52e9, 43e9, 19e9, 6e9]  + ([float("nan")] if with_nan_col else []),
+        "Stock Based Compensation":  [20e9, 17e9, 14e9, 12e9] + ([float("nan")] if with_nan_col else []),
+    }
+    return pd.DataFrame(data, index=dates).T
+
+
+def _make_balance_sheet_df(with_nan_col: bool = False):
+    dates = _DATES_5Y if with_nan_col else _DATES_4Y
+    data = {
+        "Total Debt":                [28e9, 18e9, 18e9, 18e9] + ([float("nan")] if with_nan_col else []),
+        "Cash And Cash Equivalents": [77e9, 43e9, 42e9, 14e9] + ([float("nan")] if with_nan_col else []),
+    }
+    return pd.DataFrame(data, index=dates).T
+
+
+def _mock_ticker(with_nan_col: bool = False):
+    m = MagicMock()
+    m.financials = _make_financials_df(with_nan_col)
+    m.cashflow = _make_cashflow_df(with_nan_col)
+    m.balance_sheet = _make_balance_sheet_df(with_nan_col)
+    return m
+
+
+class TestGetFinancials:
+    def test_outer_dict_has_required_keys(self):
+        with patch("tools.yf.Ticker", return_value=_mock_ticker()):
+            result = get_financials("META", "annual")
+
+        assert set(result.keys()) >= {"ticker", "period", "years"}
+
+    def test_ticker_and_period_passed_through(self):
+        with patch("tools.yf.Ticker", return_value=_mock_ticker()):
+            result = get_financials("META", "annual")
+
+        assert result["ticker"] == "META"
+        assert result["period"] == "annual"
+
+    def test_at_least_two_years_returned(self):
+        with patch("tools.yf.Ticker", return_value=_mock_ticker()):
+            result = get_financials("META", "annual")
+
+        assert len(result["years"]) >= 2
+
+    def test_each_year_has_required_fields(self):
+        required = {
+            "fiscal_year",
+            "revenue",
+            "operating_income",
+            "net_income",
+            "free_cash_flow",
+            "stock_based_compensation",
+            "total_debt",
+            "cash",
+        }
+        with patch("tools.yf.Ticker", return_value=_mock_ticker()):
+            result = get_financials("META", "annual")
+
+        for year in result["years"]:
+            assert set(year.keys()) >= required, f"Missing keys in {year}"
+
+    def test_income_statement_values_correct(self):
+        with patch("tools.yf.Ticker", return_value=_mock_ticker()):
+            result = get_financials("META", "annual")
+
+        newest = result["years"][0]
+        assert newest["revenue"] == pytest.approx(163e9, rel=1e-4)
+        assert newest["operating_income"] == pytest.approx(69e9, rel=1e-4)
+        assert newest["net_income"] == pytest.approx(62e9, rel=1e-4)
+
+    def test_cashflow_values_correct(self):
+        with patch("tools.yf.Ticker", return_value=_mock_ticker()):
+            result = get_financials("META", "annual")
+
+        newest = result["years"][0]
+        assert newest["free_cash_flow"] == pytest.approx(52e9, rel=1e-4)
+        assert newest["stock_based_compensation"] == pytest.approx(20e9, rel=1e-4)
+
+    def test_balance_sheet_values_correct(self):
+        with patch("tools.yf.Ticker", return_value=_mock_ticker()):
+            result = get_financials("META", "annual")
+
+        newest = result["years"][0]
+        assert newest["total_debt"] == pytest.approx(28e9, rel=1e-4)
+        assert newest["cash"] == pytest.approx(77e9, rel=1e-4)
+
+    def test_nan_column_dropped(self):
+        """The 5th column (all NaN) must not appear in results."""
+        with patch("tools.yf.Ticker", return_value=_mock_ticker(with_nan_col=True)):
+            result = get_financials("META", "annual")
+
+        fiscal_years = [y["fiscal_year"] for y in result["years"]]
+        assert "2021-12-31" not in fiscal_years
+
+    def test_years_ordered_newest_first(self):
+        with patch("tools.yf.Ticker", return_value=_mock_ticker()):
+            result = get_financials("META", "annual")
+
+        years = [y["fiscal_year"] for y in result["years"]]
+        assert years == sorted(years, reverse=True)
+
+    def test_raises_on_empty_financials(self):
+        m = MagicMock()
+        m.financials = pd.DataFrame()
+        m.cashflow = _make_cashflow_df()
+        m.balance_sheet = _make_balance_sheet_df()
+
+        with patch("tools.yf.Ticker", return_value=m):
+            with pytest.raises(YFNoDataError):
+                get_financials("FAKE", "annual")
+
+    def test_raises_on_unsupported_period(self):
+        with patch("tools.yf.Ticker", return_value=_mock_ticker()):
+            with pytest.raises(ValueError, match="period"):
+                get_financials("META", "quarterly")

@@ -1,7 +1,9 @@
 import sys
 import time
 from datetime import date
+from typing import Optional
 
+import pandas as pd
 import yfinance as yf
 
 
@@ -37,6 +39,77 @@ def get_estimates(ticker: str) -> dict:
         "period": "NTM",
         "date": date.today().isoformat(),
     }
+
+
+def _row(df: pd.DataFrame, name: str, col) -> Optional[float]:
+    """Safely extract a scalar from a DataFrame row, returning None if missing/NaN."""
+    try:
+        v = df.loc[name, col]
+        return float(v) if pd.notna(v) else None
+    except KeyError:
+        return None
+
+
+def get_financials(ticker: str, period: str = "annual") -> dict:
+    """Return multi-year income statement, balance sheet, and cash flow data.
+
+    Pulls from yfinance annual statements. yfinance returns 5 columns but the
+    oldest column is NaN on all tested tickers; it is dropped automatically.
+
+    Args:
+        ticker: Stock ticker symbol.
+        period: Must be "annual". Other values raise ValueError.
+
+    Returns:
+        {
+            "ticker": str,
+            "period": str,
+            "years": [  # newest first, up to 4 years
+                {
+                    "fiscal_year": "YYYY-MM-DD",
+                    "revenue": float | None,
+                    "operating_income": float | None,
+                    "net_income": float | None,
+                    "free_cash_flow": float | None,
+                    "stock_based_compensation": float | None,
+                    "total_debt": float | None,
+                    "cash": float | None,
+                }
+            ]
+        }
+    """
+    if period != "annual":
+        raise ValueError(f"Unsupported period {period!r}. Only 'annual' is supported in v1.")
+
+    t = yf.Ticker(ticker)
+    fin = t.financials
+    cf = t.cashflow
+    bs = t.balance_sheet
+
+    if fin is None or fin.empty:
+        raise YFNoDataError(
+            f"yfinance returned no financial statements for {ticker}. "
+            "Ticker may be delisted or mistyped."
+        )
+
+    # Drop columns where every value is NaN (the phantom 5th year)
+    valid_cols = [c for c in fin.columns if not fin[c].isna().all()]
+
+    years = []
+    for col in sorted(valid_cols, reverse=True):  # newest first
+        fy = col.strftime("%Y-%m-%d") if hasattr(col, "strftime") else str(col)[:10]
+        years.append({
+            "fiscal_year": fy,
+            "revenue": _row(fin, "Total Revenue", col),
+            "operating_income": _row(fin, "Operating Income", col),
+            "net_income": _row(fin, "Net Income", col),
+            "free_cash_flow": _row(cf, "Free Cash Flow", col) if cf is not None else None,
+            "stock_based_compensation": _row(cf, "Stock Based Compensation", col) if cf is not None else None,
+            "total_debt": _row(bs, "Total Debt", col) if bs is not None else None,
+            "cash": _row(bs, "Cash And Cash Equivalents", col) if bs is not None else None,
+        })
+
+    return {"ticker": ticker, "period": period, "years": years}
 
 
 def get_ratios(ticker: str) -> dict:
