@@ -125,28 +125,46 @@ Algorithm:
 
 The 60-day upper bound is the academic-standard PEAD horizon (Bernard & Thomas 1989); the 45-day inner cut is where the drift signal-to-noise meaningfully decays per follow-on studies. Both numbers are locked in v1 — do not tune them per-ticker.
 
-**Step 3 — EPS revision direction:** *(implementation in ABA-29)*
+**Step 3 — EPS revision direction:**
 
-Contract:
-- Inputs: `eps_revisions` block from `get_estimates`, containing `up_7d`, `down_7d`, `up_30d`, `down_30d`.
+v1 status: **N/A (not implemented in yf MCP).**
+
+The contract for revision direction depends on an `eps_revisions` block exposing 7d/30d up/down counts. The current yf MCP `get_estimates` tool returns only `ntm_eps`, `ntm_revenue`, and `analyst_count` — it does **not** surface `Ticker.eps_revisions`. Per the ABA-47 spike, yfinance does expose these counts via `Ticker.eps_revisions` at the library level, but adding that surface is a follow-up MCP change tracked separately.
+
+v1 behaviour:
+- Always emit `revision_direction: null` with reason `"yf MCP get_revisions tool not implemented"`.
+- Always emit `net_revisions_7d: null` and `net_revisions_30d: null`.
+- The output block shows: `Revision direction: N/A — yf MCP get_revisions tool not implemented`.
+- **Do not fabricate** revision counts, do not extrapolate from price movement, do not fall back to `Ticker.upgrades_downgrades` (which the ABA-47 spike found stale).
+
+When the follow-up MCP tool ships, the contract restores to:
+- Inputs: `eps_revisions` block from `get_revisions` (or `get_estimates` once it's extended), containing `up_7d`, `down_7d`, `up_30d`, `down_30d`.
 - Compute net revision counts per window: `net_7d = up_7d − down_7d`, `net_30d = up_30d − down_30d`.
 - Direction classification:
   - `UP` — net_30d > 0 AND net_7d ≥ 0
   - `DOWN` — net_30d < 0 AND net_7d ≤ 0
   - `MIXED` — net signs disagree between the two windows
   - `FLAT` — both windows zero
-- Output fields: `revision_direction`, `net_revisions_7d`, `net_revisions_30d`. **Never** compute or output 60d/90d windows — they are explicitly out of scope (ABA-47).
 
-Stub behaviour: output `Revision direction: N/A — pending ABA-29`, `revision_direction` = `null`.
+**Step 4 — Next catalyst (estimated):**
 
-**Step 4 — Next catalyst:** *(implementation in ABA-29)*
+v1 status: **estimated only.**
 
-Contract:
-- Input: next earnings date from `get_estimates`. If absent, infer the next earnings date as `most_recent_earnings_date + ~90d` and flag with `catalyst_source: "estimated"`.
-- Output fields: `next_catalyst` (one-line string, e.g. `"Earnings report 2026-05-28"`), `next_catalyst_date` (ISO date), `days_to_catalyst` (integer), `catalyst_source` (`"scheduled"` or `"estimated"`).
-- The stub does **not** scan for product events, investor days, or 8-K filings — those are future work (Later).
+The scheduled next-earnings date depends on `Ticker.calendar` / `Ticker.earnings_dates`, which the yf MCP does not yet surface. v1 derives a best-effort estimate from the most recent earnings period-end.
 
-Stub behaviour: output `Next catalyst: N/A — pending ABA-29`, all catalyst fields `null`.
+Algorithm:
+1. `most_recent_earnings_date = quarter[0]` from `get_earnings_history` (the period-end date of the most recently reported quarter).
+2. `next_catalyst_date = most_recent_earnings_date + 90 days` (calendar days). Tech companies on a quarterly cadence land within a few days of this; the estimate is good enough to fire the 7-day override when it would matter and is honest about the basis.
+3. `days_to_catalyst = (next_catalyst_date − today).days`.
+4. If `days_to_catalyst < 0` (the estimated date is already in the past — typically when more than 90 days have elapsed since the last report and the actual announcement is overdue), advance by another 90 days. Do this once only; if still in the past, set `days_to_catalyst: null` and `catalyst_source: null` with reason `"no scheduled-date surface; estimate exhausted"`.
+5. Output: `next_catalyst = "Estimated earnings ~YYYY-MM-DD"`, `next_catalyst_date = ISO date`, `days_to_catalyst = integer`, `catalyst_source = "estimated"`.
+
+When a scheduled-date MCP tool ships, the contract restores to:
+- Input: next earnings date from `get_next_earnings_date` (or `get_estimates` once extended).
+- Output: `next_catalyst = "Earnings report YYYY-MM-DD"`, `catalyst_source = "scheduled"`.
+- The skill never scans for product events, investor days, or 8-K filings — those remain future work.
+
+**Limitation surfaced to user:** because `catalyst_source` is always `"estimated"` in v1, the 7-day WAIT FOR CATALYST override fires off a best-guess date, not a confirmed one. The rationale string must call this out when the override fires (e.g., "Estimated earnings within 7 days — override fires on an estimated date, not a confirmed calendar entry").
 
 ### THRESHOLD — Combine into TIMING verdict
 
@@ -159,11 +177,17 @@ The verdict combination logic is set here in the stub so ABA-28/29 only need to 
 | **WAIT FOR BETTER ENTRY** | SUE ≤ 0 OR `revision_direction` = `DOWN` OR `pead_window_status` = `IN WINDOW (negative)` |
 | **NEUTRAL** | None of the above resolve — typically when `pead_window_status` = `OUTSIDE WINDOW` and revisions are FLAT/MIXED. Treated as WAIT FOR BETTER ENTRY for downstream consumers but emitted as NEUTRAL in the block for transparency. |
 
-Stub behaviour: if all three signals are N/A, emit `TIMING: N/A — pending ABA-28/29`. If at least one signal resolves, apply the table to whatever is available and label the others as missing in the rationale.
+Apply the table to whatever signals resolve. If all three are N/A, emit `TIMING: N/A` and explain the gaps.
+
+**v1 reachability note:** because `revision_direction` is always `null` in v1 (yf MCP gap), the **ACT NOW** verdict is unreachable from the standard table — it requires `revision_direction = UP`. The most common v1 verdicts are:
+- **WAIT FOR CATALYST** when the estimated `days_to_catalyst ≤ 14` (or the 7d override fires).
+- **WAIT FOR BETTER ENTRY** when SUE ≤ 0 OR `pead_window_status = IN WINDOW (negative)`.
+- **NEUTRAL** when SUE > 0 and PEAD is IN WINDOW but revisions are unknown — the rationale must call this out so the user knows the verdict could become ACT NOW once revisions are wired up.
 
 ### OVERRIDE
 
-- **Earnings within 7 days:** if `days_to_catalyst` ≤ 7, force `WAIT FOR CATALYST` regardless of SUE / revisions. The cost of being wrong about earnings within a week is too high relative to the edge from any other signal. (Implemented in ABA-29 alongside the catalyst lookup.)
+- **Earnings within 7 days:** if `days_to_catalyst` ≤ 7, force `WAIT FOR CATALYST` regardless of SUE / revisions. The cost of being wrong about earnings within a week is too high relative to the edge from any other signal.
+  - **v1 caveat:** `days_to_catalyst` is computed from an *estimated* next-earnings date (most-recent period-end + 90d) because the yf MCP does not yet expose a scheduled-date surface. The override still fires when the estimate is ≤ 7 days; the rationale must call out that it fired on an estimated date.
 
 ### OUTPUT
 
@@ -218,14 +242,14 @@ Write to `reports/TICKER_YYYYMMDD.json` where YYYYMMDD is today's date.
       "pead_window_status": "IN WINDOW",
       "days_since_earnings": 12,
       "pead_late_window": false,
-      "revision_direction": "UP",
-      "net_revisions_7d": 3,
-      "net_revisions_30d": 7,
-      "next_catalyst": "Earnings report 2026-08-21",
-      "next_catalyst_date": "2026-08-21",
-      "days_to_catalyst": 101,
-      "catalyst_source": "scheduled",
-      "rationale": "SUE 1.82 above the 1.5 v1 noise floor, PEAD window still in play (day 12 of 60), and 30d revisions net +7 — entry conditions aligned."
+      "revision_direction": null,
+      "net_revisions_7d": null,
+      "net_revisions_30d": null,
+      "next_catalyst": "Estimated earnings ~2026-07-29",
+      "next_catalyst_date": "2026-07-29",
+      "days_to_catalyst": 78,
+      "catalyst_source": "estimated",
+      "rationale": "SUE 1.82 above the 1.5 v1 noise floor and PEAD window still in play (day 12 of 60); revision direction N/A (yf MCP get_revisions tool not implemented); catalyst date is estimated (period-end + 90d)."
     }
   },
   "meta": {
@@ -248,9 +272,9 @@ Write to `reports/TICKER_YYYYMMDD.json` where YYYYMMDD is today's date.
 
 **Confidence rules (meta.confidence after Timing merges):**
 
-- **HIGH**: all three signals (SUE, revision direction, next catalyst) resolved to a real value, none of them N/A.
-- **MEDIUM**: at least one signal is N/A but the verdict is still computable.
-- **LOW**: only one of three signals resolved, or the verdict had to fall back to NEUTRAL.
+- **HIGH**: all three signals (SUE, revision direction, next catalyst) resolved to a real, non-estimated value. *Not reachable in v1* because `revision_direction` is always N/A and `catalyst_source` is always `"estimated"`. Reserved for when the follow-up MCP tools ship.
+- **MEDIUM**: SUE resolved AND the verdict is computable AND either revision direction is resolved OR catalyst is scheduled (not both required). In v1 this is the typical case when SUE computes cleanly.
+- **LOW**: SUE is N/A, or only the catalyst (estimated) is available, or the verdict falls back to NEUTRAL.
 
 If the existing report has a `meta.confidence` value, take the **lower** of `existing_confidence` and `timing_confidence` — Timing should never upgrade overall confidence beyond what upstream stages established.
 
@@ -258,7 +282,7 @@ After writing, print:
 
 ```
 Wrote: reports/NVDA_20260512.json  ← stages.timing
-NVDA — ACT NOW | SUE 1.82, PEAD IN WINDOW (day 12), revisions UP (+7 30d), next catalyst in 101d
+NVDA — NEUTRAL | SUE 1.82, PEAD IN WINDOW (day 12), revisions N/A, est. catalyst in 78d
 ```
 
 ---
@@ -331,8 +355,12 @@ Timing is a **single-ticker** operation. For multi-ticker batches, the user shou
 **Stale-source exclusion:**
 - `Ticker.upgrades_downgrades` is not used. ABA-47 confirmed staleness on META (latest entry 2024-09-30). Do not fall back to it even if `eps_revisions` is missing — instead emit `revision_direction: N/A` with the reason "no revision data".
 
-**Catalyst inference:**
-- When the next earnings date is missing from `get_estimates`, fall back to `most_recent_earnings_date + 90d` and set `catalyst_source: "estimated"`. Never guess product event dates or investor-day dates — those require external sources not yet wired up.
+**Catalyst inference (v1):**
+- The yf MCP `get_estimates` tool does **not** expose `Ticker.calendar` or `Ticker.earnings_dates`. v1 therefore always derives `next_catalyst_date = most_recent_earnings_date + 90d` and sets `catalyst_source: "estimated"`. Never guess product event dates or investor-day dates — those require external sources not yet wired up.
+- A follow-up Linear issue tracks adding a `get_next_earnings_date` MCP tool that will flip `catalyst_source` to `"scheduled"`.
+
+**Revision data (v1):**
+- The yf MCP does **not** yet expose `Ticker.eps_revisions`. v1 always emits `revision_direction: null` with reason `"yf MCP get_revisions tool not implemented"`. Do not fabricate, do not extrapolate, do not fall back to `upgrades_downgrades`. A follow-up Linear issue tracks adding a `get_revisions` MCP tool.
 
 ---
 
@@ -361,6 +389,9 @@ Planned future overrides (not implemented):
 | "The report doesn't exist yet so I'll skip writing one" | Timing creates a new report file when none exists, with `stages.timing` as the only populated stage. The UI reads whatever stages are present. |
 | "All three Timing signals are N/A so I'll still emit a verdict to be useful" | If SUE, revision direction, and next catalyst are all N/A, there is no basis for a verdict. Stop and report the gaps. A guessed verdict is worse than no verdict. |
 | "Earnings are tomorrow but SUE is 2.1 and revisions are UP so I'll say ACT NOW" | Override: earnings within 7 days forces WAIT FOR CATALYST. The asymmetry — full earnings risk vs. a few days of held edge — is not worth the bet. |
+| "The yf MCP doesn't return eps_revisions so I'll compute revision direction from price action or analyst-target changes" | v1 emits `revision_direction: null` with reason "yf MCP get_revisions tool not implemented". Inferring from price/targets is a different signal masquerading under the revision label — it would corrupt downstream confidence. Wait for the follow-up MCP tool. |
+| "The yf MCP doesn't return a scheduled earnings date so I'll skip the catalyst entirely" | v1 always estimates: `next_catalyst_date = most_recent_earnings_date + 90d`, `catalyst_source: "estimated"`. The estimate is good enough to fire the 7d override when it matters. Omitting the field breaks the locked output contract. |
+| "catalyst_source is estimated so I'll skip the 7-day override to avoid false positives" | The override fires on the estimated date. The rationale string calls out the estimated basis. Suppressing the override silently would hide a legitimate signal — and the user is the one who decides whether to trust the estimate. |
 | "I'll round SUE to 1 decimal place in the JSON" | Preserve full numeric precision in the JSON. Rounding belongs in the display block, not the data file. |
 | "PEAD window status is `IN WINDOW (negative)` but SUE is missing so I'll say `IN WINDOW`" | `IN WINDOW (negative)` requires a computed negative SUE. If SUE is `null`, `pead_window_status` is `OUTSIDE WINDOW` (the positive/negative split depends on the SUE sign — without it we cannot honestly claim the drift is in play). |
 | "I'll use the population std-dev (n denominator) because it gives a tidier number" | Use the **sample** std-dev (n−1 denominator). We are estimating population variance from a 4-quarter sample; the population formula systematically underestimates and inflates SUE. The 1.5 noise floor was calibrated against sample std-dev. |
