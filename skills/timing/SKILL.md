@@ -71,30 +71,59 @@ Source references: Bernard & Thomas (1989) for PEAD; Foster, Olsen & Shevlin (19
 
 ### COMPUTE
 
-**Step 1 — SUE (Standardized Unexpected Earnings):** *(implementation in ABA-28)*
+**Step 1 — SUE (Standardized Unexpected Earnings):**
 
-This stub defines the contract; ABA-28 fills in the math.
+Inputs: last 4 quarters from `get_earnings_history`, each row carrying `reported_eps`, `estimated_eps` (yfinance field name for consensus), `surprise_pct`, and `quarter` (the period-end date).
 
-Contract:
-- Inputs: last 4 quarters of `(reported_eps, consensus_eps)` from `get_earnings_history`.
-- Formula: `SUE = (reported_eps_q0 − consensus_eps_q0) / std_dev(reported_eps − consensus_eps over q0..q-3)`.
-- Output fields: `sue` (number or null), `sue_window` (always `"4q"` in v1), `sue_caveat` (always present — see below).
-- Caveat string (verbatim in the output block): `"4-quarter std-dev is statistically weaker than the 8-quarter window used in the academic literature; treat SUE > 1.5 as the noise floor for v1."`
+Algorithm:
 
-Stub behaviour until ABA-28 lands: output `SUE: N/A — pending ABA-28`, `sue` = `null` in JSON, `sue_caveat` still present.
+1. Sort the 4 rows by `quarter` descending so `q0` is the most recent quarter, `q-1`, `q-2`, `q-3` follow.
+2. For each row compute the per-quarter surprise in dollar terms: `surprise_i = reported_eps_i − estimated_eps_i`. If `surprise_pct` is provided but `estimated_eps_i` is null, derive `estimated_eps_i = reported_eps_i / (1 + surprise_pct_i / 100)`; if neither is recoverable for a given row, that row is unusable.
+3. Require **all 4 usable surprise values** to compute SUE. If fewer than 4 are usable: `sue` = `null`, `sue` block reason = `"insufficient quarterly history (only N/4 usable rows)"`. Do not pad with zeros, do not extrapolate.
+4. Compute `std_dev_surprise = sample standard deviation (ddof=1) of [surprise_0, surprise_-1, surprise_-2, surprise_-3]`. Use the sample formula (n−1 denominator), not the population formula, because we are estimating a population variance from a small sample.
+5. If `std_dev_surprise = 0` (every surprise identical, including all zeros), `sue` = `null`, reason = `"surprise variance zero — std-dev undefined"`. Do not divide.
+6. `SUE = surprise_0 / std_dev_surprise`. Round only for display, never in the JSON.
+7. Output fields: `sue` (float), `sue_window` = `"4q"` (always), `sue_caveat` (verbatim — see Output section). The caveat is present even when `sue` resolves cleanly; it's a data-quality disclosure, not a fallback note.
 
-**Step 2 — PEAD window status:** *(implementation in ABA-28)*
+Worked example (NVDA, illustrative — replace with live values at runtime):
 
-Contract:
-- Input: most recent earnings date from `get_earnings_history`.
-- Compute: `days_since_earnings = today − most_recent_earnings_date`.
-- Classify:
-  - `IN WINDOW` — 0 ≤ days_since_earnings ≤ 60 AND SUE > 0 (positive surprise drift still in play)
-  - `IN WINDOW (negative)` — 0 ≤ days_since_earnings ≤ 60 AND SUE ≤ 0 (drift goes the other way — used as a CAUTION marker)
-  - `OUTSIDE WINDOW` — days_since_earnings > 60 OR SUE = N/A
-- The PEAD window contract uses **60 days** as the academic-standard upper bound; the 45–60 day band is treated as "late window" where the edge is decaying but not gone. Output fields: `pead_window_status`, `days_since_earnings`.
+```
+quarter        reported_eps  estimated_eps  surprise
+2026-04-30     0.81          0.74           +0.07
+2026-01-31     0.89          0.85           +0.04
+2025-10-31     0.81          0.74           +0.07
+2025-07-31     0.68          0.64           +0.04
+                                            ----
+                                    mean    +0.055
+                            sample std-dev   0.017
+SUE = 0.07 / 0.017 ≈ 4.12  (above the 1.5 v1 noise floor)
+```
 
-Stub behaviour: output `PEAD window: N/A — pending ABA-28`, `pead_window_status` = `null`.
+The 4q sample std-dev is the only window v1 supports. Do not silently extend to 8q or pull additional quarters from any other surface.
+
+**Step 2 — PEAD window status:**
+
+Inputs: the `quarter` of the most recent row from `get_earnings_history` (this is the period-end date, which yfinance reports for the most recently reported quarter — for v1 we treat this as a proxy for the earnings announcement date; announcement typically lands within 4–6 weeks of period-end, so the window is conservative by construction).
+
+Algorithm:
+
+1. `most_recent_earnings_date = quarter[0]` (the period-end date of `q0`, parsed as ISO `YYYY-MM-DD`).
+2. `days_since_earnings = (today − most_recent_earnings_date).days`. Compute on calendar days, not trading days — the PEAD literature uses calendar days.
+3. If `days_since_earnings < 0` (period-end in the future — unusual but possible if yfinance returned a forward estimate row): `pead_window_status` = `null`, reason = `"earnings date in the future — unable to compute window"`.
+4. Classify:
+
+| Condition | `pead_window_status` |
+|---|---|
+| `0 ≤ days_since_earnings ≤ 44` AND `sue > 0` | `IN WINDOW` |
+| `0 ≤ days_since_earnings ≤ 44` AND `sue ≤ 0` | `IN WINDOW (negative)` |
+| `45 ≤ days_since_earnings ≤ 60` AND `sue > 0` | `IN WINDOW` (late sub-band — set `pead_late_window: true`) |
+| `45 ≤ days_since_earnings ≤ 60` AND `sue ≤ 0` | `IN WINDOW (negative)` (late sub-band — set `pead_late_window: true`) |
+| `days_since_earnings > 60` | `OUTSIDE WINDOW` |
+| `sue` = `null` (any window) | `OUTSIDE WINDOW` (the positive/negative split depends on SUE; if SUE is unknown we cannot honestly claim the drift is in play) |
+
+5. Output fields: `pead_window_status`, `days_since_earnings`, and `pead_late_window` (boolean) which is `true` only inside the 45–60 day band. The late-window flag is for the rationale string and the UI — it does not change the verdict table.
+
+The 60-day upper bound is the academic-standard PEAD horizon (Bernard & Thomas 1989); the 45-day inner cut is where the drift signal-to-noise meaningfully decays per follow-on studies. Both numbers are locked in v1 — do not tune them per-ticker.
 
 **Step 3 — EPS revision direction:** *(implementation in ABA-29)*
 
@@ -149,6 +178,7 @@ TIMING OUTPUT
   SUE caveat:           4-quarter std-dev is statistically weaker than the 8-quarter window used in the academic literature; treat SUE > 1.5 as the noise floor for v1.
   PEAD window:          [IN WINDOW | IN WINDOW (negative) | OUTSIDE WINDOW | N/A]
   Days since earnings:  [N | N/A]
+  PEAD late window:     [YES — drift signal decaying (45–60d band) | NO | N/A]
 
   Revision direction:   [UP | DOWN | MIXED | FLAT | N/A — reason]
     Net revisions 7d:   [+N | -N | 0 | N/A]
@@ -187,6 +217,7 @@ Write to `reports/TICKER_YYYYMMDD.json` where YYYYMMDD is today's date.
       "sue_caveat": "4-quarter std-dev is statistically weaker than the 8-quarter window used in the academic literature; treat SUE > 1.5 as the noise floor for v1.",
       "pead_window_status": "IN WINDOW",
       "days_since_earnings": 12,
+      "pead_late_window": false,
       "revision_direction": "UP",
       "net_revisions_7d": 3,
       "net_revisions_30d": 7,
@@ -234,9 +265,9 @@ NVDA — ACT NOW | SUE 1.82, PEAD IN WINDOW (day 12), revisions UP (+7 30d), nex
 
 ## 5. Output Schema
 
-Every run produces the TIMING OUTPUT block above and writes/merges `reports/TICKER_YYYYMMDD.json`. Fields 1–13 are always present in both the block and JSON.
+Every run produces the TIMING OUTPUT block above and writes/merges `reports/TICKER_YYYYMMDD.json`. Fields 1–14 are always present in both the block and JSON.
 
-The 13 JSON fields under `stages.timing` are:
+The 14 JSON fields under `stages.timing` are:
 
 1. `verdict` — ACT NOW / WAIT FOR CATALYST / WAIT FOR BETTER ENTRY / NEUTRAL / `null`
 2. `sue` — number or `null`
@@ -244,13 +275,14 @@ The 13 JSON fields under `stages.timing` are:
 4. `sue_caveat` — verbatim caveat string, always present
 5. `pead_window_status` — IN WINDOW / IN WINDOW (negative) / OUTSIDE WINDOW / `null`
 6. `days_since_earnings` — integer or `null`
-7. `revision_direction` — UP / DOWN / MIXED / FLAT / `null`
-8. `net_revisions_7d` — integer or `null`
-9. `net_revisions_30d` — integer or `null`
-10. `next_catalyst` — one-line string or `null`
-11. `next_catalyst_date` — ISO date string or `null`
-12. `days_to_catalyst` — integer or `null`
-13. `catalyst_source` — `"scheduled"` / `"estimated"` / `null`
+7. `pead_late_window` — boolean (`true` only when `45 ≤ days_since_earnings ≤ 60` AND `pead_window_status` is an IN WINDOW variant); `null` when window status is null
+8. `revision_direction` — UP / DOWN / MIXED / FLAT / `null`
+9. `net_revisions_7d` — integer or `null`
+10. `net_revisions_30d` — integer or `null`
+11. `next_catalyst` — one-line string or `null`
+12. `next_catalyst_date` — ISO date string or `null`
+13. `days_to_catalyst` — integer or `null`
+14. `catalyst_source` — `"scheduled"` / `"estimated"` / `null`
 
 Plus `rationale` — one-line string summarising the decisive signals.
 
@@ -330,7 +362,11 @@ Planned future overrides (not implemented):
 | "All three Timing signals are N/A so I'll still emit a verdict to be useful" | If SUE, revision direction, and next catalyst are all N/A, there is no basis for a verdict. Stop and report the gaps. A guessed verdict is worse than no verdict. |
 | "Earnings are tomorrow but SUE is 2.1 and revisions are UP so I'll say ACT NOW" | Override: earnings within 7 days forces WAIT FOR CATALYST. The asymmetry — full earnings risk vs. a few days of held edge — is not worth the bet. |
 | "I'll round SUE to 1 decimal place in the JSON" | Preserve full numeric precision in the JSON. Rounding belongs in the display block, not the data file. |
-| "PEAD window status is `IN WINDOW (negative)` but SUE is missing so I'll say `IN WINDOW`" | `IN WINDOW (negative)` requires a computed negative SUE. If SUE is N/A, PEAD window is also N/A (the positive vs. negative split depends on the SUE sign). Don't fake it. |
+| "PEAD window status is `IN WINDOW (negative)` but SUE is missing so I'll say `IN WINDOW`" | `IN WINDOW (negative)` requires a computed negative SUE. If SUE is `null`, `pead_window_status` is `OUTSIDE WINDOW` (the positive/negative split depends on the SUE sign — without it we cannot honestly claim the drift is in play). |
+| "I'll use the population std-dev (n denominator) because it gives a tidier number" | Use the **sample** std-dev (n−1 denominator). We are estimating population variance from a 4-quarter sample; the population formula systematically underestimates and inflates SUE. The 1.5 noise floor was calibrated against sample std-dev. |
+| "Every quarter beat by the same dollar amount — std-dev is zero — I'll just return SUE = 0" | Zero variance means SUE is mathematically undefined (divide by zero). Output `sue: null` with reason `"surprise variance zero — std-dev undefined"`. Returning 0 implies "no surprise" which is the opposite of the truth — every quarter was a positive surprise of identical magnitude. |
+| "It's day 52 post-earnings, IN WINDOW, ACT NOW conditions met — I'll just say ACT NOW" | The 45–60 day band is "late window" — set `pead_late_window: true` and call it out in the rationale: "drift signal decaying (day 52 of 60)". The verdict can still be ACT NOW, but the user needs to know the window is closing. |
+| "Period-end is in `quarter[0]` but earnings probably actually announced 4 weeks later, so I'll add 28 days" | Don't shift the date in v1. yfinance does not surface the announcement date directly; using period-end is the documented v1 approximation. The 60-day window is conservative against this — better to call OUTSIDE WINDOW too early than IN WINDOW too late. The 4–6 week lag is acknowledged in the data fetching notes. |
 
 ---
 
