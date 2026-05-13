@@ -41,6 +41,16 @@ When working on a Linear issue:
 
 Always update Linear status. Do not leave issues in the wrong state.
 
+## Linear wave promotion
+
+M5 work is grouped into waves via Linear labels (`wave-1`, `wave-1.5-gate`, `wave-2`, `wave-3`, `wave-4`) and gated via `blockedBy` relationships. When a Linear issue moves to Done:
+
+1. Run a 30-second smoke check on the just-completed work (eyeball one representative output). If it fails, the work isn't actually done — reopen and stop.
+2. Find issues whose `blockedBy` list contained the just-completed issue — these are now unblocked candidates.
+3. Filter unblocked candidates by wave label — promote in wave order; never skip a wave.
+4. Promote 1–3 unblocked candidates to Todo, keeping the Todo queue ≤ 3 deep.
+5. Linear's blockers enforce the hard stops (Wave 1 → ABA-82 gate → Wave 2 → Wave 3 → Wave 4); never manually bypass them.
+
 ## Git
 
 Do not add `Co-Authored-By` trailers to commit messages.
