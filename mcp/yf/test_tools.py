@@ -7,7 +7,7 @@ import pandas as pd
 import pytest
 
 sys.path.insert(0, "/Users/anton/src/stock-review/mcp/yf")
-from tools import FXNoDataError, YFNoDataError, _ScrapeError, _fetch_with_retry, get_analyst_targets, get_earnings_history, get_estimates, get_financials, get_fx_rate
+from tools import FXNoDataError, YFNoDataError, _ScrapeError, _fetch_with_retry, get_analyst_targets, get_earnings_history, get_estimates, get_financials, get_fx_rate, get_ratios
 
 
 def _make_earnings_estimate(avg, analysts):
@@ -629,3 +629,101 @@ class TestFetchWithRetry:
                 _fetch_with_retry("https://x/", attempts=3)
         # 2 sleeps between 3 attempts: 0.5, 1.0 — no sleep after final attempt
         assert [c.args[0] for c in s.call_args_list] == [0.5, 1.0]
+
+
+# ---------------------------------------------------------------------------
+# Slice 3: get_ratios HTML fallback wiring
+# ---------------------------------------------------------------------------
+
+
+def _info_aapl():
+    return {
+        "longName": "Apple Inc.",
+        "trailingPE": 35.0,
+        "priceToSalesTrailing12Months": 8.5,
+        "enterpriseToEbitda": 25.0,
+        "enterpriseToRevenue": 8.0,
+        "trailingEps": 6.0,
+        "sharesOutstanding": 15_000_000_000,
+        "currentPrice": 210.0,
+        "marketCap": 3_150_000_000_000,
+        "freeCashflow": 100_000_000_000,
+        "financialCurrency": "USD",
+    }
+
+
+def _info_kspi_missing_ps():
+    # KSPI-shape: info present but no priceToSalesTrailing12Months / trailingPE.
+    # currentPrice and marketCap remain available; financialCurrency = KZT.
+    return {
+        "longName": "Joint Stock Company Kaspi.kz",
+        "currentPrice": 90.0,
+        "marketCap": 17_000_000_000,
+        "financialCurrency": "KZT",
+    }
+
+
+class TestGetRatiosApiPath:
+    def test_api_path_returns_source_and_currency(self):
+        mock_ticker = MagicMock()
+        mock_ticker.info = _info_aapl()
+        with patch("tools.yf.Ticker", return_value=mock_ticker):
+            result = get_ratios("AAPL")
+        assert result["source"] == "yahoo_api"
+        assert result["reporting_currency"] == "USD"
+
+    def test_api_path_existing_fields_unchanged(self):
+        mock_ticker = MagicMock()
+        mock_ticker.info = _info_aapl()
+        with patch("tools.yf.Ticker", return_value=mock_ticker):
+            result = get_ratios("AAPL")
+        assert result["ticker"] == "AAPL"
+        assert result["pe_ratio"] == 35.0
+        assert result["ps_ratio"] == 8.5
+        assert result["currentPrice"] == 210.0
+        assert result["marketCap"] == 3_150_000_000_000
+        assert result["pfcf"] == pytest.approx(31.5, rel=1e-4)
+        assert result["period"] == "TTM"
+
+
+class TestGetRatiosHtmlFallback:
+    def test_falls_back_when_ps_ratio_missing(self):
+        mock_ticker = MagicMock()
+        mock_ticker.info = _info_kspi_missing_ps()
+        html_ratios = {
+            "pe_ratio": 7.15,
+            "ps_ratio": 1.91,
+            "ev_ebitda": 5.5,
+            "ev_revenue": 1.9,
+            "marketCap": 17_000_000_000,
+            "enterpriseValue": 16_000_000_000,
+        }
+        with patch("tools.yf.Ticker", return_value=mock_ticker), \
+             patch("tools._ratios_from_html", return_value=html_ratios) as scrape:
+            result = get_ratios("KSPI")
+        scrape.assert_called_once_with("KSPI")
+        assert result["source"] == "yahoo_html"
+        assert result["reporting_currency"] == "KZT"
+        assert result["pe_ratio"] == 7.15
+        assert result["ps_ratio"] == 1.91
+        assert result["marketCap"] == 17_000_000_000
+        # currentPrice layered from info (HTML doesn't carry it)
+        assert result["currentPrice"] == 90.0
+        assert result["ticker"] == "KSPI"
+        assert result["period"] == "TTM"
+
+    def test_scrape_error_raises_yfnodataerror(self):
+        mock_ticker = MagicMock()
+        mock_ticker.info = _info_kspi_missing_ps()
+        with patch("tools.yf.Ticker", return_value=mock_ticker), \
+             patch("tools._ratios_from_html", side_effect=_ScrapeError("boom")):
+            with pytest.raises(YFNoDataError):
+                get_ratios("KSPI")
+
+    def test_no_fallback_when_info_has_ps_ratio(self):
+        mock_ticker = MagicMock()
+        mock_ticker.info = _info_aapl()
+        with patch("tools.yf.Ticker", return_value=mock_ticker), \
+             patch("tools._ratios_from_html") as scrape:
+            get_ratios("AAPL")
+        scrape.assert_not_called()

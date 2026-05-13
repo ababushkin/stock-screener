@@ -442,34 +442,16 @@ def _ratios_from_html(ticker: str) -> dict:
     }
 
 
-def get_ratios(ticker: str) -> dict:
-    """Return valuation ratios for a ticker from Yahoo Finance (TTM).
-
-    Returns the same dict shape the FMP server returned, so callers don't care
-    which backend produced the numbers. P/FCF is computed from market cap and
-    free cash flow since yfinance doesn't expose it pre-computed.
-    """
-    start = time.monotonic()
-    info = yf.Ticker(ticker).info or {}
-    elapsed = time.monotonic() - start
-    print(f"[yf] get_ratios({ticker}).info → {len(info)} keys in {elapsed:.2f}s", file=sys.stderr)
-
-    ps_ratio = info.get("priceToSalesTrailing12Months")
-    if not ps_ratio:
-        raise YFNoDataError(
-            f"yfinance returned no usable data for {ticker}. "
-            f"Ticker may be delisted, mistyped, or Yahoo's endpoint changed."
-        )
-
+def _ratios_from_info(ticker: str, info: dict) -> dict:
+    """Build the standard ratios dict from a populated `Ticker.info`. Happy path."""
     market_cap = info.get("marketCap")
     fcf = info.get("freeCashflow")
     pfcf = market_cap / fcf if market_cap and fcf and fcf > 0 else None
-
     return {
         "ticker": ticker,
         "company_name": info.get("longName") or info.get("shortName"),
         "pe_ratio": info.get("trailingPE"),
-        "ps_ratio": ps_ratio,
+        "ps_ratio": info.get("priceToSalesTrailing12Months"),
         "ev_ebitda": info.get("enterpriseToEbitda"),
         "pfcf": pfcf,
         "ev_revenue": info.get("enterpriseToRevenue"),
@@ -477,6 +459,66 @@ def get_ratios(ticker: str) -> dict:
         "sharesOutstanding": info.get("sharesOutstanding"),
         "currentPrice": info.get("currentPrice") or info.get("regularMarketPrice"),
         "marketCap": market_cap,
+        "source": "yahoo_api",
+        "reporting_currency": info.get("financialCurrency"),
+        "period": "TTM",
+        "date": date.today().isoformat(),
+    }
+
+
+def get_ratios(ticker: str) -> dict:
+    """Return valuation ratios for a ticker from Yahoo Finance (TTM).
+
+    Happy path reads from `Ticker.info` (`source: "yahoo_api"`). When
+    `priceToSalesTrailing12Months` is missing (typical for non-US ADRs such as
+    KSPI), falls back to scraping the public key-statistics HTML page
+    (`source: "yahoo_html"`). Raises `YFNoDataError` if the fallback also
+    fails — loud failure preserved.
+    """
+    start = time.monotonic()
+    info = yf.Ticker(ticker).info or {}
+    elapsed = time.monotonic() - start
+    print(f"[yf] get_ratios({ticker}).info → {len(info)} keys in {elapsed:.2f}s", file=sys.stderr)
+
+    if info.get("priceToSalesTrailing12Months"):
+        return _ratios_from_info(ticker, info)
+
+    html_start = time.monotonic()
+    try:
+        html_ratios = _ratios_from_html(ticker)
+    except _ScrapeError as e:
+        html_elapsed = time.monotonic() - html_start
+        print(
+            f"[yf] get_ratios({ticker}).html FAILED in {html_elapsed:.2f}s reason={e}",
+            file=sys.stderr,
+        )
+        raise YFNoDataError(
+            f"yfinance returned no usable data for {ticker} and HTML fallback failed: {e}. "
+            f"Ticker may be delisted, mistyped, or Yahoo's endpoint changed."
+        ) from e
+
+    html_elapsed = time.monotonic() - html_start
+    n_fields = sum(1 for v in html_ratios.values() if v is not None)
+    print(
+        f"[yf] get_ratios({ticker}).html → {n_fields} fields in {html_elapsed:.2f}s source=yahoo_html",
+        file=sys.stderr,
+    )
+
+    market_cap = html_ratios.get("marketCap") or info.get("marketCap")
+    return {
+        "ticker": ticker,
+        "company_name": info.get("longName") or info.get("shortName"),
+        "pe_ratio": html_ratios.get("pe_ratio"),
+        "ps_ratio": html_ratios.get("ps_ratio"),
+        "ev_ebitda": html_ratios.get("ev_ebitda"),
+        "pfcf": None,
+        "ev_revenue": html_ratios.get("ev_revenue"),
+        "eps_ttm": info.get("trailingEps"),
+        "sharesOutstanding": info.get("sharesOutstanding"),
+        "currentPrice": info.get("currentPrice") or info.get("regularMarketPrice"),
+        "marketCap": market_cap,
+        "source": "yahoo_html",
+        "reporting_currency": info.get("financialCurrency"),
         "period": "TTM",
         "date": date.today().isoformat(),
     }
