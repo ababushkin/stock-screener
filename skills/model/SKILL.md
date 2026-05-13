@@ -206,7 +206,7 @@ Produce a 5×5 grid of per-share intrinsic values around the **base** scenario b
 - **WACC axis (rows):** `base_wacc − 1.0pp, −0.5pp, base_wacc, +0.5pp, +1.0pp` — five values, 0.5 pp steps.
 - **Terminal-growth axis (columns):** `1.5%, 2.0%, 2.5%, 3.0%, 3.5%` — five values centred on the base scenario's 2.5% g, 0.5 pp steps.
 
-For each `(wacc, g)` cell, repeat COMPUTE Steps 4–6 (terminal value → discount → equity bridge → per-share IV) using the base-scenario explicit FCFs (Y1–Y5 from Step 2 base + Step 3 base CAGR projection). The cell at row=3, col=3 (`base_wacc`, `g=2.5%`) is the **base cell** and must equal `scenarios.base.intrinsic_value_per_share` from Step 6 — within $0.50 / share of rounding tolerance. If the two diverge by more than that, the grid math has drifted from the base scenario math; stop and reconcile before emitting.
+For each `(wacc, g)` cell, repeat COMPUTE Steps 4–6 (terminal value → discount → equity bridge → per-share IV) using the base-scenario explicit FCFs (Y1–Y5 from Step 2 base + Step 3 base CAGR projection). The cell at the middle of both axes — `(row=2, col=2)` in 0-indexed terms (`base_wacc`, `g=2.5%`) — is the **base cell** and must equal `scenarios.base.intrinsic_value_per_share` from Step 6 — within $0.50 / share of rounding tolerance. The JSON `base_cell` field uses the same 0-indexed convention: `{"row": 2, "col": 2}`. If the two diverge by more than that, the grid math has drifted from the base scenario math; stop and reconcile before emitting.
 
 **Monotonicity invariant.** The grid must satisfy:
 
@@ -258,7 +258,8 @@ The pre-profit variant always caps at MEDIUM (per Confidence rules), so any pre-
 
 **Step 5 — Rationale string.** One line referencing all three load-bearing inputs: signal verdict, range_vs_price (with current_price and base_iv), and the resulting band. If a confidence cap fired, name it. Examples:
 
-- `"BUY × WITHIN BEAR–BASE (price $603.00 vs base IV $1050.50, MoS +74.2%) → 2–3% band (capped from 3–4% by MEDIUM confidence)."`
+- `"BUY × WITHIN BEAR–BASE (price $603.00 vs base IV $1050.50, MoS +74.2%) → 3–4% band (HIGH confidence, no cap applied)."`
+- `"BUY × MARGIN OF SAFETY (price $42.00 vs base IV $98.00, MoS +133%) → 4–4% band (capped from 4–6% by MEDIUM confidence)."`
 - `"WATCH × PRICE EXCEEDS RANGE (price $137.20 vs bull IV $98.00, MoS −60.5%) → 0% of portfolio (no entry)."`
 
 ### OUTPUT — MODEL OUTPUT block + JSON merge
@@ -668,7 +669,7 @@ RDDT — pre-profit DCF bear/base/bull = $X / $Y / $Z (price $P, WITHIN BEAR–B
 11. **ESTABLISHED + MODEL_READY=YES →** invoking `/stock:model META` after a META Signal output produces a MODEL OUTPUT block with three intrinsic-value scenarios and writes `stages.model` into `reports/META_YYYYMMDD.json` (merging with existing `stages.signal` / `stages.screen` — no overwrite).
 12. **Bear < Base < Bull (range integrity) →** the three scenarios satisfy `bear_iv < base_iv < bull_iv`. If the inequality fails, the skill stops and surfaces the three scenario inputs/outputs without silently re-ordering.
 13. **Demonstrably different assumption sets →** each scenario's Y1 anchor, Y2–5 CAGR, terminal growth, and WACC are each set by an independent axis (not a single percentage haircut applied to a base case). Each scenario carries its own one-line narrative.
-14. **EMERGING + MODEL_READY=YES (edge case) →** the route step refuses with the ABA-34 message; no DCF math is run, no `stages.model` is written.
+14. **EMERGING + MODEL_READY=YES →** (superseded by v1.3 #18 — EMERGING now routes to the pre-profit variant rather than refusing.)
 15. **Base WACC always asked →** the Manual Input Protocol fires for base WACC on every ESTABLISHED run; the value is recorded in `meta.manual_inputs` and the confidence caps at MEDIUM.
 16. **Sensitivity note present →** the OUTPUT block names exactly one dominant driver (WACC / terminal growth / Y2–5 CAGR) with a one-line magnitude statement.
 17. **`wacc ≤ g` override is disclosed →** if a scenario required narrowing the WACC adjustment to keep `wacc > g`, the OUTPUT block states the override explicitly; the user never sees a silently re-tuned scenario.
@@ -686,7 +687,7 @@ RDDT — pre-profit DCF bear/base/bull = $X / $Y / $Z (price $P, WITHIN BEAR–B
 
 ### v1.4 — ABA-32 (sensitivity grid, ESTABLISHED)
 
-26. **Sensitivity grid present →** the ESTABLISHED OUTPUT block contains a formatted 5×5 grid with rows = WACC axis (`base_wacc ± 1.0 pp` in 0.5 pp steps) and columns = terminal growth axis (`1.5%, 2.0%, 2.5%, 3.0%, 3.5%`). The JSON carries `stages.model.sensitivity_grid` with `wacc_axis`, `terminal_growth_axis`, `intrinsic_value_per_share` (5×5 array of per-share IVs), and `base_cell` index.
+26. **Sensitivity grid present →** the ESTABLISHED OUTPUT block contains a formatted 5×5 grid with rows = WACC axis (`base_wacc ± 1.0 pp` in 0.5 pp steps) and columns = terminal growth axis (`1.5%, 2.0%, 2.5%, 3.0%, 3.5%`). The JSON carries `stages.model.sensitivity_table` (renamed from `sensitivity_grid` in ABA-35) with `wacc_axis`, `terminal_growth_axis`, `intrinsic_value_per_share` (5×5 array of per-share IVs), and `base_cell` index.
 27. **Base cell reconciles →** the cell at `base_cell` (`base_wacc`, `g=2.5%`) matches `scenarios.base.intrinsic_value_per_share` within $0.50 / share. A larger gap stops the run.
 28. **Monotonicity →** every column is strictly decreasing top-to-bottom (IV ↓ as WACC ↑); every row is strictly increasing left-to-right (IV ↑ as g ↑). If either monotonicity check fails, the grid math is broken — stop, do not silently re-order.
 29. **`wacc ≤ g` cells →** if a low-WACC / high-g cell collapses (only possible when user-supplied `base_wacc < 4.5%`), it is emitted as `null` in the JSON and `n/a` in the table, with a one-line note. Never floor, fudge, or silently swap.
