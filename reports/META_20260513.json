@@ -43,6 +43,11 @@
           "narrative": "revenue beat, operating leverage, rate-easing tailwind"
         }
       },
+      "intrinsic_value_range": {
+        "bear": 413.6,
+        "base": 1050.5,
+        "bull": 2132.5
+      },
       "range_vs_price": "WITHIN BEAR-BASE",
       "sensitivity": {
         "dominant_driver": "WACC",
@@ -54,7 +59,17 @@
           "source": "user_paste"
         }
       ],
-      "sensitivity_grid": {
+      "position_sizing": {
+        "band": "2–3% of portfolio",
+        "lower_pct": 2,
+        "upper_pct": 3,
+        "signal_verdict": "WATCH",
+        "range_vs_price": "WITHIN BEAR-BASE",
+        "margin_of_safety_pct": 74.2,
+        "confidence_cap_applied": false,
+        "rationale": "WATCH × WITHIN BEAR-BASE (price $603.00 vs base IV $1050.50, MoS +74.2%) → 2–3% band; MEDIUM confidence cap of 4% upper not binding."
+      },
+      "sensitivity_table": {
         "wacc_axis": [
           0.08,
           0.085,

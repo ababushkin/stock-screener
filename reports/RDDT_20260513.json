@@ -65,10 +65,26 @@
           "narrative": "revenue beat, operating leverage extends runway, IPO grant cliff exits dilution schedule, comp multiples expand above META"
         }
       },
+      "intrinsic_value_range": {
+        "bear": 60.02,
+        "base": 273.81,
+        "bull": 733.61
+      },
       "range_vs_price": "WITHIN BEAR-BASE",
       "sensitivity": {
         "dominant_driver": "exit_multiple",
         "note": "Exit multiple dominates — ±1.0x moves base IV by ±14.5% (vs ±9% for dilution ±200 bps, ±5% for WACC ±100 bps, ±0.6% for terminal margin ±300 bps); margin matters less because exit anchors on revenue not FCF"
+      },
+      "sensitivity_table": null,
+      "position_sizing": {
+        "band": "2–3% of portfolio",
+        "lower_pct": 2,
+        "upper_pct": 3,
+        "signal_verdict": "WATCH",
+        "range_vs_price": "WITHIN BEAR-BASE",
+        "margin_of_safety_pct": 79.7,
+        "confidence_cap_applied": false,
+        "rationale": "WATCH × WITHIN BEAR-BASE (price $152.35 vs base IV $273.81, MoS +79.7%) → 2–3% band; pre-profit MEDIUM confidence cap of 4% upper not binding."
       },
       "manual_inputs": [
         {"field": "base_wacc", "source": "user_paste"},

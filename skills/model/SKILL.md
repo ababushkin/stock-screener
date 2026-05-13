@@ -230,6 +230,37 @@ After IVs are computed, classify where `currentPrice` sits in the bear–bull ra
 
 This is a descriptive label, not a buy/sell instruction. The Signal verdict is the buy/sell call; Model reports where price sits in the modelled value range.
 
+### POSITION SIZING — Allocation band from Signal verdict × margin of safety
+
+Applies identically to both ESTABLISHED and EMERGING paths. Run after THRESHOLD, before OUTPUT.
+
+**Step 1 — Margin of safety (MoS) %.** `mos_pct = (scenarios.base.intrinsic_value_per_share / current_price − 1) × 100`. Sign matters: positive = upside to base IV; negative = price already exceeds base IV.
+
+**Step 2 — Look up the allocation band.** Cross signal verdict against `range_vs_price` (the THRESHOLD label, which already integrates where price sits in the bear–bull range — a richer signal than MoS alone):
+
+| Signal verdict ↓ / Range vs price → | MARGIN OF SAFETY | WITHIN BEAR–BASE | WITHIN BASE–BULL | PRICE EXCEEDS RANGE |
+|---|---|---|---|---|
+| **BUY**     | 4–6% | 3–4% | 2–3% | 0–1% |
+| **WATCH**   | 3–4% | 2–3% | 1–2% | 0%   |
+| **CAUTION** | 0–1% | 0%   | 0%   | 0%   |
+
+The bands are deliberately conservative for a single-name tech book — bear conviction plus a price already through the bull case is a fully-priced thesis, not a position. CAUTION × MARGIN OF SAFETY is *not* unlocked by cheapness; CAUTION means a qualitative or governance concern that price doesn't fix.
+
+**Step 3 — Confidence cap.** Cap the *upper* band by `meta.confidence`:
+
+- HIGH → no cap (use band as-is).
+- MEDIUM → upper bound capped at `min(upper, 4%)`. Lower bound unchanged.
+- LOW → upper bound capped at `min(upper, 2%)`. Lower bound unchanged. If the table band starts at 0%, leave at 0%.
+
+The pre-profit variant always caps at MEDIUM (per Confidence rules), so any pre-profit position is `≤ 4%` regardless of MoS.
+
+**Step 4 — Emit the band string.** Format: `"L–U% of portfolio"` (en-dash, no space around digits) where L and U are the (possibly capped) lower and upper bounds. If L = U = 0, emit `"0% of portfolio (no entry)"`.
+
+**Step 5 — Rationale string.** One line referencing all three load-bearing inputs: signal verdict, range_vs_price (with current_price and base_iv), and the resulting band. If a confidence cap fired, name it. Examples:
+
+- `"BUY × WITHIN BEAR–BASE (price $603.00 vs base IV $1050.50, MoS +74.2%) → 2–3% band (capped from 3–4% by MEDIUM confidence)."`
+- `"WATCH × PRICE EXCEEDS RANGE (price $137.20 vs bull IV $98.00, MoS −60.5%) → 0% of portfolio (no entry)."`
+
 ### OUTPUT — MODEL OUTPUT block + JSON merge
 
 Emit the MODEL OUTPUT block. All fields must appear every run; never omit.
@@ -271,6 +302,10 @@ MODEL OUTPUT
     WACC=X.X%    $XXXX.X   $XXXX.X   $XXXX.X   $XXXX.X   $XXXX.X
     WACC=X.X%    $XXXX.X   $XXXX.X   $XXXX.X   $XXXX.X   $XXXX.X
     * = base scenario (matches Base IV above)
+
+  Position sizing: [L–U% of portfolio]
+    Signal: [BUY|WATCH|CAUTION] × Range vs price: [...] (MoS [+/-]X.X%)
+    Rationale: [one-line — signal × range_vs_price → band; cap if applicable]
 ```
 
 **JSON merge into `reports/TICKER_YYYYMMDD.json` under `stages.model`:**
@@ -298,12 +333,17 @@ Run `mkdir -p reports` and read-modify-write the existing file (it already conta
     "base": { /* same shape */ },
     "bull": { /* same shape */ }
   },
+  "intrinsic_value_range": {
+    "bear": <number>,
+    "base": <number>,
+    "bull": <number>
+  },
   "range_vs_price": "MARGIN OF SAFETY | WITHIN BEAR-BASE | WITHIN BASE-BULL | PRICE EXCEEDS RANGE",
   "sensitivity": {
     "dominant_driver": "WACC | terminal_growth | y2_5_cagr",
     "note": "WACC dominates — ±100 bps WACC moves base IV by ±18%"
   },
-  "sensitivity_grid": {
+  "sensitivity_table": {
     "wacc_axis": [<base_wacc-0.01>, <base_wacc-0.005>, <base_wacc>, <base_wacc+0.005>, <base_wacc+0.01>],
     "terminal_growth_axis": [0.015, 0.02, 0.025, 0.03, 0.035],
     "intrinsic_value_per_share": [
@@ -314,11 +354,23 @@ Run `mkdir -p reports` and read-modify-write the existing file (it already conta
       [<iv>, <iv>, <iv>, <iv>, <iv>]
     ],
     "base_cell": {"row": 2, "col": 2}
+  },
+  "position_sizing": {
+    "band": "L–U% of portfolio",
+    "lower_pct": <number>,
+    "upper_pct": <number>,
+    "signal_verdict": "BUY | WATCH | CAUTION",
+    "range_vs_price": "MARGIN OF SAFETY | WITHIN BEAR-BASE | WITHIN BASE-BULL | PRICE EXCEEDS RANGE",
+    "margin_of_safety_pct": <number>,
+    "confidence_cap_applied": <boolean>,
+    "rationale": "..."
   }
 }
 ```
 
-Rows in `intrinsic_value_per_share` are indexed by `wacc_axis` (row 0 = lowest WACC); columns by `terminal_growth_axis` (col 0 = lowest g). `base_cell` names the index that should match `scenarios.base.intrinsic_value_per_share`. Suppressed cells (where `wacc ≤ g`) are emitted as `null`, not numbers.
+`intrinsic_value_range` is a flat extract of `scenarios.{bear,base,bull}.intrinsic_value_per_share` for UI convenience — must reconcile cell-for-cell with the scenarios block.
+
+Rows in `sensitivity_table.intrinsic_value_per_share` are indexed by `wacc_axis` (row 0 = lowest WACC); columns by `terminal_growth_axis` (col 0 = lowest g). `base_cell` names the index that should match `scenarios.base.intrinsic_value_per_share`. Suppressed cells (where `wacc ≤ g`) are emitted as `null`, not numbers.
 
 After writing, print:
 
@@ -480,6 +532,10 @@ MODEL OUTPUT
 
   Range vs price: [MARGIN OF SAFETY | WITHIN BEAR–BASE | WITHIN BASE–BULL | PRICE EXCEEDS RANGE]
   Sensitivity:    [one-line dominant-driver note — usually exit multiple or margin target for pre-profit]
+
+  Position sizing: [L–U% of portfolio]
+    Signal: [BUY|WATCH|CAUTION] × Range vs price: [...] (MoS [+/-]X.X%)
+    Rationale: [one-line — signal × range_vs_price → band; MEDIUM-confidence cap always applies for pre-profit]
 ```
 
 If any scenario's inflection year is `beyond Y5`, the line reads `FCF inflection: beyond Y5 — model assumes exit-multiple buyer absorbs continued cash burn`.
@@ -516,10 +572,28 @@ If any scenario's inflection year is `beyond Y5`, the line reads `FCF inflection
     "base": { /* same shape */ },
     "bull": { /* same shape */ }
   },
+  "intrinsic_value_range": {
+    "bear": <number>,
+    "base": <number>,
+    "bull": <number>
+  },
   "range_vs_price": "MARGIN OF SAFETY | WITHIN BEAR-BASE | WITHIN BASE-BULL | PRICE EXCEEDS RANGE",
-  "sensitivity": {"dominant_driver": "exit_multiple | terminal_margin | dilution_rate | wacc", "note": "..."}
+  "sensitivity": {"dominant_driver": "exit_multiple | terminal_margin | dilution_rate | wacc", "note": "..."},
+  "sensitivity_table": null,
+  "position_sizing": {
+    "band": "L–U% of portfolio",
+    "lower_pct": <number>,
+    "upper_pct": <number>,
+    "signal_verdict": "BUY | WATCH | CAUTION",
+    "range_vs_price": "MARGIN OF SAFETY | WITHIN BEAR-BASE | WITHIN BASE-BULL | PRICE EXCEEDS RANGE",
+    "margin_of_safety_pct": <number>,
+    "confidence_cap_applied": true,
+    "rationale": "..."
+  }
 }
 ```
+
+`sensitivity_table` is `null` for the pre-profit variant — the 5×5 WACC × terminal-g grid is meaningless when there is no Gordon-growth terminal. The per-driver dominant-driver note in `sensitivity` remains the only sensitivity artefact for this path. `intrinsic_value_range` is a flat extract of `scenarios.{bear,base,bull}.intrinsic_value_per_share` — must reconcile.
 
 After writing, print:
 
@@ -563,6 +637,11 @@ RDDT — pre-profit DCF bear/base/bull = $X / $Y / $Z (price $P, WITHIN BEAR–B
 | "The 5×5 sensitivity grid is just decoration — I'll skip it or fudge it from the dominant-driver note." | Forbidden. The grid is a separate required artefact: it shows the full joint shape of IV vs (WACC, g), which the one-line dominant-driver note cannot. The center cell must reconcile to base IV; if it doesn't, the rest of the run is suspect — stop and reconcile, do not paper over. |
 | "The center cell of the grid is $5 off the base scenario IV — close enough, I'll round and ship." | Tolerance is ±$0.50 / share. A larger gap means the grid's discounting math has diverged from Step 6's (e.g. using cagr instead of `(1+cagr)`, or off-by-one on the discount exponent). Reconcile before emitting. |
 | "Gordon-growth terminal would give a cleaner number than a revenue-multiple exit." | Forbidden for pre-profit. Gordon growth requires a stable FCF base and a defensible long-run growth rate; pre-profit companies have neither. Revenue-multiple exit is the honest call — comp-anchored, scenario-disclosed, and not pretending to a precision the inputs don't support. |
+| "Position sizing is just a vibe — I'll write '2-3%' without showing the lookup." | The band must be derivable from the table (Signal verdict × range_vs_price), the MoS %, and the confidence cap. The rationale string names all three load-bearing inputs so the user can audit the call. "Felt right" is not a sizing methodology. |
+| "BUY × MARGIN OF SAFETY is rare — I'll bump the band to 6–8% to express conviction." | Forbidden. The bands are fixed by the table and capped by confidence. Single-name tech caps at 6% upper even at maximum conviction; expressing more conviction than the table allows is exactly the discipline failure the table exists to prevent. |
+| "CAUTION but the price is far below bear IV — surely a 1–2% starter is justified?" | Forbidden. CAUTION from Signal means a qualitative or governance concern (FAIL or hard-flag), not a price concern. Price-cheapness does not unlock CAUTION; the concern needs to be resolved at the Signal layer first. The table caps CAUTION × MARGIN OF SAFETY at 0–1% for this reason. |
+| "Pre-profit run; I should still produce a sensitivity_table by sweeping exit multiple × dilution." | Forbidden in v1. The `sensitivity_table` JSON field is the WACC × terminal-g grid only (ESTABLISHED path). Pre-profit emits `sensitivity_table: null` and relies on the single-driver `sensitivity` note. A second-axis grid for pre-profit is a future-tier concern, not v1. |
+| "I'll skip `intrinsic_value_range` — the consumer can read `scenarios.{bear,base,bull}.intrinsic_value_per_share` itself." | Forbidden. `intrinsic_value_range` is a contract field for downstream consumers (UI, router, position-sizing logic) so they don't need to know the scenario-block shape. Drop it and the next change to the scenario shape silently breaks every consumer. |
 
 ---
 
@@ -611,4 +690,20 @@ RDDT — pre-profit DCF bear/base/bull = $X / $Y / $Z (price $P, WITHIN BEAR–B
 27. **Base cell reconciles →** the cell at `base_cell` (`base_wacc`, `g=2.5%`) matches `scenarios.base.intrinsic_value_per_share` within $0.50 / share. A larger gap stops the run.
 28. **Monotonicity →** every column is strictly decreasing top-to-bottom (IV ↓ as WACC ↑); every row is strictly increasing left-to-right (IV ↑ as g ↑). If either monotonicity check fails, the grid math is broken — stop, do not silently re-order.
 29. **`wacc ≤ g` cells →** if a low-WACC / high-g cell collapses (only possible when user-supplied `base_wacc < 4.5%`), it is emitted as `null` in the JSON and `n/a` in the table, with a one-line note. Never floor, fudge, or silently swap.
-30. **Acceptance smoke (META) →** the existing META smoke report `reports/META_YYYYMMDD.json` is updated to include `stages.model.sensitivity_grid`; the center cell matches the stored base IV; the printed table satisfies monotonicity.
+30. **Acceptance smoke (META) →** the existing META smoke report `reports/META_YYYYMMDD.json` is updated to include `stages.model.sensitivity_table` (ABA-35 renamed from `sensitivity_grid`); the center cell matches the stored base IV; the printed table satisfies monotonicity.
+
+### v1.5 — ABA-33 (position sizing)
+
+31. **Position-sizing block present →** every MODEL OUTPUT block (both ESTABLISHED and EMERGING paths) includes a `Position sizing` line with an allocation band string and a rationale that references both the upstream Signal verdict (BUY/WATCH/CAUTION) and the margin-of-safety percentage (`(base_iv / current_price − 1) × 100`).
+32. **Band derived from the lookup table →** the band must match the Signal × range_vs_price table in the POSITION SIZING section, with the upper bound capped per confidence (HIGH = no cap; MEDIUM ≤ 4%; LOW ≤ 2%). When a cap fires, the rationale names it.
+33. **CAUTION → 0–1% maximum →** any CAUTION signal caps total allocation at 0–1% (and only at MARGIN OF SAFETY); CAUTION × any other range is 0%. Cheapness does not unlock CAUTION.
+34. **Pre-profit caps at MEDIUM →** because the pre-profit variant always caps `meta.confidence` at MEDIUM, every pre-profit `position_sizing.upper_pct` is `≤ 4`.
+35. **No-entry phrasing →** if the band is `0–0%`, the band string reads exactly `"0% of portfolio (no entry)"` — never `"0–0% of portfolio"`.
+
+### v1.6 — ABA-35 (report JSON integration)
+
+36. **`stages.model.intrinsic_value_range` present →** the model JSON contains a flat `{bear, base, bull}` extract of per-share IVs that reconciles cell-for-cell with `scenarios.{bear,base,bull}.intrinsic_value_per_share`. Applies to both ESTABLISHED and EMERGING paths.
+37. **`stages.model.scenarios` present →** the full scenario block (each of bear/base/bull with its own assumptions, IV, upside %, narrative) is emitted under `scenarios`.
+38. **`stages.model.sensitivity_table` present →** ESTABLISHED emits the 5×5 WACC × terminal-g grid object (renamed from `sensitivity_grid` in v1.4) with `wacc_axis`, `terminal_growth_axis`, `intrinsic_value_per_share` 5×5 array, and `base_cell` index. EMERGING emits `sensitivity_table: null` (the grid is meaningless without a Gordon-growth terminal) and relies on the dominant-driver `sensitivity` note instead.
+39. **`stages.model.position_sizing` present →** the sizing block from v1.5 is emitted as a structured object (`band`, `lower_pct`, `upper_pct`, `signal_verdict`, `range_vs_price`, `margin_of_safety_pct`, `confidence_cap_applied`, `rationale`) — not just a string.
+40. **JSON validity preserved →** running `/stock:model META` writes a `reports/META_YYYYMMDD.json` that parses as valid JSON, with `stages.model` containing all four required fields and merging cleanly with any pre-existing `stages.signal` / `stages.screen` / `stages.timing` blocks (no overwrite of sibling stages).
