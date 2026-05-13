@@ -44,10 +44,10 @@ Source references: Bernard & Thomas (1989) for PEAD; Foster, Olsen & Shevlin (19
 | Next catalyst date | `mcp__yf__get_estimates(ticker)` — earnings calendar field | Null → fall back to current price ± inference from most recent earnings + ~90d; flag as estimated |
 | Current price | `mcp__yf__get_ratios(ticker)` — derived from PE × eps_ttm or market_cap/shares | Null → entry-range fields = N/A |
 
-**Window definitions (locked v1, per ABA-47 spike):**
+**Window definitions (locked v1):**
 - **SUE std-dev window:** 4 quarters (the only window yfinance `earnings_history` returns). Output **must** carry a `sue_window: "4q"` field and the output block **must** include a one-line caveat that 4-quarter std-dev is statistically weaker than the 8-quarter window used in the academic literature.
-- **EPS revision windows:** 7d and 30d **only**. 60d and 90d are deferred (ABA-47 spike confirmed yfinance does not surface them).
-- **`Ticker.upgrades_downgrades` is NOT used.** ABA-47 spike found this surface stale (META latest entry 2024-09-30). Analyst-action momentum is inferred from `eps_revisions` direction only.
+- **EPS revision windows:** 7d and 30d **only**. yfinance does not surface 60d or 90d revision counts; do not extrapolate them.
+- **`Ticker.upgrades_downgrades` is NOT used.** This surface is stale (latest entry on META is 2024-09-30 as of v1 cut-in). Analyst-action momentum is inferred from `eps_revisions` direction only.
 
 ---
 
@@ -129,13 +129,13 @@ The 60-day upper bound is the academic-standard PEAD horizon (Bernard & Thomas 1
 
 v1 status: **N/A (not implemented in yf MCP).**
 
-The contract for revision direction depends on an `eps_revisions` block exposing 7d/30d up/down counts. The current yf MCP `get_estimates` tool returns only `ntm_eps`, `ntm_revenue`, and `analyst_count` — it does **not** surface `Ticker.eps_revisions`. Per the ABA-47 spike, yfinance does expose these counts via `Ticker.eps_revisions` at the library level, but adding that surface is a follow-up MCP change tracked separately.
+The contract for revision direction depends on an `eps_revisions` block exposing 7d/30d up/down counts. The current yf MCP `get_estimates` tool returns only `ntm_eps`, `ntm_revenue`, and `analyst_count` — it does **not** surface `Ticker.eps_revisions`. yfinance does expose these counts via `Ticker.eps_revisions` at the library level, but exposing them through the MCP is a follow-up tracked in [ABA-68](https://linear.app/ababushkin/issue/ABA-68).
 
 v1 behaviour:
 - Always emit `revision_direction: null` with reason `"yf MCP get_revisions tool not implemented"`.
 - Always emit `net_revisions_7d: null` and `net_revisions_30d: null`.
 - The output block shows: `Revision direction: N/A — yf MCP get_revisions tool not implemented`.
-- **Do not fabricate** revision counts, do not extrapolate from price movement, do not fall back to `Ticker.upgrades_downgrades` (which the ABA-47 spike found stale).
+- **Do not fabricate** revision counts, do not extrapolate from price movement, do not fall back to `Ticker.upgrades_downgrades` (its data is stale — see the data priority chain above).
 
 When the follow-up MCP tool ships, the contract restores to:
 - Inputs: `eps_revisions` block from `get_revisions` (or `get_estimates` once it's extended), containing `up_7d`, `down_7d`, `up_30d`, `down_30d`.
@@ -168,7 +168,7 @@ When a scheduled-date MCP tool ships, the contract restores to:
 
 ### THRESHOLD — Combine into TIMING verdict
 
-The verdict combination logic is set here in the stub so ABA-28/29 only need to plug in computed values — the table does not change.
+The verdict combination logic is fixed; algorithms in Steps 1–4 plug computed values into the table without changing it.
 
 | TIMING verdict | Conditions |
 |---|---|
@@ -220,7 +220,7 @@ TIMING OUTPUT
 Run `mkdir -p reports` before writing.
 Write to `reports/TICKER_YYYYMMDD.json` where YYYYMMDD is today's date.
 
-**Merge behaviour (ABA-29 implements; contract locked here):**
+**Merge behaviour:**
 
 - If the file already exists (e.g. written by `/screen`, `/signal`, or `/model` earlier), READ it first, then merge — add/update `stages.timing` and the `meta.confidence` field only if Timing has a HIGHER-quality confidence than what is already there. **Never** overwrite `stages.screen`, `stages.signal`, or `stages.model`.
 - If the file does not exist, create it with the full outer structure and `stages.timing` as the only populated stage.
@@ -317,7 +317,7 @@ Plus `rationale` — one-line string summarising the decisive signals.
 - Always fetch from yfinance MCP tools — do not use hardcoded values or training-data recall.
 - Fetch order: `get_earnings_history` first (SUE/PEAD inputs), then `get_estimates` (revisions + catalyst), then `get_ratios` (price context).
 - State what was retrieved, what was missing, and what was assumed before the TIMING OUTPUT block.
-- **Do not call `Ticker.upgrades_downgrades`** — it is stale on at least META per the ABA-47 spike and is explicitly excluded from the data priority chain.
+- **Do not call `Ticker.upgrades_downgrades`** — it is stale (META's latest entry is 2024-09-30 as of v1 cut-in) and is explicitly excluded from the data priority chain.
 
 ---
 
@@ -350,17 +350,17 @@ Timing is a **single-ticker** operation. For multi-ticker batches, the user shou
 - OUTSIDE WINDOW = > 60 days since the last earnings announcement.
 
 **Revision windows:**
-- v1 reports **7d and 30d only**. 60d and 90d are not implemented and not surfaced by yfinance per the ABA-47 spike. Do not estimate them, do not extrapolate from 7d/30d, do not output them.
+- v1 reports **7d and 30d only**. 60d and 90d are not implemented and are not surfaced by yfinance. Do not estimate them, do not extrapolate from 7d/30d, do not output them.
 
 **Stale-source exclusion:**
-- `Ticker.upgrades_downgrades` is not used. ABA-47 confirmed staleness on META (latest entry 2024-09-30). Do not fall back to it even if `eps_revisions` is missing — instead emit `revision_direction: N/A` with the reason "no revision data".
+- `Ticker.upgrades_downgrades` is not used. The surface is stale (META latest entry 2024-09-30 as of v1 cut-in). Do not fall back to it even if `eps_revisions` is missing — instead emit `revision_direction: N/A` with the reason "no revision data".
 
 **Catalyst inference (v1):**
 - The yf MCP `get_estimates` tool does **not** expose `Ticker.calendar` or `Ticker.earnings_dates`. v1 therefore always derives `next_catalyst_date = most_recent_earnings_date + 90d` and sets `catalyst_source: "estimated"`. Never guess product event dates or investor-day dates — those require external sources not yet wired up.
-- A follow-up Linear issue tracks adding a `get_next_earnings_date` MCP tool that will flip `catalyst_source` to `"scheduled"`.
+- [ABA-69](https://linear.app/ababushkin/issue/ABA-69) tracks adding a `get_next_earnings_date` MCP tool that will flip `catalyst_source` to `"scheduled"`.
 
 **Revision data (v1):**
-- The yf MCP does **not** yet expose `Ticker.eps_revisions`. v1 always emits `revision_direction: null` with reason `"yf MCP get_revisions tool not implemented"`. Do not fabricate, do not extrapolate, do not fall back to `upgrades_downgrades`. A follow-up Linear issue tracks adding a `get_revisions` MCP tool.
+- The yf MCP does **not** yet expose `Ticker.eps_revisions`. v1 always emits `revision_direction: null` with reason `"yf MCP get_revisions tool not implemented"`. Do not fabricate, do not extrapolate, do not fall back to `upgrades_downgrades`. [ABA-68](https://linear.app/ababushkin/issue/ABA-68) tracks adding a `get_revisions` MCP tool.
 
 ---
 
@@ -381,9 +381,9 @@ Planned future overrides (not implemented):
 | Rationalisation | Rebuttal |
 |---|---|
 | "yfinance only returned 3 quarters of earnings history so I'll estimate the 4th" | Don't fabricate a quarterly print. If fewer than 4 quarters resolve, output `SUE: N/A — insufficient quarterly history`. Estimation here would produce a SUE number with no statistical meaning. |
-| "I'll use the 8-quarter SUE because the literature says it's stronger" | yfinance only returns 4 quarters per the ABA-47 spike. The skill is locked to a 4q window in v1; the caveat string discloses the weaker basis. Do not silently extend the window. |
-| "`upgrades_downgrades` has data so I'll use it as a revision proxy" | That surface is stale (META latest 2024-09-30 per ABA-47). It is explicitly excluded from the data priority chain. Use `eps_revisions` only; if it's missing, output N/A. |
-| "60d and 90d revision counts would make the signal stronger so I'll compute them from 7d/30d trends" | 60d/90d windows are out of scope per ABA-47 — yfinance does not surface them and extrapolation is not the same as measurement. Output only 7d and 30d. |
+| "I'll use the 8-quarter SUE because the literature says it's stronger" | yfinance only returns 4 quarters via `earnings_history`. The skill is locked to a 4q window in v1; the caveat string discloses the weaker basis. Do not silently extend the window. |
+| "`upgrades_downgrades` has data so I'll use it as a revision proxy" | That surface is stale (META latest entry 2024-09-30 as of v1 cut-in). It is explicitly excluded from the data priority chain. Use `eps_revisions` only; if it's missing, output N/A. |
+| "60d and 90d revision counts would make the signal stronger so I'll compute them from 7d/30d trends" | yfinance does not surface 60d or 90d windows; extrapolation is not the same as measurement. Output only 7d and 30d. |
 | "Next earnings date is missing so I'll skip the catalyst field" | Every field appears every run. If the scheduled date is missing, infer `most_recent_earnings_date + 90d` and set `catalyst_source: "estimated"`. Never omit the field. |
 | "stages.signal already exists in the report so I'll overwrite the whole file with my Timing payload" | Merge behaviour is mandatory. READ the existing file, ADD `stages.timing`, write the merged structure. Overwriting `stages.screen`, `stages.signal`, or `stages.model` is a P0 bug. |
 | "The report doesn't exist yet so I'll skip writing one" | Timing creates a new report file when none exists, with `stages.timing` as the only populated stage. The UI reads whatever stages are present. |
