@@ -77,7 +77,9 @@ Source references: Peter Lynch (One Up on Wall Street) for PEG; Brad Feld/Fred W
 
 ### VALIDATE
 
-- `ps_ratio` must be non-null and greater than 0. If missing, stop and report — P/S is the minimum viable ratio.
+- `ps_ratio` must be non-null and greater than 0. **If missing, fire the Manual Input Protocol** (see `skills/_shared/MANUAL_INPUT_PROTOCOL.md`) before stopping — ask the user to paste P/S, current price, EPS TTM, shares outstanding, and SBC TTM as a grouped paste-in. Only stop if the user replies `abort`.
+- The protocol also fires when `get_ratios` raised `YFNoDataError` (the common case for non-US filers), or when `get_financials` returned null for `stock_based_compensation` on the most recent year.
+- Any field accepted via paste-in is tagged `source: "user_paste"` and added to `meta.manual_inputs`; overall `meta.confidence` caps at MEDIUM (LOW if every required field came from paste-in).
 - State what was retrieved and what gaps exist before proceeding.
 
 ### COMPUTE
@@ -513,6 +515,9 @@ All four active override rules and the qualitative overrides from TAM/optionalit
 | "I'll infer the AI layer from my training data rather than computing it" | AI layer classification is a qualitative filter requiring current context. In the stub, output the placeholder. Do not hallucinate a classification. |
 | "I'll look up AI layer from a hardcoded table" | Classification is qualitative reasoning, not a lookup. Apply the decision tree and state your reasoning. The output is only as good as the argument you make. |
 | "A report file already exists for this ticker today, I'll skip writing" | Always write. The user may be re-running with updated data or correcting a prior run. Read-modify-write if the file exists. |
+| "yfinance returned null for P/S — I'll estimate from sector average" | Forbidden. Fire the Manual Input Protocol (`skills/_shared/MANUAL_INPUT_PROTOCOL.md`) and ask the user to paste the value. Ask, don't assume. |
+| "I'll fire one question per missing field — that's cleaner" | Forbidden. Group every missing field into a single paste-in prompt. Round-trips cost the user time. |
+| "The user is busy, I'll use last quarter's value" | Forbidden. Stale ≠ current. The Manual Input Protocol exists so we don't silently substitute. |
 | "I'll skip merging and just overwrite the whole file" | If `/stock:screen` was run first, the file has `stages.screen`. Overwriting it loses the screen data the UI needs. Always read-modify-write when the file already exists. |
 | "I'll use my training knowledge for ratio values instead of calling the MCP" | Always fetch live data from the yfinance MCP. Training data ratios are stale by definition. |
 | "SBC per share looks tiny — probably a unit mismatch but I'll proceed anyway" | yfinance returns SBC in raw dollars (not thousands or millions) and shares outstanding in units. Verify the magnitude before dividing — if per-share SBC exceeds $10 for a sub-$500 stock, a unit mismatch is almost certain. Report the raw figures so the user can sanity-check. |

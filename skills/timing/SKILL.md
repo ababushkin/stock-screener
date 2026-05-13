@@ -66,7 +66,8 @@ Source references: Bernard & Thomas (1989) for PEAD; Foster, Olsen & Shevlin (19
 
 ### VALIDATE
 
-- At least one of {SUE, revision direction, next catalyst} must resolve. If all three are N/A, stop and report — there is no basis for a Timing verdict.
+- At least one of {SUE, revision direction, next catalyst} must resolve. If all three are N/A — typically because `get_earnings_history` raised or returned no rows AND `get_analyst_targets` raised — **fire the Manual Input Protocol** (see `skills/_shared/MANUAL_INPUT_PROTOCOL.md`) before stopping. Ask the user to paste reported / estimated EPS for the most recent 1–4 quarters and the next reporting date if known. Only stop if the user replies `abort`.
+- Any field accepted via paste-in is tagged `source: "user_paste"` and added to `meta.manual_inputs`; overall `meta.confidence` caps at MEDIUM.
 - State which signals were retrieved and which are N/A before computing the verdict.
 
 ### COMPUTE
@@ -392,6 +393,7 @@ Planned future overrides (not implemented):
 | "The yf MCP doesn't return eps_revisions so I'll compute revision direction from price action or analyst-target changes" | v1 emits `revision_direction: null` with reason "yf MCP get_revisions tool not implemented". Inferring from price/targets is a different signal masquerading under the revision label — it would corrupt downstream confidence. Wait for the follow-up MCP tool. |
 | "The yf MCP doesn't return a scheduled earnings date so I'll skip the catalyst entirely" | v1 always estimates: `next_catalyst_date = most_recent_earnings_date + 90d`, `catalyst_source: "estimated"`. The estimate is good enough to fire the 7d override when it matters. Omitting the field breaks the locked output contract. |
 | "catalyst_source is estimated so I'll skip the 7-day override to avoid false positives" | The override fires on the estimated date. The rationale string calls out the estimated basis. Suppressing the override silently would hide a legitimate signal — and the user is the one who decides whether to trust the estimate. |
+| "All three signals are N/A — I'll just stop without asking" | If MCP coverage failed, fire the Manual Input Protocol (`skills/_shared/MANUAL_INPUT_PROTOCOL.md`) and offer the user a grouped paste-in for recent EPS prints and the next reporting date. Ask, don't assume. |
 | "I'll round SUE to 1 decimal place in the JSON" | Preserve full numeric precision in the JSON. Rounding belongs in the display block, not the data file. |
 | "PEAD window status is `IN WINDOW (negative)` but SUE is missing so I'll say `IN WINDOW`" | `IN WINDOW (negative)` requires a computed negative SUE. If SUE is `null`, `pead_window_status` is `OUTSIDE WINDOW` (the positive/negative split depends on the SUE sign — without it we cannot honestly claim the drift is in play). |
 | "I'll use the population std-dev (n denominator) because it gives a tidier number" | Use the **sample** std-dev (n−1 denominator). We are estimating population variance from a 4-quarter sample; the population formula systematically underestimates and inflates SUE. The 1.5 noise floor was calibrated against sample std-dev. |

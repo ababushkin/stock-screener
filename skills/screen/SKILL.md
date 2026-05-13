@@ -32,7 +32,7 @@ description: Fast go/no-go valuation screen for tech stocks. Invoked as `/stock:
 
 ### VALIDATE
 
-Confirm ratios were retrieved. At minimum, `ps_ratio` must be non-null and greater than 0 for the screen to proceed — P/S is the one ratio available for both profitable and pre-profit companies, so without it there's no basis for any verdict. If `ps_ratio` is null or zero, stop and report that yfinance returned no usable data for this ticker. (Note: the MCP server raises `YFNoDataError` itself when `ps_ratio` is missing, so this path mainly guards against an unexpected zero.)
+Confirm ratios were retrieved. At minimum, `ps_ratio` must be non-null and greater than 0 for the screen to proceed — P/S is the one ratio available for both profitable and pre-profit companies, so without it there's no basis for any verdict. If `ps_ratio` is null/zero (or `get_ratios` raised `YFNoDataError`), **fire the Manual Input Protocol** (see `skills/_shared/MANUAL_INPUT_PROTOCOL.md`) and ask the user to paste P/S, market cap, current price, total debt, and cash as a grouped paste-in. Only stop if the user replies `abort`. Also fire when a field required for the verdict path is null — e.g. `gross_profit` for the EMERGING gross-margin gate, or any Piotroski canonical input on the ESTABLISHED path (those have documented per-signal fallbacks so the protocol is a *recovery* path, not the default). Any field accepted via paste-in is tagged `source: "user_paste"` and added to `meta.manual_inputs`; overall `meta.confidence` caps at MEDIUM.
 
 ### COMPUTE — Infer profit stage and track
 
@@ -435,7 +435,9 @@ For single-ticker runs, the inline ranked table is not emitted and the consolida
 | "The P/E field exists so I'll use it for this EMERGING company" | Pre-profit P/E is mathematically undefined or misleading. Only P/S applies to EMERGING companies. Mixing methods produces nonsense verdicts. |
 | "A report file already exists for this ticker today, I'll skip writing" | Always overwrite. The user may be re-running with updated data or correcting a prior run. |
 | "I'll round the ratios to 2 decimal places in the JSON" | Preserve full yfinance precision in the file. Rounding belongs in display layers, not in the source data that the report viewer reads. |
-| "I'll continue past a null ps_ratio and use other ratios instead" | P/S is the one ratio available for both profitable and pre-profit companies. Without it there's no basis for any verdict. Stop and report. |
+| "I'll continue past a null ps_ratio and use other ratios instead" | P/S is the one ratio available for both profitable and pre-profit companies. Without it there's no basis for any verdict. Fire the Manual Input Protocol (`skills/_shared/MANUAL_INPUT_PROTOCOL.md`) first; only stop if the user replies `abort`. |
+| "yfinance returned null for `<field>` so I'll estimate from peer averages or training data" | Forbidden. Fire the Manual Input Protocol and ask the user to paste it. Estimation is fabrication once it's in the JSON. |
+| "I'll fire one paste-in question per missing field — that's clearer" | Forbidden. Group all missing fields into a single paste-in prompt. Round-trips cost the user time. |
 | "YFNoDataError means I should retry with a different ticker spelling" | Don't guess at ticker variants. Report the failure with the exact ticker the user supplied and let them re-invoke with a different one. |
 | "I'll skip the financial data fetch and use only ratios for ESTABLISHED tickers" | The Quality Signals set requires 2 years of revenue/op_income/net_income/FCF/SBC/debt/cash from `get_financials`. Always call `get_financials` for ESTABLISHED tickers. |
 | "All three tickers have the same Quality score" | Check that YoY deltas are computed correctly using two distinct annual periods. META, MSFT, and AAPL have meaningfully different revenue/op-margin/SBC trends — identical scores indicate a data or computation error. |

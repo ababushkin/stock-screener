@@ -80,6 +80,7 @@ When those issues land, this section will be filled in following the pattern in 
 | "There's a `reports/TICKER_YYYYMMDD.json` with a `stages.signal` block — that should count as upstream context." | Not in v1. The gate checks the conversation context, not the filesystem. The user may have run Signal in a different session days ago and the underlying data may be stale. Refuse and instruct the user to re-run Signal in the current session. (A future iteration may extend the gate to accept fresh on-disk reports — that is an ABA-31 design call, not a v1 concern.) |
 | "The SIGNAL OUTPUT block is for a different ticker but it has useful classification info." | Tickers are not fungible. A SIGNAL OUTPUT for META tells you nothing about NVDA's profit stage or AI layer. Refuse and instruct. |
 | "MODEL_READY is NO so I should refuse with a different message." | v1 gate does not branch on MODEL_READY. Pass the gate, then let the (future) downstream logic decide whether to proceed, abort, or produce a CONDITIONAL output. Recording MODEL_READY in the acknowledgement is enough. |
+| "A DCF input is null — I'll assume a reasonable default (WACC 10%, terminal growth 3%, …)" | Forbidden. Per the Manual Input Protocol (`skills/_shared/MANUAL_INPUT_PROTOCOL.md`), when any DCF input cannot be derived from MCP data the skill MUST ask the user via a grouped paste-in (this fires in the downstream DCF logic tracked in ABA-31/ABA-34, not in the v1 stub). Defaults are fabrication once written to JSON. |
 
 ---
 
