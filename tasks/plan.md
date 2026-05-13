@@ -41,7 +41,7 @@ Each slice ends with a runnable, demonstrable artefact. We avoid horizontal laye
 - Open Question 1 is answered in writing (in the design doc) — either "`reporting_currency` is read from element X" or "no currency indicator on the page; default to None and document".
 
 **Verification:**
-- Manual REPL: `python -c "from mcp.yf.tools import _ratios_from_html; print(_ratios_from_html('KSPI'))"` prints populated dict.
+- Manual REPL from `mcp/yf/`: `.venv/bin/python -c "from tools import _ratios_from_html; print(_ratios_from_html('KSPI'))"` prints populated dict.
 - Eyeball comparison vs. live Yahoo page.
 
 **Not in this slice:** retry logic, integration into `get_ratios`, tests as CI fitness functions.
@@ -98,7 +98,7 @@ Smoke test: hand-call `_fetch_with_retry` against the real Yahoo KSPI page, pass
 - Stderr logs match the three lines documented in Operability.
 
 **Verification:**
-- Manual: `python -c "from mcp.yf.tools import get_ratios; print(get_ratios('KSPI'))"` and `... 'AAPL'`.
+- Manual from `mcp/yf/`: `.venv/bin/python -c "from tools import get_ratios; print(get_ratios('KSPI'))"` and `... 'AAPL'`.
 - Run `/signal KSPI` end-to-end — workflow completes through the ratios step.
 
 ---

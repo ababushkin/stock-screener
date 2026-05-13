@@ -197,13 +197,13 @@ Negative:
 2. Estimated time: 5 minutes including CI run.
 3. Behaviour reverts to today: `YFNoDataError` on KSPI; `/signal KSPI` falls back to ABA-74 manual-input path (once ABA-74 ships) or hard stop (today).
 
-**Capacity headroom:** Yahoo's public HTML pages are not rate-limited at the volumes a single-user research pack generates (well under 100 requests/day). No concurrency to worry about. A 5s `requests` timeout caps worst-case latency.
+**Capacity headroom:** Yahoo's public HTML pages are not rate-limited at the volumes a single-user research pack generates (well under 100 requests/day). No concurrency to worry about. A 5s `curl_cffi` per-attempt timeout caps worst-case latency.
 
 **Known failure modes:**
 - Yahoo HTML markup change → `_ScrapeError` → `YFNoDataError` raised → caller sees same error as today. Loud failure. Detected by nightly fitness function.
-- Yahoo rate-limits the User-Agent → 429 → `_fetch_with_retry` retries up to 3 times with exponential backoff; if all retries fail, `_ScrapeError` → `YFNoDataError`. 403 is treated as non-transient (no retry). If 429s become routine, escalate to a UA-rotation pool (not in this design — premature).
+- Yahoo rate-limits the TLS-impersonation flow → 429 → `_fetch_with_retry` retries up to 3 times with exponential backoff; if all retries fail, `_ScrapeError` → `YFNoDataError`. 403 is treated as non-transient (no retry). If 429s become routine, escalate to a UA / impersonate-profile rotation (not in this design — premature).
 - Ticker exists on Yahoo HTML but `key-statistics` page is missing a row → field returns `None` → response shape preserved with that field nulled. Existing pattern for partial coverage.
-- `requests` connection failure / timeout → `_ScrapeError` → `YFNoDataError` after 5s. Acceptable for a non-real-time research workflow.
+- `curl_cffi` connection failure / timeout → `_ScrapeError` → `YFNoDataError` after 5s × attempts. Acceptable for a non-real-time research workflow.
 
 **Upstream dependencies:** `finance.yahoo.com` HTML rendering — no SLA, never had one. We are a guest. Mitigation: fail loud, fixture-test continuously.
 
@@ -214,7 +214,7 @@ Negative:
 - **Q2 (resolved 2026-05-13):** `source` field is scoped strictly to `get_ratios` in this PR. Sibling tools (`get_financials`, `get_estimates`) gain the field in a follow-up if/when they grow fallbacks of their own.
 - **Q3 (resolved 2026-05-13):** Retry up to 3 attempts on transient network errors (connection failure, timeout, 5xx, 429) with exponential backoff (0.5s / 1.0s / 2.0s). Do not retry on 4xx (other than 429) or on parse failures.
 - **Q1 (resolved 2026-05-13 during Slice 1 spike):** Yahoo's key-statistics HTML page does NOT surface `financialCurrency` (KZT for KSPI) as a structured field. The visible header reads "NasdaqGS - Nasdaq Real Time Price • USD" — that's the *trade* currency, not the reporting currency. Decision: on the HTML path, set `reporting_currency` from `Ticker.info["financialCurrency"]` when present (it is present for KSPI even when ratios are missing), otherwise `None`. The HTML page is parsed only for *ratios*, not for currency.
-- **Transport (resolved 2026-05-13 during Slice 1 spike):** `requests` and `curl` both receive HTTP 404 from `/quote/{TICKER}/key-statistics/` for KSPI and AAPL — Yahoo's edge bot-detects by TLS fingerprint, not just User-Agent. Switched to `curl_cffi` with `impersonate="chrome"` which returns 200/~2MB on all probed tickers. `curl_cffi` is a ~1MB pure-Python wrapper around libcurl-impersonate; it does NOT require a real browser binary. Dependency change in Slice 5: add `curl_cffi>=0.7` instead of (or in addition to) bare `requests`. Still pinned: `beautifulsoup4>=4.12`.
+- **Transport (resolved 2026-05-13 during Slice 1 spike):** `requests` and `curl` both receive HTTP 404 from `/quote/{TICKER}/key-statistics/` for KSPI and AAPL — Yahoo's edge bot-detects by TLS fingerprint, not just User-Agent. Switched to `curl_cffi` with `impersonate="chrome"` which returns 200/~2MB on all probed tickers. `curl_cffi` is a ~1MB pure-Python wrapper around libcurl-impersonate; it does NOT require a real browser binary. Dependency change in Slice 5: add `curl_cffi>=0.7` to `requirements.txt`. Bare `requests` is not used by this code path. Still pinned: `beautifulsoup4>=4.12`.
 - **DOM hook (recorded 2026-05-13 during Slice 1 spike):** the Valuation Measures block lives at `<section data-testid="qsp-statistics"> > div.table-container > table` (first table within that section). Each `<tr>` has the format `label | Current | Q-1 | Q-2 | Q-3 | Q-4 | Q-5`. The "Current" column (index 1) is the value we want. Confirmed labels: "Market Cap", "Enterprise Value", "Trailing P/E", "Forward P/E", "PEG Ratio (5yr expected)", "Price/Sales", "Price/Book", "Enterprise Value/Revenue", "Enterprise Value/EBITDA". The `data-testid` attribute is a stable hook; the inner `yf-l6kdm7` class is generated and must NOT be relied on.
 
 ## Open questions

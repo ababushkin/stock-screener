@@ -3,10 +3,13 @@ import time
 from datetime import date
 from typing import Optional
 
+import re
+
 import pandas as pd
 import yfinance as yf
 from bs4 import BeautifulSoup
 from curl_cffi import requests as creq
+from curl_cffi.requests.exceptions import RequestException
 
 
 class YFNoDataError(Exception):
@@ -295,6 +298,7 @@ def get_analyst_targets(ticker: str) -> dict:
 
 
 _SI_SUFFIX = {"T": 1e12, "B": 1e9, "M": 1e6, "k": 1e3, "K": 1e3}
+_DATE_CELL = re.compile(r"^\d{1,2}/\d{1,2}/\d{2,4}$")
 
 
 def _parse_si_number(s: str) -> Optional[float]:
@@ -346,14 +350,10 @@ def _parse_valuation_table(soup: BeautifulSoup) -> dict:
             continue
         label = cells[0]
         current = cells[1]
-        # Skip header rows whose "current" cell is a date
-        if not label or any(ch.isdigit() and "/" in current for ch in current):
+        if not label or _DATE_CELL.match(current) or current == "Current":
             continue
         out[label] = _parse_si_number(current)
     return out
-
-
-_YH_HEADERS: dict = {}  # curl_cffi handles browser headers via impersonate=
 
 
 def _fetch_yahoo_html(url: str, timeout: float = 5.0) -> str:
@@ -364,7 +364,7 @@ def _fetch_yahoo_html(url: str, timeout: float = 5.0) -> str:
     """
     try:
         r = creq.get(url, impersonate="chrome", timeout=timeout)
-    except Exception as e:  # curl_cffi raises a variety of error types
+    except RequestException as e:
         raise _ScrapeError(f"network error fetching {url}: {e}") from e
     if r.status_code != 200:
         raise _ScrapeError(f"HTTP {r.status_code} fetching {url}")
@@ -399,8 +399,8 @@ def _ratios_from_html(ticker: str) -> dict:
     ps = vm.get("Price/Sales")
     if pe is None and ps is None:
         raise _ScrapeError(
-            f"Yahoo key-statistics page for {ticker} returned no P/E and no P/S "
-            f"(table shape may have changed)"
+            f"Yahoo key-statistics page for {ticker} has no P/E and no P/S. "
+            f"Either the ticker is too new/delisted, or Yahoo's table labels changed."
         )
 
     return {
