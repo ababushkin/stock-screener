@@ -81,15 +81,31 @@ def get_financials(ticker: str, period: str = "annual") -> dict:
                 {
                     "fiscal_year": "YYYY-MM-DD",
                     "revenue": float | None,
+                    "gross_profit": float | None,
+                    "cost_of_revenue": float | None,
                     "operating_income": float | None,
                     "net_income": float | None,
                     "free_cash_flow": float | None,
+                    "operating_cash_flow": float | None,
+                    "capital_expenditures": float | None,
                     "stock_based_compensation": float | None,
                     "total_debt": float | None,
+                    "long_term_debt": float | None,
                     "cash": float | None,
+                    "total_assets": float | None,
+                    "current_assets": float | None,
+                    "current_liabilities": float | None,
+                    "intangible_assets": float | None,
+                    "shares_outstanding_diluted": float | None,
                 }
             ]
         }
+
+    Notes on yfinance row mapping:
+        - intangible_assets uses "Goodwill And Other Intangible Assets" (goodwill + other intangibles).
+          Falls back to summing "Goodwill" + "Other Intangible Assets" when the combined row is absent.
+        - shares_outstanding_diluted uses "Diluted Average Shares" from the income statement (annual avg).
+        - capital_expenditures is reported negative by yfinance; we return the raw signed value.
     """
     if period != "annual":
         raise ValueError(f"Unsupported period {period!r}. Only 'annual' is supported in v1.")
@@ -113,15 +129,36 @@ def get_financials(ticker: str, period: str = "annual") -> dict:
     years = []
     for col in sorted(valid_cols, reverse=True):  # newest first
         fy = col.strftime("%Y-%m-%d") if hasattr(col, "strftime") else str(col)[:10]
+        # Intangibles: prefer the combined "Goodwill And Other Intangible Assets" row;
+        # fall back to summing "Goodwill" + "Other Intangible Assets" when only those exist.
+        if bs is not None:
+            intangibles = _row(bs, "Goodwill And Other Intangible Assets", col)
+            if intangibles is None:
+                gw = _row(bs, "Goodwill", col)
+                oi = _row(bs, "Other Intangible Assets", col)
+                intangibles = (gw or 0) + (oi or 0) if (gw is not None or oi is not None) else None
+        else:
+            intangibles = None
+
         year_data = {
             "fiscal_year": fy,
             "revenue": _row(fin, "Total Revenue", col),
+            "gross_profit": _row(fin, "Gross Profit", col),
+            "cost_of_revenue": _row(fin, "Cost Of Revenue", col),
             "operating_income": _row(fin, "Operating Income", col),
             "net_income": _row(fin, "Net Income", col),
             "free_cash_flow": _row(cf, "Free Cash Flow", col) if cf is not None else None,
+            "operating_cash_flow": _row(cf, "Operating Cash Flow", col) if cf is not None else None,
+            "capital_expenditures": _row(cf, "Capital Expenditure", col) if cf is not None else None,
             "stock_based_compensation": _row(cf, "Stock Based Compensation", col) if cf is not None else None,
             "total_debt": _row(bs, "Total Debt", col) if bs is not None else None,
+            "long_term_debt": _row(bs, "Long Term Debt", col) if bs is not None else None,
             "cash": _row(bs, "Cash And Cash Equivalents", col) if bs is not None else None,
+            "total_assets": _row(bs, "Total Assets", col) if bs is not None else None,
+            "current_assets": _row(bs, "Current Assets", col) if bs is not None else None,
+            "current_liabilities": _row(bs, "Current Liabilities", col) if bs is not None else None,
+            "intangible_assets": intangibles,
+            "shares_outstanding_diluted": _row(fin, "Diluted Average Shares", col),
         }
         # Drop years where every financial field is None (partial NaN columns)
         if any(v is not None for k, v in year_data.items() if k != "fiscal_year"):

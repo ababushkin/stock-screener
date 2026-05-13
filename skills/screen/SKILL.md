@@ -44,70 +44,65 @@ Confirm ratios were retrieved. At minimum, `ps_ratio` must be non-null and great
 
 ---
 
-#### ESTABLISHED path: Magic Formula (capped) + Quality Signals (MCP-constrained Piotroski analogue)
+#### ESTABLISHED path: Magic Formula (canonical) + Piotroski F-Score (canonical, 9 signals)
 
-For ESTABLISHED tickers, run a two-factor quality screen using only fields the yf MCP actually exposes. **The canonical Piotroski F-Score and the canonical Magic Formula ROIC are NOT computable from the current `get_financials` surface** — the MCP returns only `revenue`, `operating_income`, `net_income`, `free_cash_flow`, `stock_based_compensation`, `total_debt`, `cash` per year (plus `marketCap`, `sharesOutstanding`, `eps_ttm` from `get_ratios`). It does NOT return total_assets, current_assets/liabilities, long-term debt split, gross_profit, operating_cash_flow, intangibles, or historical share counts.
+For ESTABLISHED tickers, run the canonical Greenblatt Magic Formula and Piotroski F-Score using the full `get_financials` surface (post-[ABA-70](https://linear.app/ababushkin/issue/ABA-70)). When a specific input is null for a given year (e.g. yfinance returned no balance-sheet row), fall back to the MCP-constrained substitute *for that signal only* — do not abandon canonical methodology wholesale. Every fabricated proxy is forbidden: a signal is either canonical, MCP-constrained-fallback (clearly labelled), or null.
 
-[ABA-70](https://linear.app/ababushkin/issue/ABA-70) tracks adding those fields. Until then, the methodology below is the honest, MCP-constrained substitute. Every uncomputable input is marked **N/A** in the JSON — never fabricated, never silently proxied without disclosure.
-
-##### Step 1 — Magic Formula (EY only — ROIC N/A)
+##### Step 1 — Magic Formula (canonical)
 
 **Earnings Yield** = `operating_income` / Enterprise Value
 - `operating_income`: from `get_financials.years[0]` (most recent annual period). EBIT proxy — operating income excludes interest and tax, matching Greenblatt's definition.
 - Enterprise Value (EV) = `marketCap + total_debt − cash`, all from the most recent year of `get_financials` (for `total_debt` / `cash`) and `get_ratios` (for `marketCap`). Do **not** use `ev_revenue` × revenue to back-derive EV — that path quietly inherits Yahoo's EV definition which we cannot inspect.
 
-**ROIC** = **N/A in v1** — the canonical denominator (Net Working Capital + Net Fixed Assets) requires `total_assets`, `current_assets`, `current_liabilities`, and `intangible_assets`, none of which the MCP returns. Do **not** substitute an undocumented proxy. `roic` is `null` in JSON.
+**ROIC** = `operating_income` / (Net Working Capital + Net Fixed Assets)
+- Net Working Capital (NWC) = `current_assets − current_liabilities`
+- Net Fixed Assets = `total_assets − current_assets − intangible_assets`
+- All from `get_financials.years[0]`. Greenblatt's canonical denominator — tangible operating capital deployed.
+- If `current_assets`, `current_liabilities`, `total_assets`, or `intangible_assets` is null for the most recent year, set `roic: null` and `roic_note: "canonical ROIC denominator unavailable for fiscal year — falling back to EY-only flag"`. Magic Formula flag then falls back to the EY-only rule (Step 1, single-ticker case).
 
 **Magic Formula flag:**
-- **Multi-ticker batch** (≥2 ESTABLISHED tickers): rank each ticker by Earnings Yield (higher = better). Top 25% of batch → flag = `PASS`; remainder → flag = `WATCH`. Document that ranking is EY-only (no ROIC tiebreaker) in the rationale.
-- **Single ESTABLISHED ticker**: Earnings Yield > 5% → flag = `PASS`; otherwise flag = `WATCH`. Single-dimension threshold — the rationale must note that ROIC is N/A so the bar is lower than the canonical "EY > 5% AND ROIC > 15%".
+- **Multi-ticker batch** (≥2 ESTABLISHED tickers): combined rank = rank-by-EY + rank-by-ROIC (lower combined = better). Top 25% of batch → flag = `PASS`; remainder → flag = `WATCH`. If ROIC is null for any ticker, that ticker is ranked EY-only and the rationale notes the ROIC tiebreaker is unavailable for it.
+- **Single ESTABLISHED ticker**: Earnings Yield > 5% AND ROIC > 15% → flag = `PASS`; one but not both → flag = `WATCH`; neither → flag = `SKIP`. If ROIC is null, the bar reverts to EY > 5% → `PASS`, else `WATCH`, with a rationale note.
 
 If `operating_income` or EV cannot be computed (missing data), set flag = `WATCH` and `earnings_yield: null`. Note the gap in the rationale.
 
-##### Step 2 — Quality Signals (MCP-constrained — 9 signals, denominator floats)
+##### Step 2 — Piotroski F-Score (canonical, 9 signals)
 
-This is a *named substitute* for the Piotroski F-Score. Each signal is 1 if true, 0 if false, N/A if the inputs are unavailable. **The denominator is the number of computable signals for this ticker, not 9** — i.e. score is reported as "X of N computable signals". Do not score N/A signals as 0; that would silently penalise tickers with sparse data.
+Each signal is 1 if true, 0 if false, null if its inputs are unavailable. **The denominator is the number of computable signals for this ticker, not always 9** — score is reported as "X of N computable signals". Do not score null signals as 0; that would silently penalise tickers with sparse balance-sheet data.
 
-YoY = year-over-year change comparing `get_financials.years[0]` (most recent) to `get_financials.years[1]` (prior year). If `years[1]` is missing, all YoY signals are N/A.
+YoY compares `get_financials.years[0]` (most recent) to `get_financials.years[1]` (prior year). If `years[1]` is missing, all YoY signals are null.
 
-| Signal | Condition | Required fields | Notes |
-|--------|-----------|-----------------|-------|
-| Q1 `net_income_positive` | `net_income[0] > 0` | net_income | Profitability existence |
-| Q2 `fcf_positive` | `free_cash_flow[0] > 0` | free_cash_flow | Cash generation existence |
-| Q3 `net_income_improving` | `net_income[0] > net_income[1]` | net_income (2 yrs) | YoY profit trend |
-| Q4 `fcf_improving` | `free_cash_flow[0] > free_cash_flow[1]` | free_cash_flow (2 yrs) | YoY cash trend |
-| Q5 `revenue_growing` | `revenue[0] > revenue[1]` | revenue (2 yrs) | Top-line trend |
-| Q6 `operating_margin_improving` | `op_income[0]/revenue[0] > op_income[1]/revenue[1]` | revenue, operating_income (2 yrs) | Margin trend |
-| Q7 `leverage_not_increasing` | `total_debt[0] <= total_debt[1]` (no YoY rise) | total_debt (2 yrs) | Absolute debt — without total_assets denominator, this is the honest substitute for F5 |
-| Q8 `cash_buffer_improving` | `cash[0] > cash[1]` | cash (2 yrs) | Liquidity trend (substitute for F6 current-ratio improving) |
-| Q9 `sbc_intensity_not_worsening` | `sbc[0]/revenue[0] <= sbc[1]/revenue[1]` | stock_based_compensation, revenue (2 yrs) | Tech-specific quality signal — F-Score has no SBC equivalent because Piotroski (2000) predates the SBC era |
+| Signal | Condition | Required fields | Fallback when canonical inputs null |
+|--------|-----------|-----------------|--------------------------------------|
+| F1 `roa_positive` | `net_income[0] / total_assets[0] > 0` | net_income, total_assets | **Q1 fallback**: `net_income[0] > 0` (profitability existence). Mark `f1_source: "mcp_constrained_q1"`. |
+| F2 `ocf_positive` | `operating_cash_flow[0] > 0` | operating_cash_flow | **Q2 fallback**: `free_cash_flow[0] > 0`. FCF positive is strictly stronger than OCF positive (FCF = OCF − CapEx ≥ 0 ⇒ OCF > 0), so the fallback is conservative. Mark `f2_source: "mcp_constrained_q2"`. |
+| F3 `roa_improving` | `net_income[0]/total_assets[0] > net_income[1]/total_assets[1]` | net_income, total_assets (2 yrs) | **Q3 fallback**: `net_income[0] > net_income[1]` (raw NI trend). Mark `f3_source: "mcp_constrained_q3"`. |
+| F4 `accruals` | `operating_cash_flow[0] > net_income[0]` (OCF > NI ⇒ earnings backed by cash, low accruals) | operating_cash_flow, net_income | **Q4 fallback**: `free_cash_flow[0] > free_cash_flow[1]` (FCF improving — proxy for earnings quality trend). Mark `f4_source: "mcp_constrained_q4"`. |
+| F5 `leverage_decreasing` | `long_term_debt[0]/total_assets[0] <= long_term_debt[1]/total_assets[1]` | long_term_debt, total_assets (2 yrs) | **Q7 fallback**: `total_debt[0] <= total_debt[1]` (absolute debt no rise). Mark `f5_source: "mcp_constrained_q7"`. |
+| F6 `current_ratio_improving` | `(current_assets[0]/current_liabilities[0]) > (current_assets[1]/current_liabilities[1])` | current_assets, current_liabilities (2 yrs) | **Q8 fallback**: `cash[0] > cash[1]` (cash-buffer trend — liquidity-direction proxy). Mark `f6_source: "mcp_constrained_q8"`. |
+| F7 `no_new_shares` | `shares_outstanding_diluted[0] <= shares_outstanding_diluted[1]` | shares_outstanding_diluted (2 yrs) | No honest fallback — set `null` if shares-diluted history is missing. |
+| F8 `gross_margin_improving` | `gross_profit[0]/revenue[0] > gross_profit[1]/revenue[1]` | gross_profit, revenue (2 yrs) | No honest fallback — set `null` if `gross_profit` is missing for either year. |
+| F9 `asset_turnover_improving` | `revenue[0]/total_assets[0] > revenue[1]/total_assets[1]` | revenue, total_assets (2 yrs) | No honest fallback — set `null` if `total_assets` is missing for either year. |
 
-**Mapping to Piotroski (for reviewers familiar with the canonical signals):**
-- Q1 ↔ F1 (NI > 0 is a strict substitute since we lack total_assets; profitability existence rather than ROA)
-- Q2 substitutes for F2 OCF (FCF > 0 is strictly stronger than OCF > 0 — FCF = OCF − CapEx, so FCF positive implies OCF positive, but the reverse is not true; we err conservative)
-- Q3, Q4, Q5, Q6 cover ROA-improving / accruals / efficiency dimensions without requiring TA
-- Q7 substitutes for F5 (absolute debt rather than LT-debt / TA)
-- Q8 substitutes for F6 (cash buffer rather than current-ratio improving)
-- Q9 is NEW — SBC dilution is a tech-specific quality signal not in the original framework
-- F7 (no new shares), F8 (gross margin improving), F9 (asset turnover) have **no honest MCP-constrained substitute** — they would require historical shares outstanding, gross_profit, and total_assets respectively, none of which the MCP exposes. They are **not** present in the 9 substitute signals.
+**SBC intensity (tech-specific addendum, informational):** also compute `sbc_intensity_not_worsening` = `sbc[0]/revenue[0] <= sbc[1]/revenue[1]` and report alongside F1–F9 (NOT counted in the F-Score). Piotroski (2000) predates the SBC era; we keep this as a tech-specific quality flag visible in the JSON for downstream consumers without inflating the canonical score.
 
-If a signal's required field is null for any required year, the signal value is `null` (not `false`). The score is reported as `score: X, denominator: N, signals: {...}` where `N = sum(1 for v in signals.values() if v is not None)`.
+If a signal's required field is null for the canonical year *and* its fallback is also null, the signal value is `null` (not `false`). Report `score: X, denominator: N, signals: {...}` where `N = sum(1 for v in signals.values() if v is not None)`. The `methodology` field in the JSON records `"piotroski_canonical_v1"` if every signal used canonical inputs, or `"piotroski_mixed_v1"` if any signal fell back to its MCP-constrained substitute.
 
 ##### Step 3 — Combine into verdict
 
-Verdict uses the **normalised quality ratio** = `score / denominator`. This keeps the thresholds stable when some signals are N/A.
+Verdict uses the **normalised quality ratio** = `score / denominator`. This keeps the thresholds stable when some signals are null.
 
 | Verdict | Condition |
 |---------|-----------|
 | PASS    | quality_ratio ≥ 0.75 (i.e. ≥75% of computable signals true) AND Magic Formula flag = PASS |
-| WATCH   | quality_ratio ≥ 0.55, OR (quality_ratio ≥ 0.55 AND Magic Formula flag = WATCH) |
+| WATCH   | quality_ratio ≥ 0.55, OR (quality_ratio ≥ 0.75 AND Magic Formula flag = WATCH) |
 | SKIP    | quality_ratio < 0.55 (regardless of Magic Formula) |
 
 The 0.55 / 0.75 cutoffs map to the original F-Score thresholds (5/9 ≈ 0.556 for WATCH; 7/9 ≈ 0.778 for PASS).
 
 If `denominator < 4` (too sparse for a defensible verdict), force verdict = `WATCH` and note in the rationale that the quality dimension is insufficiently sampled — Magic Formula carries the decision.
 
-Compose a one-sentence rationale citing the quality ratio (with score/denominator), which Q-signals drove it, the Magic Formula flag, and **explicitly call out that ROIC is N/A and the Piotroski substitute is MCP-constrained pending [ABA-70](https://linear.app/ababushkin/issue/ABA-70)**.
+Compose a one-sentence rationale citing the quality ratio (with score/denominator), which F-signals drove it, the Magic Formula flag (with EY and ROIC values), and the methodology label (`piotroski_canonical_v1` vs `piotroski_mixed_v1`). If any signal fell back to an MCP-constrained substitute, name the substitute explicitly.
 
 ---
 
@@ -120,21 +115,15 @@ For EMERGING tickers, call **three** yfinance MCP tools:
 - `mcp__yf__get_financials` — for annual `revenue`, `operating_income`, `free_cash_flow`, `total_debt`, `cash` (note: `gross_profit` is NOT returned — see Step 1 caveat)
 - `mcp__yf__get_estimates` — for `ntm_revenue` (NTM consensus revenue estimate)
 
-##### Step 1 — Gross Margin Gate (informational in v1)
+##### Step 1 — Gross Margin Gate (canonical)
 
-Canonical gate: Gross Margin = Gross Profit / Revenue, hard SKIP if < 60%.
+Gross Margin = `gross_profit[0]` / `revenue[0]` (most recent annual period from `get_financials`).
 
-**v1 status — gate is INFORMATIONAL only.** The yf MCP `get_financials` tool does NOT currently return `gross_profit`. Until [ABA-70](https://linear.app/ababushkin/issue/ABA-70) ships:
-
-- Set `gross_margin: null` and `gross_margin_gate: "N/A"` in JSON.
-- Do **not** fabricate gross margin from peer averages, training-data recall, or any undocumented proxy.
-- Do **not** fire SKIP on the basis of a missing gate.
-- Always proceed to Step 2 (Rule of 40) and Step 3 (EV/NTM Revenue) regardless.
-- Note the gate's v1 status in the rationale ("gross margin gate informational only — `gross_profit` not exposed by MCP, see ABA-70").
-
-When `gross_profit` is available (post-ABA-70), restore the canonical behaviour:
-- Gross Margin ≥ 60% → `gross_margin_gate: "PASS"`, proceed.
+- Gross Margin ≥ 60% → `gross_margin_gate: "PASS"`, proceed to Step 2.
 - Gross Margin < 60% → `gross_margin_gate: "FAIL"`, verdict = SKIP immediately, `rule_of_40` and `ev_ntm_revenue` set to `null`. Rationale must include "gross margin gate" explicitly.
+- If `gross_profit` is null for the most recent year (yfinance returned no row), set `gross_margin: null`, `gross_margin_gate: "N/A"`, and proceed to Step 2 without firing SKIP — the gate is informational only when its input is missing. Note this fallback in the rationale.
+
+Do **not** fabricate gross margin from peer averages, training-data recall, or any undocumented proxy.
 
 ##### Step 2 — Rule of 40
 
@@ -205,31 +194,40 @@ Run `mkdir -p reports` before writing. Write the report file at `reports/TICKER_
         "ev_revenue": 7.9
       },
       "quality_signals": {
-        "score": 6,
+        "score": 7,
         "denominator": 9,
-        "ratio": 0.667,
-        "methodology": "mcp_constrained_v1",
+        "ratio": 0.778,
+        "methodology": "piotroski_canonical_v1",
         "signals": {
-          "q1_net_income_positive": true,
-          "q2_fcf_positive": true,
-          "q3_net_income_improving": true,
-          "q4_fcf_improving": false,
-          "q5_revenue_growing": true,
-          "q6_operating_margin_improving": false,
-          "q7_leverage_not_increasing": true,
-          "q8_cash_buffer_improving": true,
-          "q9_sbc_intensity_not_worsening": false
+          "f1_roa_positive": true,
+          "f2_ocf_positive": true,
+          "f3_roa_improving": true,
+          "f4_accruals": true,
+          "f5_leverage_decreasing": true,
+          "f6_current_ratio_improving": false,
+          "f7_no_new_shares": false,
+          "f8_gross_margin_improving": true,
+          "f9_asset_turnover_improving": true
         },
-        "piotroski_canonical": null,
-        "piotroski_note": "Canonical Piotroski F-Score not computable from current yf MCP get_financials surface (missing total_assets, current_assets/liabilities, long-term debt split, gross_profit, operating_cash_flow, historical share counts). See ABA-70."
+        "signal_sources": {
+          "f1_roa_positive": "canonical",
+          "f2_ocf_positive": "canonical",
+          "f3_roa_improving": "canonical",
+          "f4_accruals": "canonical",
+          "f5_leverage_decreasing": "canonical",
+          "f6_current_ratio_improving": "canonical",
+          "f7_no_new_shares": "canonical",
+          "f8_gross_margin_improving": "canonical",
+          "f9_asset_turnover_improving": "canonical"
+        },
+        "sbc_intensity_not_worsening": true
       },
       "magic_formula": {
         "earnings_yield": 0.062,
-        "roic": null,
-        "roic_note": "ROIC not computable from current yf MCP surface (canonical denominator requires total_assets, current_assets/liabilities, intangibles). See ABA-70.",
-        "flag": "WATCH"
+        "roic": 0.31,
+        "flag": "PASS"
       },
-      "rationale": "Quality ratio 6/9 = 67% (above 55% WATCH cutoff, below 75% PASS cutoff) with Magic Formula WATCH (EY 6.2%, ROIC N/A — MCP-constrained per ABA-70); WATCH verdict driven by mixed Q-signals (FCF declining, op-margin contracting, SBC intensity rising) offsetting positive profitability and revenue trend."
+      "rationale": "Piotroski 7/9 = 77.8% (above 75% PASS cutoff) with Magic Formula PASS (EY 6.2%, ROIC 31% — both clear single-ticker thresholds); methodology piotroski_canonical_v1; quality driven by positive ROA + improving trend, OCF-backed earnings (low accruals), declining LT-debt ratio, gross-margin and asset-turnover expansion; offset by current-ratio dip and modest share-count increase."
     }
   },
   "meta": {

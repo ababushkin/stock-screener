@@ -90,28 +90,41 @@ _DATES_5Y = pd.to_datetime(
 def _make_financials_df(with_nan_col: bool = False):
     """Income statement DataFrame (rows=metrics, cols=dates, newest first)."""
     dates = _DATES_5Y if with_nan_col else _DATES_4Y
+    nan = ([float("nan")] if with_nan_col else [])
     data = {
-        "Total Revenue":    [163e9, 140e9, 134e9, 116e9] + ([float("nan")] if with_nan_col else []),
-        "Operating Income": [69e9,  59e9,  46e9,  28e9]  + ([float("nan")] if with_nan_col else []),
-        "Net Income":       [62e9,  50e9,  39e9,  23e9]  + ([float("nan")] if with_nan_col else []),
+        "Total Revenue":          [163e9, 140e9, 134e9, 116e9] + nan,
+        "Gross Profit":           [134e9, 117e9, 108e9,  92e9] + nan,
+        "Cost Of Revenue":        [ 29e9,  23e9,  26e9,  24e9] + nan,
+        "Operating Income":       [ 69e9,  59e9,  46e9,  28e9] + nan,
+        "Net Income":             [ 62e9,  50e9,  39e9,  23e9] + nan,
+        "Diluted Average Shares": [2.55e9, 2.58e9, 2.62e9, 2.65e9] + nan,
     }
     return pd.DataFrame(data, index=dates).T
 
 
 def _make_cashflow_df(with_nan_col: bool = False):
     dates = _DATES_5Y if with_nan_col else _DATES_4Y
+    nan = ([float("nan")] if with_nan_col else [])
     data = {
-        "Free Cash Flow":            [52e9, 43e9, 19e9, 6e9]  + ([float("nan")] if with_nan_col else []),
-        "Stock Based Compensation":  [20e9, 17e9, 14e9, 12e9] + ([float("nan")] if with_nan_col else []),
+        "Free Cash Flow":            [52e9, 43e9, 19e9, 6e9]   + nan,
+        "Operating Cash Flow":       [80e9, 72e9, 60e9, 50e9]  + nan,
+        "Capital Expenditure":       [-28e9, -29e9, -41e9, -44e9] + nan,
+        "Stock Based Compensation":  [20e9, 17e9, 14e9, 12e9]  + nan,
     }
     return pd.DataFrame(data, index=dates).T
 
 
 def _make_balance_sheet_df(with_nan_col: bool = False):
     dates = _DATES_5Y if with_nan_col else _DATES_4Y
+    nan = ([float("nan")] if with_nan_col else [])
     data = {
-        "Total Debt":                [28e9, 18e9, 18e9, 18e9] + ([float("nan")] if with_nan_col else []),
-        "Cash And Cash Equivalents": [77e9, 43e9, 42e9, 14e9] + ([float("nan")] if with_nan_col else []),
+        "Total Debt":                            [28e9, 18e9, 18e9, 18e9] + nan,
+        "Long Term Debt":                        [18e9, 18e9, 18e9, 9e9]  + nan,
+        "Cash And Cash Equivalents":             [77e9, 43e9, 42e9, 14e9] + nan,
+        "Total Assets":                          [276e9, 229e9, 214e9, 166e9] + nan,
+        "Current Assets":                        [85e9,  66e9,  86e9,  60e9]  + nan,
+        "Current Liabilities":                   [32e9,  27e9,  25e9,  27e9]  + nan,
+        "Goodwill And Other Intangible Assets":  [21e9,  21e9,  21e9,  21e9]  + nan,
     }
     return pd.DataFrame(data, index=dates).T
 
@@ -148,18 +161,85 @@ class TestGetFinancials:
         required = {
             "fiscal_year",
             "revenue",
+            "gross_profit",
+            "cost_of_revenue",
             "operating_income",
             "net_income",
             "free_cash_flow",
+            "operating_cash_flow",
+            "capital_expenditures",
             "stock_based_compensation",
             "total_debt",
+            "long_term_debt",
             "cash",
+            "total_assets",
+            "current_assets",
+            "current_liabilities",
+            "intangible_assets",
+            "shares_outstanding_diluted",
         }
         with patch("tools.yf.Ticker", return_value=_mock_ticker()):
             result = get_financials("META", "annual")
 
         for year in result["years"]:
             assert set(year.keys()) >= required, f"Missing keys in {year}"
+
+    def test_balance_sheet_new_fields_populated(self):
+        """ABA-70: total_assets, current_assets/liabilities, long_term_debt, intangibles, shares non-null."""
+        with patch("tools.yf.Ticker", return_value=_mock_ticker()):
+            result = get_financials("META", "annual")
+
+        newest = result["years"][0]
+        assert newest["total_assets"] == pytest.approx(276e9, rel=1e-4)
+        assert newest["current_assets"] == pytest.approx(85e9, rel=1e-4)
+        assert newest["current_liabilities"] == pytest.approx(32e9, rel=1e-4)
+        assert newest["long_term_debt"] == pytest.approx(18e9, rel=1e-4)
+        assert newest["intangible_assets"] == pytest.approx(21e9, rel=1e-4)
+        assert newest["shares_outstanding_diluted"] == pytest.approx(2.55e9, rel=1e-4)
+
+    def test_income_statement_new_fields_populated(self):
+        """ABA-70: gross_profit and cost_of_revenue non-null."""
+        with patch("tools.yf.Ticker", return_value=_mock_ticker()):
+            result = get_financials("META", "annual")
+
+        newest = result["years"][0]
+        assert newest["gross_profit"] == pytest.approx(134e9, rel=1e-4)
+        assert newest["cost_of_revenue"] == pytest.approx(29e9, rel=1e-4)
+
+    def test_cashflow_new_fields_populated(self):
+        """ABA-70: operating_cash_flow and capital_expenditures non-null. CapEx is signed (negative)."""
+        with patch("tools.yf.Ticker", return_value=_mock_ticker()):
+            result = get_financials("META", "annual")
+
+        newest = result["years"][0]
+        assert newest["operating_cash_flow"] == pytest.approx(80e9, rel=1e-4)
+        assert newest["capital_expenditures"] == pytest.approx(-28e9, rel=1e-4)
+
+    def test_intangibles_falls_back_to_goodwill_plus_other(self):
+        """When the combined row is missing, sum Goodwill + Other Intangible Assets."""
+        dates = _DATES_4Y
+        bs = pd.DataFrame(
+            {
+                "Total Assets":              [276e9, 229e9, 214e9, 166e9],
+                "Current Assets":            [85e9,  66e9,  86e9,  60e9],
+                "Current Liabilities":       [32e9,  27e9,  25e9,  27e9],
+                "Total Debt":                [28e9,  18e9,  18e9,  18e9],
+                "Long Term Debt":            [18e9,  18e9,  18e9,   9e9],
+                "Cash And Cash Equivalents": [77e9,  43e9,  42e9,  14e9],
+                "Goodwill":                  [15e9,  15e9,  15e9,  15e9],
+                "Other Intangible Assets":   [ 6e9,   6e9,   6e9,   6e9],
+            },
+            index=dates,
+        ).T
+        m = MagicMock()
+        m.financials = _make_financials_df()
+        m.cashflow = _make_cashflow_df()
+        m.balance_sheet = bs
+
+        with patch("tools.yf.Ticker", return_value=m):
+            result = get_financials("META", "annual")
+
+        assert result["years"][0]["intangible_assets"] == pytest.approx(21e9, rel=1e-4)
 
     def test_income_statement_values_correct(self):
         with patch("tools.yf.Ticker", return_value=_mock_ticker()):
