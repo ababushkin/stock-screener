@@ -19,7 +19,7 @@
           "y1_fcf": 58700000000,
           "y2_5_cagr": 0.168,
           "terminal_growth": 0.015,
-          "wacc": 0.10,
+          "wacc": 0.1,
           "intrinsic_value_per_share": 413.6,
           "upside_pct": -31.4,
           "narrative": "revenue miss, decelerating growth, tighter cost of capital"
@@ -48,16 +48,78 @@
         "dominant_driver": "WACC",
         "note": "WACC dominates — ±100 bps WACC moves base IV by ±17% (vs ±14% for terminal g, ±9% for Y2–5 CAGR)"
       },
-      "manual_inputs": [{"field": "base_wacc", "source": "user_paste"}]
+      "manual_inputs": [
+        {
+          "field": "base_wacc",
+          "source": "user_paste"
+        }
+      ],
+      "sensitivity_grid": {
+        "wacc_axis": [
+          0.08,
+          0.085,
+          0.09,
+          0.095,
+          0.1
+        ],
+        "terminal_growth_axis": [
+          0.015,
+          0.02,
+          0.025,
+          0.03,
+          0.035
+        ],
+        "intrinsic_value_per_share": [
+          [
+            1088.5,
+            1169.1,
+            1264.3,
+            1378.5,
+            1518.1
+          ],
+          [
+            1001.3,
+            1069.1,
+            1148.1,
+            1241.6,
+            1353.7
+          ],
+          [
+            925.8,
+            983.5,
+            1050.0,
+            1127.7,
+            1219.4
+          ],
+          [
+            859.9,
+            909.4,
+            966.1,
+            1031.4,
+            1107.6
+          ],
+          [
+            801.9,
+            844.8,
+            893.5,
+            949.1,
+            1013.2
+          ]
+        ],
+        "base_cell": {
+          "row": 2,
+          "col": 2
+        }
+      }
     },
     "signal": {
       "verdict": "WATCH",
       "profit_stage": "ESTABLISHED",
       "track": "GROWTH",
       "ai_layer": "INCUMBENT",
-      "clean_eps_ttm": 18.20,
+      "clean_eps_ttm": 18.2,
       "sbc_stripped": true,
-      "sbc_adjustment_per_share": 9.30,
+      "sbc_adjustment_per_share": 9.3,
       "peg_ratio": 1.72,
       "ps_ratio": 7.12,
       "rule_of_40": null,

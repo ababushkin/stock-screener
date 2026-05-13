@@ -189,7 +189,7 @@ EV = Σ_{n=1..5} fcf_y_n / (1 + wacc)^n  +  TV / (1 + wacc)^5
 
 Compute all three scenarios. The acceptance contract requires `bear_iv < base_iv < bull_iv`. If the inequality fails, the assumption sets have collided — stop, print the three scenario inputs and outputs, and ask the user to widen the WACC or growth deltas. Never silently re-order or hand-tune. (This is the "demonstrably different assumption sets" guardrail in executable form.)
 
-**Step 8 — Sensitivity note.**
+**Step 8 — Sensitivity note (dominant driver).**
 
 Vary one assumption at a time around the base scenario and observe which produces the largest swing in base IV:
 
@@ -198,6 +198,24 @@ Vary one assumption at a time around the base scenario and observe which produce
 - Y2–Y5 CAGR ± 300 bps
 
 Report the dominant driver as a one-line note (e.g. `Sensitivity: WACC dominates — ±100 bps WACC moves base IV by ±18%`). The numbers shown are the percentage change in base IV, not raw IVs.
+
+**Step 9 — Sensitivity grid (5×5 WACC × terminal growth).**
+
+Produce a 5×5 grid of per-share intrinsic values around the **base** scenario by sweeping WACC and terminal growth jointly. All other base-case inputs (`fcf_y1`, `y2_5_cagr`, `shares`, `net_debt`) are held constant — only WACC and terminal `g` move.
+
+- **WACC axis (rows):** `base_wacc − 1.0pp, −0.5pp, base_wacc, +0.5pp, +1.0pp` — five values, 0.5 pp steps.
+- **Terminal-growth axis (columns):** `1.5%, 2.0%, 2.5%, 3.0%, 3.5%` — five values centred on the base scenario's 2.5% g, 0.5 pp steps.
+
+For each `(wacc, g)` cell, repeat COMPUTE Steps 4–6 (terminal value → discount → equity bridge → per-share IV) using the base-scenario explicit FCFs (Y1–Y5 from Step 2 base + Step 3 base CAGR projection). The cell at row=3, col=3 (`base_wacc`, `g=2.5%`) is the **base cell** and must equal `scenarios.base.intrinsic_value_per_share` from Step 6 — within $0.50 / share of rounding tolerance. If the two diverge by more than that, the grid math has drifted from the base scenario math; stop and reconcile before emitting.
+
+**Monotonicity invariant.** The grid must satisfy:
+
+- IV strictly decreases down each column (WACC ↑ → IV ↓), and
+- IV strictly increases across each row (g ↑ → IV ↑).
+
+`wacc > g` holds for every cell in this grid by construction (WACC floor 8% with default base_wacc 9%, g ceiling 3.5%) — but if the user-supplied `base_wacc` is < 4.5%, the lowest-WACC / highest-g corner collapses (`wacc ≤ g`). In that case, refuse the grid for that cell with `n/a (wacc ≤ g)` and surface a one-line note `Sensitivity grid: N cell(s) suppressed because wacc ≤ g at low-WACC corner`. Never floor or fudge.
+
+The grid is a complement to the dominant-driver note, not a replacement — both are required output.
 
 ### THRESHOLD — Range vs price
 
@@ -244,6 +262,15 @@ MODEL OUTPUT
 
   Range vs price: [MARGIN OF SAFETY | WITHIN BEAR–BASE | WITHIN BASE–BULL | PRICE EXCEEDS RANGE]
   Sensitivity:    [one-line dominant-driver note]
+
+  Sensitivity grid (base IV, $/share — WACC rows × terminal g columns):
+                   g=1.5%    g=2.0%    g=2.5%    g=3.0%    g=3.5%
+    WACC=X.X%    $XXXX.X   $XXXX.X   $XXXX.X   $XXXX.X   $XXXX.X
+    WACC=X.X%    $XXXX.X   $XXXX.X   $XXXX.X   $XXXX.X   $XXXX.X
+    WACC=X.X%    $XXXX.X   $XXXX.X   $XXXX.X*  $XXXX.X   $XXXX.X
+    WACC=X.X%    $XXXX.X   $XXXX.X   $XXXX.X   $XXXX.X   $XXXX.X
+    WACC=X.X%    $XXXX.X   $XXXX.X   $XXXX.X   $XXXX.X   $XXXX.X
+    * = base scenario (matches Base IV above)
 ```
 
 **JSON merge into `reports/TICKER_YYYYMMDD.json` under `stages.model`:**
@@ -275,9 +302,23 @@ Run `mkdir -p reports` and read-modify-write the existing file (it already conta
   "sensitivity": {
     "dominant_driver": "WACC | terminal_growth | y2_5_cagr",
     "note": "WACC dominates — ±100 bps WACC moves base IV by ±18%"
+  },
+  "sensitivity_grid": {
+    "wacc_axis": [<base_wacc-0.01>, <base_wacc-0.005>, <base_wacc>, <base_wacc+0.005>, <base_wacc+0.01>],
+    "terminal_growth_axis": [0.015, 0.02, 0.025, 0.03, 0.035],
+    "intrinsic_value_per_share": [
+      [<iv>, <iv>, <iv>, <iv>, <iv>],
+      [<iv>, <iv>, <iv>, <iv>, <iv>],
+      [<iv>, <iv>, <iv>, <iv>, <iv>],
+      [<iv>, <iv>, <iv>, <iv>, <iv>],
+      [<iv>, <iv>, <iv>, <iv>, <iv>]
+    ],
+    "base_cell": {"row": 2, "col": 2}
   }
 }
 ```
+
+Rows in `intrinsic_value_per_share` are indexed by `wacc_axis` (row 0 = lowest WACC); columns by `terminal_growth_axis` (col 0 = lowest g). `base_cell` names the index that should match `scenarios.base.intrinsic_value_per_share`. Suppressed cells (where `wacc ≤ g`) are emitted as `null`, not numbers.
 
 After writing, print:
 
@@ -519,6 +560,8 @@ RDDT — pre-profit DCF bear/base/bull = $X / $Y / $Z (price $P, WITHIN BEAR–B
 | "FCF inflection year is a soft concept; I'll just write 'eventually profitable' in the narrative." | Forbidden. The acceptance contract requires *naming* the year of first sustained positive FCF per scenario. If no scenario reaches inflection by Y5, write `beyond Y5` explicitly — never paper over with "eventually". |
 | "SBC dilution is small; I can just use today's share count for the per-share IV." | Forbidden. Pre-profit tech routinely dilutes 3–8% annually; over 5 years that compounds to 16–47%. Per-share IV must divide by Year-5 diluted shares, not today's. This is the whole reason the dilution schedule is first-class. |
 | "I'll set bear dilution = base dilution; the rate doesn't vary that much across scenarios." | The acceptance contract requires demonstrably-different assumption sets. Dilution is one of the four scenario axes (along with revenue, margin, multiple); use `× 1.5 / × 1.0 / × 0.5`. Collapsing axes defeats the bear/base/bull discipline. |
+| "The 5×5 sensitivity grid is just decoration — I'll skip it or fudge it from the dominant-driver note." | Forbidden. The grid is a separate required artefact: it shows the full joint shape of IV vs (WACC, g), which the one-line dominant-driver note cannot. The center cell must reconcile to base IV; if it doesn't, the rest of the run is suspect — stop and reconcile, do not paper over. |
+| "The center cell of the grid is $5 off the base scenario IV — close enough, I'll round and ship." | Tolerance is ±$0.50 / share. A larger gap means the grid's discounting math has diverged from Step 6's (e.g. using cagr instead of `(1+cagr)`, or off-by-one on the discount exponent). Reconcile before emitting. |
 | "Gordon-growth terminal would give a cleaner number than a revenue-multiple exit." | Forbidden for pre-profit. Gordon growth requires a stable FCF base and a defensible long-run growth rate; pre-profit companies have neither. Revenue-multiple exit is the honest call — comp-anchored, scenario-disclosed, and not pretending to a precision the inputs don't support. |
 
 ---
@@ -561,3 +604,11 @@ RDDT — pre-profit DCF bear/base/bull = $X / $Y / $Z (price $P, WITHIN BEAR–B
 23. **Comp set sourced and confirmed →** the run includes a web-search step that produces ≥3 comparable tickers with their NTM EV/Revenue, surfaced to the user for confirmation via MIP. Confidence caps at MEDIUM for the pre-profit variant by construction.
 24. **Bear < Base < Bull holds across the new scenario axes →** Y1 revenue, Y2–5 CAGR, exit multiple, terminal margin, and dilution rate each move on an independent axis; range integrity is enforced the same way as ESTABLISHED.
 25. **Acceptance smoke (RDDT) →** running `/stock:signal RDDT` then `/stock:model RDDT --pre-profit` produces a MODEL OUTPUT block with all three scenarios, named FCF inflection years, a comp-anchored exit multiple, and a SBC dilution schedule — and merges into `reports/RDDT_YYYYMMDD.json` without overwriting `stages.signal`.
+
+### v1.4 — ABA-32 (sensitivity grid, ESTABLISHED)
+
+26. **Sensitivity grid present →** the ESTABLISHED OUTPUT block contains a formatted 5×5 grid with rows = WACC axis (`base_wacc ± 1.0 pp` in 0.5 pp steps) and columns = terminal growth axis (`1.5%, 2.0%, 2.5%, 3.0%, 3.5%`). The JSON carries `stages.model.sensitivity_grid` with `wacc_axis`, `terminal_growth_axis`, `intrinsic_value_per_share` (5×5 array of per-share IVs), and `base_cell` index.
+27. **Base cell reconciles →** the cell at `base_cell` (`base_wacc`, `g=2.5%`) matches `scenarios.base.intrinsic_value_per_share` within $0.50 / share. A larger gap stops the run.
+28. **Monotonicity →** every column is strictly decreasing top-to-bottom (IV ↓ as WACC ↑); every row is strictly increasing left-to-right (IV ↑ as g ↑). If either monotonicity check fails, the grid math is broken — stop, do not silently re-order.
+29. **`wacc ≤ g` cells →** if a low-WACC / high-g cell collapses (only possible when user-supplied `base_wacc < 4.5%`), it is emitted as `null` in the JSON and `n/a` in the table, with a one-line note. Never floor, fudge, or silently swap.
+30. **Acceptance smoke (META) →** the existing META smoke report `reports/META_YYYYMMDD.json` is updated to include `stages.model.sensitivity_grid`; the center cell matches the stored base IV; the printed table satisfies monotonicity.
