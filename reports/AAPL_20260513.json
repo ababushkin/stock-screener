@@ -1,0 +1,55 @@
+{
+  "ticker": "AAPL",
+  "company": null,
+  "date": "2026-05-13",
+  "stages": {
+    "screen": {
+      "verdict": "WATCH",
+      "profit_stage": "ESTABLISHED",
+      "ratios": {
+        "pe_ratio": 35.733334,
+        "ps_ratio": 9.591115,
+        "ev_ebitda": 27.167,
+        "pfcf": 42.83114531807035,
+        "ev_revenue": 9.627
+      },
+      "quality_signals": {
+        "score": 7,
+        "denominator": 9,
+        "ratio": 0.7777777777777778,
+        "methodology": "mcp_constrained_v1",
+        "signals": {
+          "q1_net_income_positive": true,
+          "q2_fcf_positive": true,
+          "q3_net_income_improving": true,
+          "q4_fcf_improving": false,
+          "q5_revenue_growing": true,
+          "q6_operating_margin_improving": true,
+          "q7_leverage_not_increasing": true,
+          "q8_cash_buffer_improving": true,
+          "q9_sbc_intensity_not_worsening": false
+        },
+        "piotroski_canonical": null,
+        "piotroski_note": "Canonical Piotroski F-Score not computable from current yf MCP get_financials surface (missing total_assets, current_assets/liabilities, long-term debt split, gross_profit, operating_cash_flow, historical share counts). See ABA-70."
+      },
+      "magic_formula": {
+        "earnings_yield": 0.030289800311859195,
+        "roic": null,
+        "roic_note": "ROIC not computable from current yf MCP surface (canonical denominator requires total_assets, current_assets/liabilities, intangibles). See ABA-70.",
+        "flag": "WATCH",
+        "rank": 3
+      },
+      "gross_margin": null,
+      "gross_margin_gate": null,
+      "rule_of_40": null,
+      "ev_ntm_revenue": null,
+      "rationale": "Quality ratio 7/9 = 78% (above 75% PASS cutoff) but Magic Formula WATCH (EY 3.03%, rank 3 of 5, well below 5% PASS threshold; ROIC N/A — MCP-constrained per ABA-70) caps verdict at WATCH; FCF declined YoY (108.8B→98.8B) and SBC intensity rose, otherwise broad-based Q-signal strength."
+    }
+  },
+  "meta": {
+    "profit_stage": "ESTABLISHED",
+    "track": "GROWTH",
+    "ai_layer": null,
+    "confidence": "HIGH"
+  }
+}

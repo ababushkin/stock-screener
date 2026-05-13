@@ -1,0 +1,44 @@
+{
+  "ticker": "CRWV",
+  "company": null,
+  "date": "2026-05-13",
+  "stages": {
+    "screen": {
+      "verdict": "WATCH",
+      "profit_stage": "EMERGING",
+      "ratios": {
+        "pe_ratio": null,
+        "ps_ratio": 9.440373,
+        "ev_ebitda": 30.313,
+        "pfcf": null,
+        "ev_revenue": 14.721
+      },
+      "quality_signals": null,
+      "magic_formula": null,
+      "gross_margin": null,
+      "gross_margin_gate": "N/A",
+      "rule_of_40": {
+        "revenue_growth_pct": 167.93733681462142,
+        "fcf_margin_pct": -141.31748197232506,
+        "score": 26.619854842296354,
+        "tier": "ADEQUATE",
+        "growth_source": "yoy_annual",
+        "fcf_note": null
+      },
+      "ev_ntm_revenue": {
+        "value": 3.4615071617533174,
+        "label": "CHEAP",
+        "source": "computed_ev_div_ntm_revenue",
+        "ev_used": 85480206272,
+        "ntm_revenue_used": 24694463550
+      },
+      "rationale": "Gross margin gate informational only (gross_profit not exposed by yf MCP — see ABA-70). Rule of 40 score 26.6 (ADEQUATE: revenue growth +167.9% YoY offset by deeply negative FCF margin -141.3% reflecting AI infra capex of $7.25B against $5.13B revenue). EV/NTM Revenue 3.46x is CHEAP. R40 ≥ 20 OR EV/NTM ≤ 15 → WATCH (not joint PASS conditions). Cash-burn risk is the open question — verify funding runway before any size-up."
+    }
+  },
+  "meta": {
+    "profit_stage": "EMERGING",
+    "track": "GROWTH",
+    "ai_layer": null,
+    "confidence": "MEDIUM"
+  }
+}

@@ -1,0 +1,214 @@
+{
+  "date": "2026-05-13",
+  "tickers": ["AAPL", "NVDA", "META", "RDDT", "CRWV"],
+  "stages": {
+    "screen": [
+      {
+        "ticker": "AAPL",
+        "verdict": "WATCH",
+        "profit_stage": "ESTABLISHED",
+        "ratios": {
+          "pe_ratio": 35.733334,
+          "ps_ratio": 9.591115,
+          "ev_ebitda": 27.167,
+          "pfcf": 42.83114531807035,
+          "ev_revenue": 9.627
+        },
+        "quality_signals": {
+          "score": 7,
+          "denominator": 9,
+          "ratio": 0.7777777777777778,
+          "methodology": "mcp_constrained_v1",
+          "signals": {
+            "q1_net_income_positive": true,
+            "q2_fcf_positive": true,
+            "q3_net_income_improving": true,
+            "q4_fcf_improving": false,
+            "q5_revenue_growing": true,
+            "q6_operating_margin_improving": true,
+            "q7_leverage_not_increasing": true,
+            "q8_cash_buffer_improving": true,
+            "q9_sbc_intensity_not_worsening": false
+          }
+        },
+        "magic_formula": {
+          "earnings_yield": 0.030289800311859195,
+          "roic": null,
+          "roic_note": "ROIC not computable from current yf MCP surface (see ABA-70).",
+          "flag": "WATCH",
+          "rank": 3
+        },
+        "gross_margin": null,
+        "gross_margin_gate": null,
+        "rule_of_40": null,
+        "ev_ntm_revenue": null,
+        "rationale": "Quality 7/9 (78%) above PASS cutoff; MF WATCH (EY 3.03%, rank 3 of 5; ROIC N/A) caps at WATCH. FCF declined YoY, SBC intensity rose."
+      },
+      {
+        "ticker": "NVDA",
+        "verdict": "WATCH",
+        "profit_stage": "ESTABLISHED",
+        "ratios": {
+          "pe_ratio": 45.149284,
+          "ps_ratio": 24.849993,
+          "ev_ebitda": 39.884,
+          "pfcf": 92.31292372627566,
+          "ev_revenue": 24.608
+        },
+        "quality_signals": {
+          "score": 7,
+          "denominator": 9,
+          "ratio": 0.7777777777777778,
+          "methodology": "mcp_constrained_v1",
+          "signals": {
+            "q1_net_income_positive": true,
+            "q2_fcf_positive": true,
+            "q3_net_income_improving": true,
+            "q4_fcf_improving": true,
+            "q5_revenue_growing": true,
+            "q6_operating_margin_improving": false,
+            "q7_leverage_not_increasing": false,
+            "q8_cash_buffer_improving": true,
+            "q9_sbc_intensity_not_worsening": true
+          }
+        },
+        "magic_formula": {
+          "earnings_yield": 0.024296650944022053,
+          "roic": null,
+          "roic_note": "ROIC not computable from current yf MCP surface (see ABA-70).",
+          "flag": "WATCH",
+          "rank": 4
+        },
+        "gross_margin": null,
+        "gross_margin_gate": null,
+        "rule_of_40": null,
+        "ev_ntm_revenue": null,
+        "rationale": "Quality 7/9 (78%) above PASS cutoff; MF WATCH (EY 2.43%, rank 4 of 5; ROIC N/A) caps at WATCH. Op-margin compressed; FCF doubled."
+      },
+      {
+        "ticker": "META",
+        "verdict": "SKIP",
+        "profit_stage": "ESTABLISHED",
+        "ratios": {
+          "pe_ratio": 21.93525,
+          "ps_ratio": 7.120618,
+          "ev_ebitda": 14.054,
+          "pfcf": 59.88944209332116,
+          "ev_revenue": 7.147
+        },
+        "quality_signals": {
+          "score": 3,
+          "denominator": 9,
+          "ratio": 0.3333333333333333,
+          "methodology": "mcp_constrained_v1",
+          "signals": {
+            "q1_net_income_positive": true,
+            "q2_fcf_positive": true,
+            "q3_net_income_improving": false,
+            "q4_fcf_improving": false,
+            "q5_revenue_growing": true,
+            "q6_operating_margin_improving": false,
+            "q7_leverage_not_increasing": false,
+            "q8_cash_buffer_improving": false,
+            "q9_sbc_intensity_not_worsening": false
+          }
+        },
+        "magic_formula": {
+          "earnings_yield": 0.05274981116089866,
+          "roic": null,
+          "roic_note": "ROIC not computable from current yf MCP surface (see ABA-70).",
+          "flag": "PASS",
+          "rank": 1
+        },
+        "gross_margin": null,
+        "gross_margin_gate": null,
+        "rule_of_40": null,
+        "ev_ntm_revenue": null,
+        "rationale": "Quality 3/9 (33%) below WATCH cutoff triggers SKIP regardless of MF PASS (EY 5.27% rank 1; ROIC N/A). FCF declined, op-margin contracted, debt rose 71% YoY."
+      },
+      {
+        "ticker": "RDDT",
+        "verdict": "WATCH",
+        "profit_stage": "ESTABLISHED",
+        "ratios": {
+          "pe_ratio": 43.653297,
+          "ps_ratio": 11.856919,
+          "ev_ebitda": 41.714,
+          "pfcf": 51.992608559652794,
+          "ev_revenue": 10.745
+        },
+        "quality_signals": {
+          "score": 9,
+          "denominator": 9,
+          "ratio": 1.0,
+          "methodology": "mcp_constrained_v1",
+          "signals": {
+            "q1_net_income_positive": true,
+            "q2_fcf_positive": true,
+            "q3_net_income_improving": true,
+            "q4_fcf_improving": true,
+            "q5_revenue_growing": true,
+            "q6_operating_margin_improving": true,
+            "q7_leverage_not_increasing": true,
+            "q8_cash_buffer_improving": true,
+            "q9_sbc_intensity_not_worsening": true
+          }
+        },
+        "magic_formula": {
+          "earnings_yield": 0.015563705497060185,
+          "roic": null,
+          "roic_note": "ROIC not computable from current yf MCP surface (see ABA-70).",
+          "flag": "WATCH",
+          "rank": 5
+        },
+        "gross_margin": null,
+        "gross_margin_gate": null,
+        "rule_of_40": null,
+        "ev_ntm_revenue": null,
+        "rationale": "Transition-year inflection — all 9 Q-signals true (first profitable year, SBC intensity 62%→16%) but EY 1.56% rank 5 of 5 caps MF at WATCH. ESTABLISHED by P/E 43.7."
+      },
+      {
+        "ticker": "CRWV",
+        "verdict": "WATCH",
+        "profit_stage": "EMERGING",
+        "ratios": {
+          "pe_ratio": null,
+          "ps_ratio": 9.440373,
+          "ev_ebitda": 30.313,
+          "pfcf": null,
+          "ev_revenue": 14.721
+        },
+        "quality_signals": null,
+        "magic_formula": null,
+        "gross_margin": null,
+        "gross_margin_gate": "N/A",
+        "rule_of_40": {
+          "revenue_growth_pct": 167.93733681462142,
+          "fcf_margin_pct": -141.31748197232506,
+          "score": 26.619854842296354,
+          "tier": "ADEQUATE",
+          "growth_source": "yoy_annual",
+          "fcf_note": null
+        },
+        "ev_ntm_revenue": {
+          "value": 3.4615071617533174,
+          "label": "CHEAP",
+          "source": "computed_ev_div_ntm_revenue",
+          "ev_used": 85480206272,
+          "ntm_revenue_used": 24694463550
+        },
+        "rationale": "Gross margin gate informational (no gross_profit in MCP — ABA-70). R40 26.6 (ADEQUATE: rev +168% YoY, FCF margin -141% from AI infra capex). EV/NTM 3.46x CHEAP. WATCH on disjunctive condition."
+      }
+    ]
+  },
+  "meta": {
+    "batch_size": 5,
+    "established_count": 4,
+    "emerging_count": 1,
+    "pass_count": 0,
+    "watch_count": 4,
+    "skip_count": 1,
+    "track": "GROWTH",
+    "confidence": "HIGH"
+  }
+}

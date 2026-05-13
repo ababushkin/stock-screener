@@ -1,0 +1,55 @@
+{
+  "ticker": "MSFT",
+  "company": null,
+  "date": "2026-05-13",
+  "stages": {
+    "screen": {
+      "verdict": "WATCH",
+      "profit_stage": "ESTABLISHED",
+      "ratios": {
+        "pe_ratio": 24.272024,
+        "ps_ratio": 9.517279,
+        "ev_ebitda": 16.678,
+        "pfcf": 81.84248562685717,
+        "ev_revenue": 9.666
+      },
+      "quality_signals": {
+        "score": 8,
+        "denominator": 9,
+        "ratio": 0.8888888888888888,
+        "methodology": "mcp_constrained_v1",
+        "signals": {
+          "q1_net_income_positive": true,
+          "q2_fcf_positive": true,
+          "q3_net_income_improving": true,
+          "q4_fcf_improving": false,
+          "q5_revenue_growing": true,
+          "q6_operating_margin_improving": true,
+          "q7_leverage_not_increasing": true,
+          "q8_cash_buffer_improving": true,
+          "q9_sbc_intensity_not_worsening": true
+        },
+        "piotroski_canonical": null,
+        "piotroski_note": "Canonical Piotroski F-Score not computable from current yf MCP get_financials surface (missing total_assets, current_assets/liabilities, long-term debt split, gross_profit, operating_cash_flow, historical share counts). See ABA-70."
+      },
+      "magic_formula": {
+        "earnings_yield": 0.04201038870596591,
+        "roic": null,
+        "roic_note": "ROIC not computable from current yf MCP surface (canonical denominator requires total_assets, current_assets/liabilities, intangibles). See ABA-70.",
+        "flag": "WATCH",
+        "rank": 2
+      },
+      "gross_margin": null,
+      "gross_margin_gate": null,
+      "rule_of_40": null,
+      "ev_ntm_revenue": null,
+      "rationale": "Quality ratio 8/9 = 89% (above 75% PASS cutoff) but Magic Formula WATCH (EY 4.20%, rank 2 of 5, below 5% PASS threshold; ROIC N/A — MCP-constrained per ABA-70) caps verdict at WATCH; only FCF declined YoY (74.1B→71.6B), every other Q-signal positive."
+    }
+  },
+  "meta": {
+    "profit_stage": "ESTABLISHED",
+    "track": "GROWTH",
+    "ai_layer": null,
+    "confidence": "HIGH"
+  }
+}

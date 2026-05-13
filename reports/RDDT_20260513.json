@@ -1,0 +1,55 @@
+{
+  "ticker": "RDDT",
+  "company": null,
+  "date": "2026-05-13",
+  "stages": {
+    "screen": {
+      "verdict": "WATCH",
+      "profit_stage": "ESTABLISHED",
+      "ratios": {
+        "pe_ratio": 43.653297,
+        "ps_ratio": 11.856919,
+        "ev_ebitda": 41.714,
+        "pfcf": 51.992608559652794,
+        "ev_revenue": 10.745
+      },
+      "quality_signals": {
+        "score": 9,
+        "denominator": 9,
+        "ratio": 1.0,
+        "methodology": "mcp_constrained_v1",
+        "signals": {
+          "q1_net_income_positive": true,
+          "q2_fcf_positive": true,
+          "q3_net_income_improving": true,
+          "q4_fcf_improving": true,
+          "q5_revenue_growing": true,
+          "q6_operating_margin_improving": true,
+          "q7_leverage_not_increasing": true,
+          "q8_cash_buffer_improving": true,
+          "q9_sbc_intensity_not_worsening": true
+        },
+        "piotroski_canonical": null,
+        "piotroski_note": "Canonical Piotroski F-Score not computable from current yf MCP get_financials surface (missing total_assets, current_assets/liabilities, long-term debt split, gross_profit, operating_cash_flow, historical share counts). See ABA-70."
+      },
+      "magic_formula": {
+        "earnings_yield": 0.015563705497060185,
+        "roic": null,
+        "roic_note": "ROIC not computable from current yf MCP surface (canonical denominator requires total_assets, current_assets/liabilities, intangibles). See ABA-70.",
+        "flag": "WATCH",
+        "rank": 5
+      },
+      "gross_margin": null,
+      "gross_margin_gate": null,
+      "rule_of_40": null,
+      "ev_ntm_revenue": null,
+      "rationale": "Transition-year inflection — all 9 Q-signals true (first profitable year, SBC intensity collapsed 62%→16% of revenue as one-time IPO awards rolled off) but Magic Formula WATCH (EY 1.56%, rank 5 of 5 — operating income still small relative to EV; ROIC N/A — MCP-constrained per ABA-70). Quality ratio 1.0 ≥ 75% but MF=WATCH caps verdict at WATCH; ESTABLISHED classification by P/E 43.7."
+    }
+  },
+  "meta": {
+    "profit_stage": "ESTABLISHED",
+    "track": "GROWTH",
+    "ai_layer": null,
+    "confidence": "HIGH"
+  }
+}

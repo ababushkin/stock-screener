@@ -1,0 +1,55 @@
+{
+  "ticker": "META",
+  "company": null,
+  "date": "2026-05-13",
+  "stages": {
+    "screen": {
+      "verdict": "SKIP",
+      "profit_stage": "ESTABLISHED",
+      "ratios": {
+        "pe_ratio": 21.93525,
+        "ps_ratio": 7.120618,
+        "ev_ebitda": 14.054,
+        "pfcf": 59.88944209332116,
+        "ev_revenue": 7.147
+      },
+      "quality_signals": {
+        "score": 3,
+        "denominator": 9,
+        "ratio": 0.3333333333333333,
+        "methodology": "mcp_constrained_v1",
+        "signals": {
+          "q1_net_income_positive": true,
+          "q2_fcf_positive": true,
+          "q3_net_income_improving": false,
+          "q4_fcf_improving": false,
+          "q5_revenue_growing": true,
+          "q6_operating_margin_improving": false,
+          "q7_leverage_not_increasing": false,
+          "q8_cash_buffer_improving": false,
+          "q9_sbc_intensity_not_worsening": false
+        },
+        "piotroski_canonical": null,
+        "piotroski_note": "Canonical Piotroski F-Score not computable from current yf MCP get_financials surface (missing total_assets, current_assets/liabilities, long-term debt split, gross_profit, operating_cash_flow, historical share counts). See ABA-70."
+      },
+      "magic_formula": {
+        "earnings_yield": 0.05274981116089866,
+        "roic": null,
+        "roic_note": "ROIC not computable from current yf MCP surface (canonical denominator requires total_assets, current_assets/liabilities, intangibles). See ABA-70.",
+        "flag": "PASS",
+        "rank": 1
+      },
+      "gross_margin": null,
+      "gross_margin_gate": null,
+      "rule_of_40": null,
+      "ev_ntm_revenue": null,
+      "rationale": "Quality ratio 3/9 = 33% (below 55% WATCH cutoff) triggers SKIP regardless of Magic Formula PASS (EY 5.27%, rank 1 of 5; ROIC N/A — MCP-constrained per ABA-70); profitability and revenue growth exist but FCF declined YoY, op-margin contracted (41.4% vs 42.2%), total debt rose 71% (49.1B→83.9B), cash buffer shrank, and SBC intensity edged up."
+    }
+  },
+  "meta": {
+    "profit_stage": "ESTABLISHED",
+    "track": "GROWTH",
+    "ai_layer": null,
+    "confidence": "HIGH"
+  }
+}
