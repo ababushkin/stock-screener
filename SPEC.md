@@ -17,11 +17,11 @@ A personal equity research assistant for a tech-focused investor. The pack imple
 ## Architecture Overview
 
 ```
-/equity    → Router        orchestrates full chain or dispatches to sub-skills
-/screen    → Screen        fast go/no-go; two variants by profit stage
-/signal    → Signal        GARP signal analysis; outputs MODEL_READY flag
-/model     → Model         conviction-building model; two variants by profit stage
-/timing    → Timing        when-to-act overlay; standalone invocation
+/stock:equity    → Router        orchestrates full chain or dispatches to sub-skills
+/stock:screen    → Screen        fast go/no-go; two variants by profit stage
+/stock:signal    → Signal        GARP signal analysis; outputs MODEL_READY flag
+/stock:model     → Model         conviction-building model; two variants by profit stage
+/stock:timing    → Timing        when-to-act overlay; standalone invocation
 ```
 
 Two routing dimensions are inferred before any skill executes:
@@ -32,6 +32,16 @@ Router infers both from user phrasing and available data. States its inference. 
 
 ---
 
+## Namespace Convention
+
+All skills in this pack are namespaced under the `stock:` prefix (e.g. `/stock:screen`, `/stock:signal`, `/stock:timing`, `/stock:model`, `/stock:equity`).
+
+**Reason:** Generic command names (`/model`, `/review`, `/init`, `/ship`) collide with built-in Claude Code commands and with other installed skill packs. The `stock:` prefix gives the pack a stable, conflict-free namespace. The decision was taken pre-M5 (ABA-71) — `/model` would have shadowed the built-in model-switcher.
+
+**Rule:** Every new skill added to this pack MUST use the `stock:` prefix in its SKILL.md `name:` frontmatter field. References to skills in SPEC.md, CLAUDE.md, and other skill descriptions MUST also use the prefixed form. Report JSON schema keys (`stages.screen`, `stages.signal`, etc.) are NOT prefixed — they are JSON keys, not invocations.
+
+---
+
 ## Project Structure
 
 ```
@@ -39,11 +49,11 @@ Router infers both from user phrasing and available data. States its inference. 
 ├── CLAUDE.md
 ├── SPEC.md
 ├── skills/                    # Skill definition files (markdown)
-│   ├── equity.md              # Router — /equity
-│   ├── screen.md              # Screen — /screen
-│   ├── signal.md              # Signal — /signal
-│   ├── model.md               # Model — /model
-│   └── timing.md              # Timing — /timing
+│   ├── equity.md              # Router — /stock:equity
+│   ├── screen.md              # Screen — /stock:screen
+│   ├── signal.md              # Signal — /stock:signal
+│   ├── model.md               # Model — /stock:model
+│   └── timing.md              # Timing — /stock:timing
 ├── ui/                        # Interactive report viewer
 │   ├── src/
 │   │   ├── App.jsx
@@ -203,7 +213,7 @@ SIGNAL OUTPUT
   Condition:       [if CONDITIONAL — what the user must confirm]
 ```
 
-Model reads this block from context. If it is absent, Model states it cannot proceed and instructs the user to run `/signal [ticker]` first.
+Model reads this block from context. If it is absent, Model states it cannot proceed and instructs the user to run `/stock:signal [ticker]` first.
 
 ### All Skills → Report JSON
 
@@ -311,12 +321,12 @@ npm run build     # dist/ for static serving
 
 ```bash
 # Skill invocation (Claude Code slash commands)
-/equity NVDA                          # Full chain
-/equity Anthropic -- pre-profit AI    # Full chain with hint
-/screen AAPL, NVDA, META, RDDT, CRWV  # Screen only
-/signal Meta Platforms                 # Signal only
-/model Meta -- standard DCF           # Model (requires signal in context)
-/timing NVDA                           # Timing overlay
+/stock:equity NVDA                          # Full chain
+/stock:equity Anthropic -- pre-profit AI    # Full chain with hint
+/stock:screen AAPL, NVDA, META, RDDT, CRWV  # Screen only
+/stock:signal Meta Platforms                 # Signal only
+/stock:model Meta -- standard DCF           # Model (requires signal in context)
+/stock:timing NVDA                           # Timing overlay
 
 # UI development
 cd ui && npm run dev
@@ -338,7 +348,7 @@ cd mcp/edgar && python server.py
 
 **MCP integration tests:** Unit test each tool function against live API responses with known tickers. Snapshot the response schema so regressions in the API structure are caught.
 
-**Signal contract test:** Run `/signal NVDA`, capture the output block, confirm all required fields are present and correctly typed before invoking `/model NVDA`.
+**Signal contract test:** Run `/stock:signal NVDA`, capture the output block, confirm all required fields are present and correctly typed before invoking `/stock:model NVDA`.
 
 **SBC stripping test:** For a ticker with a known large SBC line (e.g. Salesforce CRM), verify that clean EPS diverges from reported EPS by the expected amount.
 
@@ -354,19 +364,19 @@ No automated test runner is mandated. Tests are skill-invocation runs with expec
 
 This pack covers **equities only**. ETFs, commodity funds, fixed income, and derivatives are out of scope for v1 and v2.
 
-**GLDM (and similar commodity ETFs)** require a fundamentally different methodology — no earnings, no DCF, no P/E or PEG. Valuation is driven by gold price vs. macro factors (real rates, dollar strength, inflation expectations) and fund-level metrics (expense ratio, AUM, tracking error). Adding support would require a new instrument type routing dimension at the `/equity` router level and a separate methodology track. Explicitly deferred to a future milestone; if added, GLDM is the reference case.
+**GLDM (and similar commodity ETFs)** require a fundamentally different methodology — no earnings, no DCF, no P/E or PEG. Valuation is driven by gold price vs. macro factors (real rates, dollar strength, inflation expectations) and fund-level metrics (expense ratio, AUM, tracking error). Adding support would require a new instrument type routing dimension at the `/stock:equity` router level and a separate methodology track. Explicitly deferred to a future milestone; if added, GLDM is the reference case.
 
 If a user passes a non-equity ticker, the router should detect the instrument type (ETF, closed-end fund, etc.) and state that the pack does not support it rather than running equity methodology on it.
 
-### Leading indicator enrichment (Later scope — /model only)
+### Leading indicator enrichment (Later scope — /stock:model only)
 
-For companies where current-period ratios are lagging indicators, `/model` will add optional enrichment steps that fetch leading indicators before locking in DCF growth rate inputs. Three enrichment paths are planned:
+For companies where current-period ratios are lagging indicators, `/stock:model` will add optional enrichment steps that fetch leading indicators before locking in DCF growth rate inputs. Three enrichment paths are planned:
 
 - **Segment revenue trend** (ABA-65): for AMZN, GOOGL, NVDA, RDDT — fetch segment data from EDGAR, compare segment growth to blended NTM estimate
 - **Engagement KPIs** (ABA-66): for META, NFLX, RDDT, GOOGL — fetch DAU/ARPU/subscriber metrics from earnings press releases via web search
 - **Bookings/backlog** (ABA-67): for INFRASTRUCTURE capital equipment companies (ASML reference case) — fetch net bookings and backlog from earnings press releases via web search
 
-These enrichments do not affect `/signal` verdicts or PEG computation. They are `/model`-only and are implemented when `/model` is built.
+These enrichments do not affect `/stock:signal` verdicts or PEG computation. They are `/stock:model`-only and are implemented when `/stock:model` is built.
 
 ### Always do
 - Strip SBC before any earnings calculation in every skill

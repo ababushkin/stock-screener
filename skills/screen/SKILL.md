@@ -1,11 +1,11 @@
 ---
-name: screen
-description: Fast go/no-go valuation screen for tech stocks. Invoked as `/screen TICKER` or `/screen TICKER1, TICKER2`. Fetches ratios from the yfinance MCP, classifies profit stage, applies threshold rules, and writes a structured JSON report to reports/. Use whenever asked to screen a stock, evaluate whether a ticker is worth deeper analysis, or produce a reports/ JSON for the UI. Also use when the user mentions a ticker and asks if it's cheap, overvalued, worth looking at, or whether to buy or investigate it — even if they don't say "screen."
+name: stock:screen
+description: Fast go/no-go valuation screen for tech stocks. Invoked as `/stock:screen TICKER` or `/stock:screen TICKER1, TICKER2`. Fetches ratios from the yfinance MCP, classifies profit stage, applies threshold rules, and writes a structured JSON report to reports/. Use whenever asked to screen a stock, evaluate whether a ticker is worth deeper analysis, or produce a reports/ JSON for the UI. Also use when the user mentions a ticker and asks if it's cheap, overvalued, worth looking at, or whether to buy or investigate it — even if they don't say "screen."
 ---
 
 # Screen — Fast Valuation Screen
 
-**Command:** `/screen TICKER [, TICKER2 ...]`
+**Command:** `/stock:screen TICKER [, TICKER2 ...]`
 **Purpose:** Fast go/no-go screen. Classifies a tech stock as PASS / WATCH / SKIP using valuation ratios and financial quality signals from the yfinance MCP. Writes output to `reports/TICKER_YYYYMMDD.json`.
 
 ---
@@ -422,9 +422,9 @@ For single-ticker runs, the inline ranked table is not emitted and the consolida
 ## Invocation patterns
 
 ```
-/screen META
-/screen RDDT
-/screen META, MSFT, AAPL     ← batch: Magic Formula ranking applies across the batch
+/stock:screen META
+/stock:screen RDDT
+/stock:screen META, MSFT, AAPL     ← batch: Magic Formula ranking applies across the batch
 ```
 
 ---

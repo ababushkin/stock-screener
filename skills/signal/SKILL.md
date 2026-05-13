@@ -1,20 +1,20 @@
 ---
-name: signal
-description: GARP signal analysis for a tech stock. Invoked as `/signal TICKER`. Fetches live financials and estimates from the yfinance MCP, strips SBC, computes PEG/P/S, classifies AI layer, and outputs a structured SIGNAL OUTPUT block with a MODEL_READY flag. Use whenever the user asks to analyse a stock more deeply, investigate a ticker, check whether it passes GARP criteria, or after a `/screen` PASS or WATCH result — even if they don't say "signal" or "GARP".
+name: stock:signal
+description: GARP signal analysis for a tech stock. Invoked as `/stock:signal TICKER`. Fetches live financials and estimates from the yfinance MCP, strips SBC, computes PEG/P/S, classifies AI layer, and outputs a structured SIGNAL OUTPUT block with a MODEL_READY flag. Use whenever the user asks to analyse a stock more deeply, investigate a ticker, check whether it passes GARP criteria, or after a `/stock:screen` PASS or WATCH result — even if they don't say "signal" or "GARP".
 ---
 
 # Signal — GARP Signal Analysis
 
-**Command:** `/signal TICKER`
-**Purpose:** GARP signal analysis. Fetches valuation ratios and financials from the yfinance MCP, classifies profit stage and AI layer, strips SBC from EPS, and emits a structured SIGNAL OUTPUT block with a MODEL_READY flag for downstream use by `/model`.
+**Command:** `/stock:signal TICKER`
+**Purpose:** GARP signal analysis. Fetches valuation ratios and financials from the yfinance MCP, classifies profit stage and AI layer, strips SBC from EPS, and emits a structured SIGNAL OUTPUT block with a MODEL_READY flag for downstream use by `/stock:model`.
 
 ---
 
 
 ## 1. Identity
 
-- **Skill name:** signal
-- **Command:** `/signal TICKER`
+- **Skill name:** stock:signal
+- **Command:** `/stock:signal TICKER`
 - **Purpose:** Produce a GARP signal verdict (BUY / WATCH / CAUTION) and a MODEL_READY flag for a single ticker, using yfinance data and a structured qualitative overlay.
 
 ---
@@ -309,14 +309,14 @@ Evaluate after all four override rules have been applied. Precedence: NO > CONDI
 | CONDITIONAL | Signal = WATCH, AND (transition-year flag is set OR one or more stub fields are still pending) |
 | NO | Signal = CAUTION, OR Qualitative = FAIL, OR profit_stage = EMERGING |
 
-If MODEL_READY = CONDITIONAL, the `Condition` line MUST state what the user needs to confirm before running `/model`. Never leave Condition blank on a CONDITIONAL result.
+If MODEL_READY = CONDITIONAL, the `Condition` line MUST state what the user needs to confirm before running `/stock:model`. Never leave Condition blank on a CONDITIONAL result.
 
 **Report JSON write:**
 Run `mkdir -p reports` before writing.
 Write to `reports/TICKER_YYYYMMDD.json` where YYYYMMDD is today's date.
 
 Merge behaviour:
-- If the file already exists (e.g. written by `/screen` earlier), READ it first, then merge — add/update `stages.signal` and `meta` fields. Do NOT overwrite `stages.screen` or other stages.
+- If the file already exists (e.g. written by `/stock:screen` earlier), READ it first, then merge — add/update `stages.signal` and `meta` fields. Do NOT overwrite `stages.screen` or other stages.
 - If the file does not exist, create it with the full outer structure.
 
 **Required JSON structure for a new file:**
@@ -425,12 +425,12 @@ The 14 JSON fields under `stages.signal` are:
 ## 7. Invocation Patterns
 
 ```
-/signal NVDA
-/signal Meta Platforms        ← resolve to META if unambiguous
-/signal RDDT
+/stock:signal NVDA
+/stock:signal Meta Platforms        ← resolve to META if unambiguous
+/stock:signal RDDT
 ```
 
-For multiple tickers, direct the user to `/screen TICKER1, TICKER2` then invoke `/signal` on each PASS result individually. Signal is a single-ticker operation.
+For multiple tickers, direct the user to `/stock:screen TICKER1, TICKER2` then invoke `/stock:signal` on each PASS result individually. Signal is a single-ticker operation.
 
 ---
 
@@ -438,7 +438,7 @@ For multiple tickers, direct the user to `/screen TICKER1, TICKER2` then invoke 
 
 - **yfinance MCP server** must be connected (`get_ratios`, `get_financials`, `get_estimates`). Registered in `.mcp.json`. If tools are unavailable, tell the user to restart the Claude Code session.
 - **`reports/` directory** — created on first write via `mkdir -p reports`.
-- **`/model` skill** — reads the SIGNAL OUTPUT block from context. If block is absent, Model cannot proceed.
+- **`/stock:model` skill** — reads the SIGNAL OUTPUT block from context. If block is absent, Model cannot proceed.
 
 ---
 
@@ -505,7 +505,7 @@ All four active override rules and the qualitative overrides from TAM/optionalit
 | "SBC is small for this company so I'll skip stripping it" | SBC stripping is mandatory step zero in every run. The amount is always noted. Skipping it silently is the exact failure mode the rule exists to prevent. |
 | "P/E is negative but this company clearly has earnings" | If yfinance returns a negative or null P/E, classify as EMERGING. A negative P/E signals something unusual — the pre-profit path is the safe default. |
 | "I'll apply PEG to this pre-profit company because it has a useful forward estimate" | PEG requires positive trailing earnings. For EMERGING companies PEG is undefined. Use P/S only. |
-| "The stub fields are not computed so I'll just omit them from the SIGNAL OUTPUT block" | Every field must appear every run. Omitting a field breaks the output contract that `/model` depends on. Use the placeholder text. |
+| "The stub fields are not computed so I'll just omit them from the SIGNAL OUTPUT block" | Every field must appear every run. Omitting a field breaks the output contract that `/stock:model` depends on. Use the placeholder text. |
 | "MODEL_READY = YES because the signal looks good even though stub fields are pending" | If any of Clean EPS, Rule of 40, or AI layer are pending, MODEL_READY is at most CONDITIONAL. The condition line must explain what needs confirming. |
 | "PEG is available so I can skip P/S entirely" | P/S must always be fetched and reported. P/S is the fallback lens and is always present in the output block regardless of whether PEG is computed. |
 | "I'll use a raw P/E from yfinance as my PEG numerator" | The PEG numerator is clean forward P/E — computed from NTM EPS minus per-share SBC. Never use reported P/E directly as the PEG numerator. |
@@ -513,7 +513,7 @@ All four active override rules and the qualitative overrides from TAM/optionalit
 | "I'll infer the AI layer from my training data rather than computing it" | AI layer classification is a qualitative filter requiring current context. In the stub, output the placeholder. Do not hallucinate a classification. |
 | "I'll look up AI layer from a hardcoded table" | Classification is qualitative reasoning, not a lookup. Apply the decision tree and state your reasoning. The output is only as good as the argument you make. |
 | "A report file already exists for this ticker today, I'll skip writing" | Always write. The user may be re-running with updated data or correcting a prior run. Read-modify-write if the file exists. |
-| "I'll skip merging and just overwrite the whole file" | If `/screen` was run first, the file has `stages.screen`. Overwriting it loses the screen data the UI needs. Always read-modify-write when the file already exists. |
+| "I'll skip merging and just overwrite the whole file" | If `/stock:screen` was run first, the file has `stages.screen`. Overwriting it loses the screen data the UI needs. Always read-modify-write when the file already exists. |
 | "I'll use my training knowledge for ratio values instead of calling the MCP" | Always fetch live data from the yfinance MCP. Training data ratios are stale by definition. |
 | "SBC per share looks tiny — probably a unit mismatch but I'll proceed anyway" | yfinance returns SBC in raw dollars (not thousands or millions) and shares outstanding in units. Verify the magnitude before dividing — if per-share SBC exceeds $10 for a sub-$500 stock, a unit mismatch is almost certain. Report the raw figures so the user can sanity-check. |
 | "I'll skip the TAM/optionality check since it's qualitative anyway" | These checks are required for INFRASTRUCTURE and INCUMBENT companies respectively. The AI optionality premium percentage must be present and non-null for every INCUMBENT. Skipping a qualitative check because it's qualitative is the exact failure mode it was designed to prevent. |

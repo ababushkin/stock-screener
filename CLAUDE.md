@@ -14,7 +14,7 @@ Tasks and milestones live in Linear: https://linear.app/ababushkin/project/ai-eq
 |-----------|-----------|
 | yfinance MCP server | `/pde:design-doc` → `agent-skills:build` |
 | EDGAR MCP server | `/pde:design-doc` → `agent-skills:build` |
-| `/signal`, `/screen`, `/timing`, `/model`, `/equity` skills | `skill-creator:skill-creator` |
+| `/stock:signal`, `/stock:screen`, `/stock:timing`, `/stock:model`, `/stock:equity` skills | `skill-creator:skill-creator` |
 | Report UI (Vite + React) | `agent-skills:build` |
 
 ## Commands

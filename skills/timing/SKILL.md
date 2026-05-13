@@ -1,26 +1,26 @@
 ---
-name: timing
-description: When-to-act overlay for a tech stock. Invoked as `/timing TICKER`. Computes SUE (earnings surprise), PEAD window status, EPS revision direction over short windows, and surfaces the next catalyst — then emits a structured TIMING OUTPUT block and merges `stages.timing` into `reports/TICKER_YYYYMMDD.json` without overwriting prior stages. Use whenever the user asks when to enter, whether to wait, what the next catalyst is, or after `/signal` or `/model` returns BUY/WATCH and the user needs an entry decision — even if they don't say "timing."
+name: stock:timing
+description: When-to-act overlay for a tech stock. Invoked as `/stock:timing TICKER`. Computes SUE (earnings surprise), PEAD window status, EPS revision direction over short windows, and surfaces the next catalyst — then emits a structured TIMING OUTPUT block and merges `stages.timing` into `reports/TICKER_YYYYMMDD.json` without overwriting prior stages. Use whenever the user asks when to enter, whether to wait, what the next catalyst is, or after `/stock:signal` or `/stock:model` returns BUY/WATCH and the user needs an entry decision — even if they don't say "timing."
 ---
 
 # Timing — When-to-Act Overlay
 
-**Command:** `/timing TICKER`
+**Command:** `/stock:timing TICKER`
 **Purpose:** Turn a positive Signal/Model thesis into an entry decision. Combines earnings-surprise momentum (SUE + PEAD window), short-window EPS revision direction, and the next scheduled catalyst into a single ACT NOW / WAIT FOR CATALYST / WAIT FOR BETTER ENTRY verdict. Output is merged into the report JSON as `stages.timing`.
 
 ---
 
 ## 1. Identity
 
-- **Skill name:** timing
-- **Command:** `/timing TICKER`
+- **Skill name:** stock:timing
+- **Command:** `/stock:timing TICKER`
 - **Purpose:** Produce a TIMING verdict (ACT NOW / WAIT FOR CATALYST / WAIT FOR BETTER ENTRY) for a single ticker using earnings-surprise, revision, and catalyst signals from the yfinance MCP.
 
 ---
 
 ## 2. Methodology
 
-Timing is an **overlay**, not a thesis. It assumes the user has already established a positive view from `/screen` and/or `/signal` and is now asking *when*, not *whether*.
+Timing is an **overlay**, not a thesis. It assumes the user has already established a positive view from `/stock:screen` and/or `/stock:signal` and is now asking *when*, not *whether*.
 
 Signals:
 
@@ -59,7 +59,7 @@ Source references: Bernard & Thomas (1989) for PEAD; Foster, Olsen & Shevlin (19
 2. Call the yfinance MCP tools in this order:
    a. `mcp__yf__get_earnings_history` — Input: `{ "ticker": "NVDA" }` — Returns: last 4 quarterly rows with `period_end`, `reported_eps`, `consensus_eps`, `surprise`.
    b. `mcp__yf__get_estimates` — Input: `{ "ticker": "NVDA" }` — Returns: `eps_revisions` (7d/30d up/down counts) and the next earnings date.
-   c. `mcp__yf__get_ratios` — Input: `{ "ticker": "NVDA" }` — Used for current price derivation only (already cached by `/screen` or `/signal` if they ran in the same session; refetch is fine).
+   c. `mcp__yf__get_ratios` — Input: `{ "ticker": "NVDA" }` — Used for current price derivation only (already cached by `/stock:screen` or `/stock:signal` if they ran in the same session; refetch is fine).
 3. If any tool errors:
    - **YFNoDataError**: report the gap for the specific signal and continue with the remaining signals. Timing is composed of three semi-independent signals — a missing one degrades the verdict, it does not block it.
    - **Server not connected / other failures**: report the failure for that signal as N/A with the error reason; do not write a partial report if all three signals fail.
@@ -222,9 +222,9 @@ Write to `reports/TICKER_YYYYMMDD.json` where YYYYMMDD is today's date.
 
 **Merge behaviour:**
 
-- If the file already exists (e.g. written by `/screen`, `/signal`, or `/model` earlier), READ it first, then merge — add/update `stages.timing` and the `meta.confidence` field only if Timing has a HIGHER-quality confidence than what is already there. **Never** overwrite `stages.screen`, `stages.signal`, or `stages.model`.
+- If the file already exists (e.g. written by `/stock:screen`, `/stock:signal`, or `/stock:model` earlier), READ it first, then merge — add/update `stages.timing` and the `meta.confidence` field only if Timing has a HIGHER-quality confidence than what is already there. **Never** overwrite `stages.screen`, `stages.signal`, or `stages.model`.
 - If the file does not exist, create it with the full outer structure and `stages.timing` as the only populated stage.
-- The merge rule is non-negotiable. The skill `/timing` is an overlay; the upstream stages are the thesis. Overwriting them silently is a P0 bug.
+- The merge rule is non-negotiable. The skill `/stock:timing` is an overlay; the upstream stages are the thesis. Overwriting them silently is a P0 bug.
 
 **Required `stages.timing` JSON structure:**
 
@@ -324,11 +324,11 @@ Plus `rationale` — one-line string summarising the decisive signals.
 ## 7. Invocation Patterns
 
 ```
-/timing NVDA
-/timing META
+/stock:timing NVDA
+/stock:timing META
 ```
 
-Timing is a **single-ticker** operation. For multi-ticker batches, the user should run `/screen TICKER1, TICKER2` and then `/timing` on each PASS / WATCH result individually. There is no batch JSON output for Timing — only per-ticker merges into existing `reports/TICKER_YYYYMMDD.json` files.
+Timing is a **single-ticker** operation. For multi-ticker batches, the user should run `/stock:screen TICKER1, TICKER2` and then `/stock:timing` on each PASS / WATCH result individually. There is no batch JSON output for Timing — only per-ticker merges into existing `reports/TICKER_YYYYMMDD.json` files.
 
 ---
 
