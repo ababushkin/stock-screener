@@ -7,7 +7,7 @@ import pandas as pd
 import pytest
 
 sys.path.insert(0, "/Users/anton/src/stock-review/mcp/yf")
-from tools import YFNoDataError, get_analyst_targets, get_earnings_history, get_estimates, get_financials
+from tools import FXNoDataError, YFNoDataError, get_analyst_targets, get_earnings_history, get_estimates, get_financials, get_fx_rate
 
 
 def _make_earnings_estimate(avg, analysts):
@@ -484,3 +484,56 @@ class TestGetEarningsHistory:
         with patch("tools.yf.Ticker", return_value=m):
             with pytest.raises(YFNoDataError):
                 get_earnings_history("FAKE", 4)
+
+
+# ---------------------------------------------------------------------------
+# get_fx_rate
+# ---------------------------------------------------------------------------
+
+class TestGetFxRate:
+    def _hist(self, close=521.34, ts="2026-05-13"):
+        return pd.DataFrame({"Close": [close]}, index=pd.to_datetime([ts]))
+
+    def test_returns_required_shape(self):
+        m = MagicMock()
+        m.history.return_value = self._hist(close=521.34, ts="2026-05-13")
+        with patch("tools.yf.Ticker", return_value=m):
+            result = get_fx_rate("USD", "KZT")
+        assert result == {
+            "base": "USD",
+            "quote": "KZT",
+            "rate": pytest.approx(521.34, rel=1e-6),
+            "date": "2026-05-13",
+            "source": "yfinance",
+        }
+
+    def test_uppercases_inputs(self):
+        m = MagicMock()
+        m.history.return_value = self._hist()
+        with patch("tools.yf.Ticker", return_value=m) as patched:
+            get_fx_rate("usd", "kzt")
+        patched.assert_called_once_with("USDKZT=X")
+
+    def test_empty_history_raises(self):
+        m = MagicMock()
+        m.history.return_value = pd.DataFrame()
+        with patch("tools.yf.Ticker", return_value=m):
+            with pytest.raises(FXNoDataError):
+                get_fx_rate("USD", "ZZZ")
+
+    def test_all_nan_close_raises(self):
+        m = MagicMock()
+        m.history.return_value = pd.DataFrame(
+            {"Close": [float("nan")]}, index=pd.to_datetime(["2026-05-13"])
+        )
+        with patch("tools.yf.Ticker", return_value=m):
+            with pytest.raises(FXNoDataError):
+                get_fx_rate("USD", "ZZZ")
+
+    def test_invalid_pair_raises(self):
+        with pytest.raises(FXNoDataError):
+            get_fx_rate("US", "KZT")
+        with pytest.raises(FXNoDataError):
+            get_fx_rate("USD", "")
+        with pytest.raises(FXNoDataError):
+            get_fx_rate("US1", "KZT")

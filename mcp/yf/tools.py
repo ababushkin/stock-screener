@@ -11,6 +11,52 @@ class YFNoDataError(Exception):
     """yfinance returned no usable data for this ticker."""
 
 
+class FXNoDataError(Exception):
+    """yfinance returned no usable FX rate for this currency pair."""
+
+
+def get_fx_rate(base: str, quote: str) -> dict:
+    """Return the latest close FX rate for base→quote via yfinance.
+
+    Uses the standard yfinance FX symbol convention `{BASE}{QUOTE}=X`
+    (e.g. USDKZT=X). Returns the most recent daily close.
+    """
+    base = (base or "").upper()
+    quote = (quote or "").upper()
+    if len(base) != 3 or len(quote) != 3 or not base.isalpha() or not quote.isalpha():
+        raise FXNoDataError(
+            f"Invalid FX pair {base!r}/{quote!r}. "
+            "Both base and quote must be 3-letter ISO currency codes."
+        )
+
+    symbol = f"{base}{quote}=X"
+    start = time.monotonic()
+    hist = yf.Ticker(symbol).history(period="1d")
+    print(f"[yf] get_fx_rate({base},{quote}) → {time.monotonic() - start:.2f}s", file=sys.stderr)
+
+    if hist is None or hist.empty or "Close" not in hist.columns:
+        raise FXNoDataError(
+            f"yfinance returned no FX data for {symbol}. "
+            "Currency pair may be unsupported or mistyped."
+        )
+
+    last = hist["Close"].dropna()
+    if last.empty:
+        raise FXNoDataError(
+            f"yfinance returned no FX close for {symbol}. "
+            "Currency pair may be unsupported or mistyped."
+        )
+
+    ts = last.index[-1]
+    return {
+        "base": base,
+        "quote": quote,
+        "rate": float(last.iloc[-1]),
+        "date": ts.strftime("%Y-%m-%d") if hasattr(ts, "strftime") else date.today().isoformat(),
+        "source": "yfinance",
+    }
+
+
 def get_estimates(ticker: str) -> dict:
     """Return NTM consensus EPS, revenue, and analyst count for a ticker.
 

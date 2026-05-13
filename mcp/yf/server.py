@@ -3,7 +3,7 @@ import sys
 print("[yf] yfinance MCP server ready", file=sys.stderr)
 
 from mcp.server.fastmcp import FastMCP
-from tools import YFNoDataError, get_analyst_targets as _get_analyst_targets, get_earnings_history as _get_earnings_history, get_estimates as _get_estimates, get_financials as _get_financials, get_ratios as _get_ratios
+from tools import YFNoDataError, FXNoDataError, get_analyst_targets as _get_analyst_targets, get_earnings_history as _get_earnings_history, get_estimates as _get_estimates, get_financials as _get_financials, get_fx_rate as _get_fx_rate, get_ratios as _get_ratios
 
 mcp = FastMCP("yf")
 
@@ -30,6 +30,12 @@ def get_ratios(ticker: str) -> dict:
 def get_estimates(ticker: str) -> dict:
     """NTM consensus estimates: ntm_eps, ntm_revenue, analyst_count."""
     return _get_estimates(ticker)
+
+
+@mcp.tool()
+def get_fx_rate(base: str, quote: str) -> dict:
+    """Latest daily close FX rate for base→quote (e.g. USD→KZT): base, quote, rate, date, source."""
+    return _get_fx_rate(base, quote)
 
 
 @mcp.tool()
