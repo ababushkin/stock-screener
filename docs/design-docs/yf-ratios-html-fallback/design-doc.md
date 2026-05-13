@@ -1,9 +1,9 @@
 ---
 name: yf-ratios-html-fallback
-status: draft
+status: accepted
 authors: Anton Babushkin
 created: 2026-05-13
-last_updated: 2026-05-13
+last_updated: 2026-05-14
 supersedes: none
 linear: ABA-72
 ---
