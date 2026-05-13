@@ -7,7 +7,7 @@ import pandas as pd
 import pytest
 
 sys.path.insert(0, "/Users/anton/src/stock-review/mcp/yf")
-from tools import FXNoDataError, YFNoDataError, get_analyst_targets, get_earnings_history, get_estimates, get_financials, get_fx_rate
+from tools import FXNoDataError, YFNoDataError, _ScrapeError, _fetch_with_retry, get_analyst_targets, get_earnings_history, get_estimates, get_financials, get_fx_rate
 
 
 def _make_earnings_estimate(avg, analysts):
@@ -537,3 +537,95 @@ class TestGetFxRate:
             get_fx_rate("USD", "")
         with pytest.raises(FXNoDataError):
             get_fx_rate("US1", "KZT")
+
+
+# ---------------------------------------------------------------------------
+# Slice 2: _fetch_with_retry
+# ---------------------------------------------------------------------------
+
+
+def _mock_response(status_code: int, text: str = ""):
+    r = MagicMock()
+    r.status_code = status_code
+    r.text = text
+    return r
+
+
+class TestFetchWithRetry:
+    def test_success_first_try_one_call(self):
+        with patch("tools.creq.get", return_value=_mock_response(200, "ok")) as g, \
+             patch("tools.time.sleep") as s:
+            r = _fetch_with_retry("https://x/", attempts=3, timeout=5.0)
+        assert r.status_code == 200
+        assert r.text == "ok"
+        assert g.call_count == 1
+        s.assert_not_called()
+
+    def test_retries_on_500_then_succeeds(self):
+        responses = [_mock_response(500), _mock_response(500), _mock_response(200, "ok")]
+        with patch("tools.creq.get", side_effect=responses) as g, \
+             patch("tools.time.sleep") as s:
+            r = _fetch_with_retry("https://x/", attempts=3)
+        assert r.status_code == 200
+        assert g.call_count == 3
+        assert [call.args[0] for call in s.call_args_list] == [0.5, 1.0]
+
+    def test_retries_on_429_then_succeeds(self):
+        responses = [_mock_response(429), _mock_response(200, "ok")]
+        with patch("tools.creq.get", side_effect=responses) as g, \
+             patch("tools.time.sleep") as s:
+            r = _fetch_with_retry("https://x/", attempts=3)
+        assert r.status_code == 200
+        assert g.call_count == 2
+        assert s.call_args_list[0].args[0] == 0.5
+
+    def test_exhausts_retries_on_persistent_5xx(self):
+        responses = [_mock_response(503), _mock_response(503), _mock_response(503)]
+        with patch("tools.creq.get", side_effect=responses) as g, \
+             patch("tools.time.sleep"):
+            with pytest.raises(_ScrapeError):
+                _fetch_with_retry("https://x/", attempts=3)
+        assert g.call_count == 3
+
+    def test_no_retry_on_404(self):
+        with patch("tools.creq.get", return_value=_mock_response(404)) as g, \
+             patch("tools.time.sleep") as s:
+            with pytest.raises(_ScrapeError):
+                _fetch_with_retry("https://x/", attempts=3)
+        assert g.call_count == 1
+        s.assert_not_called()
+
+    def test_no_retry_on_403(self):
+        with patch("tools.creq.get", return_value=_mock_response(403)) as g, \
+             patch("tools.time.sleep"):
+            with pytest.raises(_ScrapeError):
+                _fetch_with_retry("https://x/", attempts=3)
+        assert g.call_count == 1
+
+    def test_retries_on_network_error_then_succeeds(self):
+        from curl_cffi.requests.exceptions import RequestException
+        side = [RequestException("conn reset"), _mock_response(200, "ok")]
+        with patch("tools.creq.get", side_effect=side) as g, \
+             patch("tools.time.sleep") as s:
+            r = _fetch_with_retry("https://x/", attempts=3)
+        assert r.status_code == 200
+        assert g.call_count == 2
+        assert s.call_args_list[0].args[0] == 0.5
+
+    def test_exhausts_retries_on_persistent_network_error(self):
+        from curl_cffi.requests.exceptions import RequestException
+        side = [RequestException("x"), RequestException("x"), RequestException("x")]
+        with patch("tools.creq.get", side_effect=side) as g, \
+             patch("tools.time.sleep"):
+            with pytest.raises(_ScrapeError):
+                _fetch_with_retry("https://x/", attempts=3)
+        assert g.call_count == 3
+
+    def test_backoff_schedule(self):
+        responses = [_mock_response(500), _mock_response(500), _mock_response(500)]
+        with patch("tools.creq.get", side_effect=responses), \
+             patch("tools.time.sleep") as s:
+            with pytest.raises(_ScrapeError):
+                _fetch_with_retry("https://x/", attempts=3)
+        # 2 sleeps between 3 attempts: 0.5, 1.0 — no sleep after final attempt
+        assert [c.args[0] for c in s.call_args_list] == [0.5, 1.0]

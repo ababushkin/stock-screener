@@ -356,19 +356,48 @@ def _parse_valuation_table(soup: BeautifulSoup) -> dict:
     return out
 
 
-def _fetch_yahoo_html(url: str, timeout: float = 5.0) -> str:
-    """Fetch a Yahoo HTML page with Chrome TLS impersonation.
+_RETRY_BACKOFF = (0.5, 1.0, 2.0)
 
-    Raises `_ScrapeError` on non-200 or network failure. Single-attempt;
-    retries are layered on top by `_fetch_with_retry` in Slice 2.
+
+def _fetch_with_retry(url: str, attempts: int = 3, timeout: float = 5.0):
+    """Fetch `url` with Chrome TLS impersonation, retrying transient failures.
+
+    Retries on curl_cffi network errors, HTTP 5xx, and HTTP 429.
+    Does NOT retry on other 4xx — those are treated as permanent.
+    Backoff between attempts: 0.5s, 1.0s, 2.0s (no sleep after final attempt).
+
+    Returns the curl_cffi response on success. Raises `_ScrapeError` after
+    exhausting all attempts or on a non-retryable HTTP status.
     """
-    try:
-        r = creq.get(url, impersonate="chrome", timeout=timeout)
-    except RequestException as e:
-        raise _ScrapeError(f"network error fetching {url}: {e}") from e
-    if r.status_code != 200:
-        raise _ScrapeError(f"HTTP {r.status_code} fetching {url}")
-    return r.text
+    last_err = "unknown"
+    for i in range(attempts):
+        try:
+            r = creq.get(url, impersonate="chrome", timeout=timeout)
+        except RequestException as e:
+            last_err = f"network error: {e}"
+            if i < attempts - 1:
+                time.sleep(_RETRY_BACKOFF[i])
+                continue
+            raise _ScrapeError(f"{url}: {last_err} after {attempts} attempts") from e
+
+        if r.status_code == 200:
+            return r
+
+        if r.status_code >= 500 or r.status_code == 429:
+            last_err = f"HTTP {r.status_code}"
+            if i < attempts - 1:
+                time.sleep(_RETRY_BACKOFF[i])
+                continue
+            raise _ScrapeError(f"{url}: {last_err} after {attempts} attempts")
+
+        raise _ScrapeError(f"{url}: HTTP {r.status_code} (non-retryable)")
+
+    raise _ScrapeError(f"{url}: exhausted {attempts} attempts ({last_err})")
+
+
+def _fetch_yahoo_html(url: str, timeout: float = 5.0) -> str:
+    """Fetch a Yahoo HTML page with retry. Returns response body text."""
+    return _fetch_with_retry(url, timeout=timeout).text
 
 
 def _ratios_from_html(ticker: str) -> dict:
