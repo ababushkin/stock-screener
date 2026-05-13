@@ -1,0 +1,31 @@
+{
+  "ticker": "TSTY",
+  "company": "Test Fixture — MODEL_READY=YES",
+  "date": "2026-05-13",
+  "stages": {
+    "signal": {
+      "verdict": "BUY",
+      "profit_stage": "ESTABLISHED",
+      "track": "GROWTH",
+      "ai_layer": "INFRASTRUCTURE",
+      "clean_eps_ttm": 5.0,
+      "sbc_stripped": true,
+      "sbc_adjustment_per_share": 0.25,
+      "peg_ratio": 0.9,
+      "ps_ratio": 10.0,
+      "rule_of_40": null,
+      "qualitative": "PASS",
+      "qualitative_note": "All checks green — ABA-93 fixture for YES branch.",
+      "signal": "BUY",
+      "model_ready": "YES",
+      "condition": null
+    }
+  },
+  "meta": {
+    "profit_stage": "ESTABLISHED",
+    "track": "GROWTH",
+    "ai_layer": "INFRASTRUCTURE",
+    "confidence": "HIGH",
+    "fixture": "ABA-93 Check 3 — YES branch"
+  }
+}

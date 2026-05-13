@@ -1,0 +1,31 @@
+{
+  "ticker": "TSTC",
+  "company": "Test Fixture — MODEL_READY=CONDITIONAL",
+  "date": "2026-05-13",
+  "stages": {
+    "signal": {
+      "verdict": "WATCH",
+      "profit_stage": "ESTABLISHED",
+      "track": "GROWTH",
+      "ai_layer": "INCUMBENT",
+      "clean_eps_ttm": 4.0,
+      "sbc_stripped": true,
+      "sbc_adjustment_per_share": 0.50,
+      "peg_ratio": 1.5,
+      "ps_ratio": 7.0,
+      "rule_of_40": null,
+      "qualitative": "FLAG",
+      "qualitative_note": "Transition-year override applied — earnings history under 2 years.",
+      "signal": "WATCH",
+      "model_ready": "CONDITIONAL",
+      "condition": "Confirm second full year of positive EPS before running DCF — earnings history too short for reliable inputs."
+    }
+  },
+  "meta": {
+    "profit_stage": "ESTABLISHED",
+    "track": "GROWTH",
+    "ai_layer": "INCUMBENT",
+    "confidence": "MEDIUM",
+    "fixture": "ABA-93 Check 3 — CONDITIONAL branch"
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "ticker": "TSTN",
+  "company": "Test Fixture — MODEL_READY=NO",
+  "date": "2026-05-13",
+  "stages": {
+    "signal": {
+      "verdict": "CAUTION",
+      "profit_stage": "EMERGING",
+      "track": "GROWTH",
+      "ai_layer": "APPLICATION",
+      "clean_eps_ttm": null,
+      "sbc_stripped": false,
+      "sbc_adjustment_per_share": null,
+      "peg_ratio": null,
+      "ps_ratio": 35.0,
+      "rule_of_40": null,
+      "qualitative": "FAIL",
+      "qualitative_note": "Pre-profit base effect — Signal CAUTION overrides P/S threshold; PEG undefined. DCF not applicable.",
+      "signal": "CAUTION",
+      "model_ready": "NO",
+      "condition": null
+    }
+  },
+  "meta": {
+    "profit_stage": "EMERGING",
+    "track": "GROWTH",
+    "ai_layer": "APPLICATION",
+    "confidence": "LOW",
+    "fixture": "ABA-93 Check 3 — NO branch"
+  }
+}
