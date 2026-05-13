@@ -1,20 +1,20 @@
 ---
 name: stock:model
-description: DCF/valuation model for a tech stock. Invoked as `/stock:model TICKER [--confirm]`. Reads MODEL_READY from the upstream `/stock:signal` (conversation context preferred, same-day `reports/TICKER_YYYYMMDD.json` fallback) and branches: YES → run two-stage DCF (ESTABLISHED) and emit a bear/base/bull intrinsic-value range; CONDITIONAL → halt and surface `condition` (or proceed when `--confirm` is passed); NO → refuse and surface `qualitative_note`. Pre-profit (EMERGING) variant — revenue-multiple exit + FCF inflection — lands in ABA-34. Use whenever the user asks for an intrinsic value, fair-value range, DCF, or "what's it worth" on a ticker.
+description: DCF/valuation model for a tech stock. Invoked as `/stock:model TICKER [--confirm] [--pre-profit]`. Reads MODEL_READY from the upstream `/stock:signal` (conversation context preferred, same-day `reports/TICKER_YYYYMMDD.json` fallback) and branches: YES → run DCF and emit a bear/base/bull intrinsic-value range; CONDITIONAL → halt and surface `condition` (or proceed when `--confirm` is passed); NO → refuse and surface `qualitative_note`. ESTABLISHED profile uses two-stage DCF (5y FCF + Gordon terminal). EMERGING profile (or any ticker invoked with `--pre-profit`) uses revenue-multiple exit + FCF inflection + SBC dilution schedule. Use whenever the user asks for an intrinsic value, fair-value range, DCF, or "what's it worth" on a ticker.
 ---
 
 # Model — DCF & Intrinsic Value
 
-**Command:** `/stock:model TICKER [--confirm]`
-**Purpose:** Run a two-stage DCF for ESTABLISHED profitable tech and emit a bear/base/bull intrinsic-value range, after enforcing the upstream-context contract from `/stock:signal`. EMERGING (pre-profit) variant lands in ABA-34.
+**Command:** `/stock:model TICKER [--confirm] [--pre-profit]`
+**Purpose:** Run a DCF for a tech stock and emit a bear/base/bull intrinsic-value range, after enforcing the upstream-context contract from `/stock:signal`. ESTABLISHED → two-stage DCF (5y FCF + Gordon terminal). EMERGING (or any ticker forced with `--pre-profit`) → revenue-multiple exit + FCF inflection year + SBC dilution schedule.
 
 ---
 
 ## 1. Identity
 
 - **Skill name:** stock:model
-- **Command:** `/stock:model TICKER [--confirm]`
-- **Purpose:** Gate on the upstream Signal, then compute a two-stage DCF (5y explicit FCF projection + Gordon terminal) under three demonstrably-different scenario sets. Output a per-share intrinsic-value range (bear/base/bull) with each scenario's assumptions and narrative fully disclosed, and merge into `reports/TICKER_YYYYMMDD.json` under `stages.model`. EMERGING (pre-profit) ticker variant is handled by ABA-34.
+- **Command:** `/stock:model TICKER [--confirm] [--pre-profit]`
+- **Purpose:** Gate on the upstream Signal, then compute a DCF under three demonstrably-different scenario sets. ESTABLISHED profile → two-stage DCF (5y explicit FCF + Gordon terminal). EMERGING profile (or any ticker forced with `--pre-profit`) → revenue-multiple exit + FCF inflection + SBC dilution. Output a per-share intrinsic-value range (bear/base/bull) with each scenario's assumptions and narrative fully disclosed, and merge into `reports/TICKER_YYYYMMDD.json` under `stages.model`.
 
 ---
 
@@ -28,7 +28,7 @@ The gate also routes on `model_ready`. Signal's classification is the authoritat
 - `CONDITIONAL` — a specific user-confirmable risk exists. Halt and surface the `condition` string; require `--confirm` on re-invocation before continuing.
 - `NO` — Signal has already ruled the DCF out (pre-profit, qualitative FAIL, or hard CAUTION). Refuse and point back to Signal.
 
-v1.2 (ABA-31) lands the standard two-stage DCF for ESTABLISHED profile. EMERGING (pre-profit) variant — revenue-multiple exit + FCF inflection — lands in ABA-34.
+v1.2 (ABA-31) lands the standard two-stage DCF for ESTABLISHED profile. v1.3 (ABA-34) lands the pre-profit variant — revenue-multiple exit, explicit FCF inflection year per scenario, and SBC-driven dilution schedule. The `--pre-profit` flag forces the pre-profit variant even on an ESTABLISHED upstream classification (useful for transition-year tickers like RDDT whose recent profitability does not yet support a stable terminal-value calculation).
 
 ---
 
@@ -36,8 +36,9 @@ v1.2 (ABA-31) lands the standard two-stage DCF for ESTABLISHED profile. EMERGING
 
 ### GATHER
 
-1. Parse the ticker from the command argument. Uppercase it (e.g. `nvda` → `NVDA`). If blank, refuse immediately with: "Usage: `/stock:model TICKER [--confirm]`".
+1. Parse the ticker from the command argument. Uppercase it (e.g. `nvda` → `NVDA`). If blank, refuse immediately with: "Usage: `/stock:model TICKER [--confirm] [--pre-profit]`".
 2. Parse the optional `--confirm` flag. Its only effect is to allow a CONDITIONAL Signal to pass through (see GATE step 3 below).
+3. Parse the optional `--pre-profit` flag. Its effect is to force the pre-profit variant in ROUTE regardless of the upstream `profit_stage`. Accepted spellings: `--pre-profit`, `-- pre-profit` (separator tolerant). When set, record `route_override = "pre-profit"` for the OUTPUT block.
 
 ### GATE — Resolve upstream Signal, then branch on MODEL_READY
 
@@ -93,12 +94,17 @@ Surface the `qualitative_note` from the upstream Signal verbatim. Do not proceed
 
 **Ticker mismatch** (SIGNAL OUTPUT in context is for a different ticker, AND no same-day JSON for the requested ticker exists) is treated as "no upstream Signal" — use the Step 1 refusal message.
 
-### ROUTE — Branch on `profit_stage`
+### ROUTE — Branch on `profit_stage` (with `--pre-profit` override)
 
-After the gate passes (`model_ready = YES` or `CONDITIONAL` with `--confirm`):
+After the gate passes (`model_ready = YES` or `CONDITIONAL` with `--confirm`), pick a variant:
 
-- **`profit_stage = ESTABLISHED`** → continue to the standard two-stage DCF below (this skill).
-- **`profit_stage = EMERGING`** → this path is handled by the pre-profit variant in ABA-34 (revenue-multiple exit + FCF inflection). If reached in v1.2 before ABA-34 lands, refuse with: `EMERGING profile — pre-profit DCF variant (ABA-34) is not yet implemented. /stock:model standard DCF requires ESTABLISHED stage.`
+| `profit_stage` | `--pre-profit` flag | Variant |
+|---|---|---|
+| ESTABLISHED | absent | **Standard two-stage DCF** (GATHER → COMPUTE — ESTABLISHED below) |
+| ESTABLISHED | present | **Pre-profit variant** (GATHER → COMPUTE — EMERGING below). Emit: `Forcing pre-profit variant on ESTABLISHED ticker — terminal-value DCF skipped, revenue-multiple exit + FCF inflection used instead.` |
+| EMERGING | absent or present | **Pre-profit variant** (GATHER → COMPUTE — EMERGING below) |
+
+The `--pre-profit` override exists for transition-year companies (e.g. RDDT, recently profitable) where the trailing-FCF base is too thin for stable Gordon-growth terminal math, but where revenue trajectory + comp multiples + dilution schedule still produce a defensible range.
 
 ### GATHER — DCF inputs (ESTABLISHED path)
 
@@ -290,6 +296,205 @@ Take the min of any prior stage's confidence and the model's own confidence — 
 
 ---
 
+### GATHER — Pre-profit inputs (EMERGING path)
+
+Run these MCP calls in this order. Every retrieved figure is held with its raw value; never round during gather.
+
+1. **`get_ratios(ticker)`** — fields used: `currentPrice`, `marketCap`, `sharesOutstanding`.
+2. **`get_financials(ticker)`** — used for:
+   - `years[].revenue` (trailing revenue trajectory; minimum 3y required for CAGR)
+   - `years[].free_cash_flow` (margin baseline + visibility into how close to inflection the company is today; may be negative)
+   - `years[].stock_based_compensation` (SBC dilution input — required, never substituted)
+   - `years[].shares_outstanding_diluted` (compute historical dilution rate)
+   - `years[0].total_debt`, `years[0].cash` (net debt for EV→equity bridge)
+3. **`get_estimates(ticker)`** — fields used: `ntm_revenue` (Year-1 revenue anchor).
+4. **Web search for comparable EV/Revenue multiples.** Identify 3–5 public comps matched on (a) sector / business model, (b) revenue scale (within ~0.3×–3×), and (c) growth profile (NTM revenue growth within ~±15 pp). Retrieve current forward (NTM) EV/Revenue from the search results. Surface the comp list and their multiples to the user as part of the Manual Input Protocol below.
+
+**Manual Input Protocol fires (always grouped — one paste-in):**
+
+- **Base WACC** — same rule as ESTABLISHED; yfinance has no risk-free-rate / beta surface. Never default.
+- **Exit EV/Revenue multiple — base case.** Present the comp list and ask the user to confirm or override the base multiple. Bear is `base × 0.6`, bull is `base × 1.4` (state these scenario axes; do not ask separately).
+- **Terminal FCF margin target.** Industry-anchored. Ask the user for the steady-state margin the company is expected to achieve by Year 5 under the base case. Bear is `target − 5 pp`, bull is `target + 5 pp`. Never default.
+- **SBC dilution rate (annual %).** Pre-fill with the trailing 3y dilution rate derived from `shares_outstanding_diluted` history: `dilution_3y = (years[0].shares / years[3].shares) ^ (1/3) − 1`. Surface this number and the historical share-count series, and ask the user to confirm or override. Bear is `confirmed × 1.5`, bull is `confirmed × 0.5` (dilution accelerates in bear, decelerates in bull) — state these axes; do not ask separately.
+
+Manual inputs are tagged `source: "user_paste"`; `meta.confidence` caps at MEDIUM. If the user accepts every pre-filled value with no override, still record `source: "user_confirmed"` — the value is load-bearing on the output.
+
+If `get_financials` returns null `stock_based_compensation` for the latest year: refuse with `Pre-profit variant requires SBC data; yf MCP returned null. Re-run with --confirm only after SBC is verified manually.` Do not proceed without SBC — the dilution schedule is a first-class output.
+
+### COMPUTE — Pre-profit (revenue-multiple exit + FCF inflection)
+
+Execute in order. The math anchors on revenue (not FCF) because pre-profit companies do not yet have a stable FCF base.
+
+**Step 1 — Revenue trajectory per scenario.**
+
+- `rev_cagr_3y = (years[0].revenue / years[3].revenue) ^ (1/3) − 1` (use shorter history with the same degraded formulations as ESTABLISHED Step 1 if 4y is unavailable).
+- Year-1 revenue is anchored on NTM consensus, perturbed per scenario:
+
+| Scenario | Y1 revenue | Y2–Y5 CAGR |
+|---|---|---|
+| Bear | `ntm_revenue × 0.85` | `max(rev_cagr_3y × 0.50, 0.05)` |
+| Base | `ntm_revenue` | `rev_cagr_3y` |
+| Bull | `ntm_revenue × 1.15` | `rev_cagr_3y × 1.15 + 0.03` |
+
+Project `revenue_y_n = revenue_y_(n−1) × (1 + cagr)` for n = 2..5.
+
+**Step 2 — FCF margin trajectory and inflection year.**
+
+- `margin_ttm = years[0].free_cash_flow / years[0].revenue` (may be negative).
+- Target Year-5 margin per scenario: `target − 5pp` (bear) / `target` (base) / `target + 5pp` (bull), where `target` is the user-confirmed terminal margin.
+- Linear interpolation across Years 1–5: `margin_y_n = margin_ttm + (target − margin_ttm) × (n / 5)`.
+- `fcf_y_n = revenue_y_n × margin_y_n` (negative in early years if the company is still cash-burning).
+- **FCF inflection year:** the smallest n ∈ {1..5} such that `fcf_y_n ≥ 0` AND `fcf_y_m ≥ 0` for all m ≥ n in {1..5} (i.e., first year of *sustained* positive FCF — not a one-off blip).
+- If no scenario reaches positive FCF by Y5, name it explicitly: `inflection_year = "beyond Y5"`. Do **not** silently assume eventual inflection — surface it as a model limitation in the OUTPUT block.
+
+**Step 3 — Exit enterprise value.**
+
+| Scenario | Exit EV/Revenue multiple | Exit EV at end of Year 5 |
+|---|---|---|
+| Bear | `base_multiple × 0.6` | `revenue_y5 × bear_multiple` |
+| Base | `base_multiple` (user-confirmed) | `revenue_y5 × base_multiple` |
+| Bull | `base_multiple × 1.4` | `revenue_y5 × bull_multiple` |
+
+No Gordon-growth terminal — the exit-multiple is the terminal. State that explicitly in the OUTPUT block.
+
+**Step 4 — SBC dilution schedule.**
+
+- `dilution_rate` per scenario: `confirmed_rate × 1.5` (bear) / `confirmed_rate` (base) / `confirmed_rate × 0.5` (bull).
+- `shares_y_n = shares_y_(n−1) × (1 + dilution_rate)` for n = 1..5, starting from `years[0].shares_outstanding_diluted`.
+- The Year-5 diluted share count is the divisor for per-share IV — using today's share count overstates IV. This is the whole reason dilution is first-class.
+- Also report `dilution_pct_5y = (shares_y5 / shares_y0) − 1` for the OUTPUT block.
+
+**Step 5 — Discount to present.**
+
+For each scenario:
+
+```
+EV_today = Σ_{n=1..5} fcf_y_n / (1 + wacc)^n   +   exit_ev / (1 + wacc)^5
+```
+
+The first sum includes negative FCFs in early years if the company is still burning cash — this is a real present-value drag and must be carried (do not floor at zero).
+
+**Step 6 — Equity bridge and per-share intrinsic value.**
+
+- `net_debt = years[0].total_debt − years[0].cash` (keep the sign; negative means net cash).
+- `equity_value = EV_today − net_debt`
+- `intrinsic_value_per_share = equity_value / shares_y5`  ← **Year-5 diluted shares**, not today's.
+- `upside_pct = (intrinsic_value_per_share / currentPrice − 1) × 100`
+
+**Step 7 — Range integrity check.**
+
+Same rule as ESTABLISHED: require `bear_iv < base_iv < bull_iv`. If violated, stop, surface the three scenario input/output tables, and ask the user to widen the exit-multiple, margin-target, or dilution-rate deltas. Never silently re-order.
+
+**Step 8 — Sensitivity note.**
+
+For the pre-profit variant the dominant drivers are usually exit multiple and terminal margin (not WACC). Vary one assumption at a time around base:
+
+- Exit multiple ± 1.0× (absolute)
+- Terminal FCF margin ± 300 bps
+- Dilution rate ± 200 bps annual
+- WACC ± 100 bps
+
+Report the largest-swing driver as a one-line note. The numbers shown are the percentage change in base IV.
+
+### THRESHOLD — Range vs price
+
+Identical to the ESTABLISHED path (MARGIN OF SAFETY / WITHIN BEAR–BASE / WITHIN BASE–BULL / PRICE EXCEEDS RANGE).
+
+### OUTPUT — Pre-profit MODEL OUTPUT block + JSON merge
+
+```
+MODEL OUTPUT
+  Ticker:          [TICKER]
+  Method:          Revenue-multiple exit + FCF inflection (pre-profit variant)
+  Profit stage:    [EMERGING | ESTABLISHED (forced --pre-profit)]
+  Upstream:        SIGNAL OUTPUT (source=context|reports/TICKER_YYYYMMDD.json, verdict=..., MODEL_READY=...)
+
+  Current price:   $X.XX
+  Shares today:    XXX.X M (diluted)
+  Net debt:        $X.X B (total_debt $X.X B − cash $X.X B, FY ending YYYY-MM-DD)
+  Revenue (TTM):   $X.X B  |  3y CAGR: XX%  |  TTM FCF margin: -X% (cash-burning)
+  NTM revenue:     $X.X B (consensus)
+  Base WACC:       X.X% (source: user_paste)
+  Comp set:        [TICKER1: NTM EV/Rev X.Xx, TICKER2: X.Xx, ...]  →  base exit multiple: X.Xx (user-confirmed)
+  Terminal margin target (base): XX% (user-confirmed)
+  SBC dilution (base): X.X% annual (3y trailing: X.X%, user-confirmed)
+
+  Bear: $X.XX / share — [N]% [up|down]side
+    Y1 rev: $X.XB (NTM × 0.85)  |  Y2-5 rev CAGR: X%  |  exit mult: X.Xx (base × 0.6)
+    Terminal margin: XX% (target − 5pp)  |  Annual dilution: X.X% (base × 1.5)
+    FCF inflection: Year N  |  Y5 share count: XXX.X M (+X% vs today)
+    Narrative: revenue miss, slower margin path, accelerated dilution, comp multiples compress
+
+  Base: $X.XX / share — [N]% [up|down]side
+    Y1 rev: $X.XB (NTM consensus)  |  Y2-5 rev CAGR: X%  |  exit mult: X.Xx (comp median)
+    Terminal margin: XX% (industry-anchored)  |  Annual dilution: X.X% (trailing 3y)
+    FCF inflection: Year N  |  Y5 share count: XXX.X M (+X% vs today)
+    Narrative: consensus revenue + linear margin convergence + historical dilution rate persists
+
+  Bull: $X.XX / share — [N]% [up|down]side
+    Y1 rev: $X.XB (NTM × 1.15)  |  Y2-5 rev CAGR: X%  |  exit mult: X.Xx (base × 1.4)
+    Terminal margin: XX% (target + 5pp)  |  Annual dilution: X.X% (base × 0.5)
+    FCF inflection: Year N  |  Y5 share count: XXX.X M (+X% vs today)
+    Narrative: revenue beat, faster operating-leverage, dilution decelerates as SBC grants vest, comp multiples expand
+
+  Range vs price: [MARGIN OF SAFETY | WITHIN BEAR–BASE | WITHIN BASE–BULL | PRICE EXCEEDS RANGE]
+  Sensitivity:    [one-line dominant-driver note — usually exit multiple or margin target for pre-profit]
+```
+
+If any scenario's inflection year is `beyond Y5`, the line reads `FCF inflection: beyond Y5 — model assumes exit-multiple buyer absorbs continued cash burn`.
+
+**JSON merge into `reports/TICKER_YYYYMMDD.json` under `stages.model`:**
+
+```json
+"model": {
+  "method": "pre-profit (revenue-multiple exit + FCF inflection)",
+  "profit_stage": "EMERGING | ESTABLISHED",
+  "route_override": "pre-profit | null",
+  "current_price": <number>,
+  "shares_today": <number>,
+  "net_debt": <number>,
+  "revenue_ttm": <number>,
+  "rev_cagr_3y": <number>,
+  "fcf_margin_ttm": <number>,
+  "ntm_revenue": <number>,
+  "base_wacc": <number>,
+  "comp_set": [{"ticker": "...", "ntm_ev_revenue": <number>}],
+  "base_exit_multiple": <number>,
+  "terminal_margin_target": <number>,
+  "sbc_dilution_base": <number>,
+  "sbc_dilution_3y_trailing": <number>,
+  "scenarios": {
+    "bear": {
+      "y1_revenue": <number>, "y2_5_rev_cagr": <number>, "exit_multiple": <number>,
+      "terminal_margin": <number>, "dilution_rate": <number>,
+      "fcf_inflection_year": <integer | "beyond Y5">,
+      "shares_y5": <number>, "dilution_pct_5y": <number>,
+      "intrinsic_value_per_share": <number>, "upside_pct": <number>,
+      "narrative": "..."
+    },
+    "base": { /* same shape */ },
+    "bull": { /* same shape */ }
+  },
+  "range_vs_price": "MARGIN OF SAFETY | WITHIN BEAR-BASE | WITHIN BASE-BULL | PRICE EXCEEDS RANGE",
+  "sensitivity": {"dominant_driver": "exit_multiple | terminal_margin | dilution_rate | wacc", "note": "..."}
+}
+```
+
+After writing, print:
+
+```
+Wrote: reports/RDDT_20260513.json  ← stages.model (pre-profit)
+RDDT — pre-profit DCF bear/base/bull = $X / $Y / $Z (price $P, WITHIN BEAR–BASE; FCF inflection base=Y3)
+```
+
+**Confidence rules (`meta.confidence`):**
+
+- HIGH: not reachable for pre-profit — by construction, the variant relies on user-confirmed comp multiples and margin targets, so confidence caps at MEDIUM.
+- MEDIUM: comp set retrieved from web search with ≥3 matches; all manual inputs user-confirmed; range integrity passed first time; SBC data present.
+- LOW: <3 comp matches, or SBC data partial, or range integrity required user re-input, or no scenario reaches FCF inflection by Y5.
+
+---
+
 ## 4. Common rationalisations to pre-rebut
 
 | Rationalisation | Counter |
@@ -308,6 +513,13 @@ Take the min of any prior stage's confidence and the model's own confidence — 
 | "WACC > g failed in the bull scenario; I'll just use g = WACC − 0.001 to keep the formula valid." | Forbidden. If `wacc ≤ g`, narrow the WACC adjustment (e.g. reduce the bull WACC discount from −1.0 pp to −0.5 pp) and **state the override in the OUTPUT block** so the user can see why bull discount narrowed. Numerical tricks that hide a broken scenario from the reader are exactly what the rationalisations table exists to prevent. |
 | "The user just wants a number — I'll skip the sensitivity note." | The sensitivity note is required output. It tells the user which assumption their valuation is most fragile to; omitting it gives a confident-looking point estimate with no fragility disclosure. |
 | "Net debt is negative (net cash) so I'll set it to zero." | Forbidden. Net debt of −X means equity = EV + X; keep the sign. Net-cash tech companies are common and the equity bridge must reflect it. |
+| "Pre-profit company is cash-burning; I'll just floor early-year FCFs at zero so the DCF doesn't look ugly." | Forbidden. Negative early-year FCFs are real present-value drag and must be discounted as-is. Hiding them inflates the IV and masks the cost of the company's runway to profitability. |
+| "Comp multiples vary; I'll just pick a round number like 5× and call it the base." | Forbidden. The base exit multiple must come from a documented comp set (3–5 tickers with their NTM EV/Revenue) surfaced to the user for confirmation. "Pick a round number" is the fabrication path. |
+| "The comp tickers I think of off the top of my head are good enough; I'll skip the web search." | Forbidden. Comp multiples drift; using training-cutoff multiples in a 2026 valuation is hallucination. Web-search the current NTM EV/Revenue for each comp at run time, then ask the user to confirm. |
+| "FCF inflection year is a soft concept; I'll just write 'eventually profitable' in the narrative." | Forbidden. The acceptance contract requires *naming* the year of first sustained positive FCF per scenario. If no scenario reaches inflection by Y5, write `beyond Y5` explicitly — never paper over with "eventually". |
+| "SBC dilution is small; I can just use today's share count for the per-share IV." | Forbidden. Pre-profit tech routinely dilutes 3–8% annually; over 5 years that compounds to 16–47%. Per-share IV must divide by Year-5 diluted shares, not today's. This is the whole reason the dilution schedule is first-class. |
+| "I'll set bear dilution = base dilution; the rate doesn't vary that much across scenarios." | The acceptance contract requires demonstrably-different assumption sets. Dilution is one of the four scenario axes (along with revenue, margin, multiple); use `× 1.5 / × 1.0 / × 0.5`. Collapsing axes defeats the bear/base/bull discipline. |
+| "Gordon-growth terminal would give a cleaner number than a revenue-multiple exit." | Forbidden for pre-profit. Gordon growth requires a stable FCF base and a defensible long-run growth rate; pre-profit companies have neither. Revenue-multiple exit is the honest call — comp-anchored, scenario-disclosed, and not pretending to a precision the inputs don't support. |
 
 ---
 
@@ -339,4 +551,13 @@ Take the min of any prior stage's confidence and the model's own confidence — 
 16. **Sensitivity note present →** the OUTPUT block names exactly one dominant driver (WACC / terminal growth / Y2–5 CAGR) with a one-line magnitude statement.
 17. **`wacc ≤ g` override is disclosed →** if a scenario required narrowing the WACC adjustment to keep `wacc > g`, the OUTPUT block states the override explicitly; the user never sees a silently re-tuned scenario.
 
-EMERGING-path math (revenue-multiple exit + FCF inflection) is tracked in ABA-34.
+### v1.3 — ABA-34 (pre-profit variant)
+
+18. **EMERGING + MODEL_READY=YES →** invoking `/stock:model TICKER` (no flag) routes to the pre-profit variant; output `method` field reads `pre-profit (revenue-multiple exit + FCF inflection)`.
+19. **`--pre-profit` flag on ESTABLISHED ticker →** routes to the pre-profit variant, prints the `Forcing pre-profit variant...` acknowledgement, sets `route_override = "pre-profit"` in JSON, and uses revenue-multiple exit instead of Gordon-growth terminal.
+20. **Implied EV from revenue multiple →** each scenario's output explicitly shows `revenue_y5 × exit_multiple` as the terminal anchor; no Gordon-growth math runs in this path.
+21. **FCF inflection year named per scenario →** every scenario's output line includes `FCF inflection: Year N` or `FCF inflection: beyond Y5`. The skill never paraphrases this to "eventually profitable" or omits it.
+22. **SBC dilution schedule first-class →** the OUTPUT block and the JSON both carry `dilution_rate` and `shares_y5` per scenario, with `dilution_pct_5y` reported. Per-share IV divides by Y5 diluted shares, not today's. If SBC data is unavailable, the skill refuses rather than computing a dilution-free IV.
+23. **Comp set sourced and confirmed →** the run includes a web-search step that produces ≥3 comparable tickers with their NTM EV/Revenue, surfaced to the user for confirmation via MIP. Confidence caps at MEDIUM for the pre-profit variant by construction.
+24. **Bear < Base < Bull holds across the new scenario axes →** Y1 revenue, Y2–5 CAGR, exit multiple, terminal margin, and dilution rate each move on an independent axis; range integrity is enforced the same way as ESTABLISHED.
+25. **Acceptance smoke (RDDT) →** running `/stock:signal RDDT` then `/stock:model RDDT --pre-profit` produces a MODEL OUTPUT block with all three scenarios, named FCF inflection years, a comp-anchored exit multiple, and a SBC dilution schedule — and merges into `reports/RDDT_YYYYMMDD.json` without overwriting `stages.signal`.
