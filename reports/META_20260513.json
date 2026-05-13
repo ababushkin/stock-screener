@@ -1,13 +1,77 @@
 {
   "ticker": "META",
-  "company": null,
+  "company": "Meta Platforms, Inc.",
   "date": "2026-05-13",
   "stages": {
+    "model": {
+      "method": "two-stage DCF",
+      "profit_stage": "ESTABLISHED",
+      "current_price": 603.0,
+      "shares_diluted": 2574000000,
+      "net_debt": 48024000000,
+      "fcf_ttm": 46109000000,
+      "fcf_margin_ttm": 0.2294,
+      "fcf_cagr_3y": 0.336,
+      "ntm_revenue": 301559475610,
+      "base_wacc": 0.09,
+      "scenarios": {
+        "bear": {
+          "y1_fcf": 58700000000,
+          "y2_5_cagr": 0.168,
+          "terminal_growth": 0.015,
+          "wacc": 0.10,
+          "intrinsic_value_per_share": 413.6,
+          "upside_pct": -31.4,
+          "narrative": "revenue miss, decelerating growth, tighter cost of capital"
+        },
+        "base": {
+          "y1_fcf": 69060000000,
+          "y2_5_cagr": 0.336,
+          "terminal_growth": 0.025,
+          "wacc": 0.09,
+          "intrinsic_value_per_share": 1050.5,
+          "upside_pct": 74.2,
+          "narrative": "consensus delivers, growth normalises to GDP+"
+        },
+        "bull": {
+          "y1_fcf": 75970000000,
+          "y2_5_cagr": 0.423,
+          "terminal_growth": 0.035,
+          "wacc": 0.08,
+          "intrinsic_value_per_share": 2132.5,
+          "upside_pct": 253.6,
+          "narrative": "revenue beat, operating leverage, rate-easing tailwind"
+        }
+      },
+      "range_vs_price": "WITHIN BEAR-BASE",
+      "sensitivity": {
+        "dominant_driver": "WACC",
+        "note": "WACC dominates — ±100 bps WACC moves base IV by ±17% (vs ±14% for terminal g, ±9% for Y2–5 CAGR)"
+      },
+      "manual_inputs": [{"field": "base_wacc", "source": "user_paste"}]
+    },
+    "signal": {
+      "verdict": "WATCH",
+      "profit_stage": "ESTABLISHED",
+      "track": "GROWTH",
+      "ai_layer": "INCUMBENT",
+      "clean_eps_ttm": 18.20,
+      "sbc_stripped": true,
+      "sbc_adjustment_per_share": 9.30,
+      "peg_ratio": 1.72,
+      "ps_ratio": 7.12,
+      "rule_of_40": null,
+      "qualitative": "PASS",
+      "qualitative_note": "AI optionality premium 15.9% (AI capex ~$48.8B × 5× proxy / $1,531B mcap) — proportionate to core business value",
+      "signal": "WATCH",
+      "model_ready": "YES",
+      "condition": null
+    },
     "screen": {
       "verdict": "SKIP",
       "profit_stage": "ESTABLISHED",
       "ratios": {
-        "pe_ratio": 21.93525,
+        "pe_ratio": 21.927273,
         "ps_ratio": 7.120618,
         "ev_ebitda": 14.054,
         "pfcf": 59.88944209332116,
@@ -36,20 +100,36 @@
         "earnings_yield": 0.05274981116089866,
         "roic": null,
         "roic_note": "ROIC not computable from current yf MCP surface (canonical denominator requires total_assets, current_assets/liabilities, intangibles). See ABA-70.",
-        "flag": "PASS",
-        "rank": 1
+        "flag": "PASS"
       },
       "gross_margin": null,
       "gross_margin_gate": null,
       "rule_of_40": null,
       "ev_ntm_revenue": null,
-      "rationale": "Quality ratio 3/9 = 33% (below 55% WATCH cutoff) triggers SKIP regardless of Magic Formula PASS (EY 5.27%, rank 1 of 5; ROIC N/A — MCP-constrained per ABA-70); profitability and revenue growth exist but FCF declined YoY, op-margin contracted (41.4% vs 42.2%), total debt rose 71% (49.1B→83.9B), cash buffer shrank, and SBC intensity edged up."
+      "rationale": "Quality ratio 3/9 = 33% (below 55% WATCH cutoff) triggers SKIP despite Magic Formula PASS (single-ticker EY 5.27% > 5% threshold; ROIC N/A — MCP-constrained per ABA-70); FY2025 vs FY2024 shows NI declining (60.5B vs 62.4B), FCF declining (46.1B vs 54.1B), op-margin contracting (41.4% vs 42.2%), total debt rising 71% (49.1B→83.9B), cash shrinking (35.9B vs 43.9B), and SBC intensity edging up — only profitability/FCF existence and topline growth remain positive."
+    },
+    "timing": {
+      "verdict": "NEUTRAL",
+      "sue": 0.9427559099641826,
+      "sue_window": "4q",
+      "sue_caveat": "4-quarter std-dev is statistically weaker than the 8-quarter window used in the academic literature; treat SUE > 1.5 as the noise floor for v1.",
+      "pead_window_status": "IN WINDOW",
+      "days_since_earnings": 43,
+      "pead_late_window": false,
+      "revision_direction": null,
+      "net_revisions_7d": null,
+      "net_revisions_30d": null,
+      "next_catalyst": "Estimated earnings ~2026-06-29",
+      "next_catalyst_date": "2026-06-29",
+      "days_to_catalyst": 47,
+      "catalyst_source": "estimated",
+      "rationale": "SUE 0.94 is below the 1.5 v1 noise floor (driven by the FY2025-Q3 -84% miss inflating sample std-dev to ~4.01 even though Q1-2026 surprise was +$3.78); PEAD still nominally IN WINDOW (day 43 of 60) but the surprise quality is mixed; revision direction N/A (yf MCP get_revisions tool not implemented, ABA-68); estimated catalyst ~47 days out (period-end + 90d, ABA-69) — no override fires. Verdict NEUTRAL: ACT NOW unreachable without revisions, no decisive WAIT FOR BETTER ENTRY trigger."
     }
   },
   "meta": {
     "profit_stage": "ESTABLISHED",
     "track": "GROWTH",
-    "ai_layer": null,
-    "confidence": "HIGH"
+    "ai_layer": "INCUMBENT",
+    "confidence": "MEDIUM"
   }
 }
