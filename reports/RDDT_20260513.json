@@ -1,8 +1,100 @@
 {
   "ticker": "RDDT",
-  "company": null,
+  "company": "Reddit, Inc.",
   "date": "2026-05-13",
   "stages": {
+    "model": {
+      "method": "pre-profit (revenue-multiple exit + FCF inflection)",
+      "profit_stage": "ESTABLISHED",
+      "route_override": "pre-profit",
+      "current_price": 152.35,
+      "shares_today": 202107978,
+      "net_debt": -930355000,
+      "revenue_ttm": 2202506000,
+      "rev_cagr_3y": 0.489,
+      "fcf_margin_ttm": 0.3106,
+      "ntm_revenue": 4250567220,
+      "base_wacc": 0.10,
+      "comp_set": [
+        {"ticker": "META", "ntm_ev_revenue": 7.1},
+        {"ticker": "PINS", "ntm_ev_revenue": 1.9},
+        {"ticker": "SNAP", "ntm_ev_revenue": 1.2}
+      ],
+      "base_exit_multiple": 6.0,
+      "terminal_margin_target": 0.25,
+      "sbc_dilution_base": 0.10,
+      "sbc_dilution_3y_trailing": 0.10,
+      "scenarios": {
+        "bear": {
+          "y1_revenue": 3613000000,
+          "y2_5_rev_cagr": 0.2445,
+          "exit_multiple": 3.6,
+          "terminal_margin": 0.20,
+          "dilution_rate": 0.15,
+          "fcf_inflection_year": 1,
+          "shares_y5": 406500000,
+          "dilution_pct_5y": 1.011,
+          "intrinsic_value_per_share": 60.02,
+          "upside_pct": -60.6,
+          "narrative": "revenue miss, slower margin path, accelerated dilution, comp multiples compress to PINS-band"
+        },
+        "base": {
+          "y1_revenue": 4250567220,
+          "y2_5_rev_cagr": 0.489,
+          "exit_multiple": 6.0,
+          "terminal_margin": 0.25,
+          "dilution_rate": 0.10,
+          "fcf_inflection_year": 1,
+          "shares_y5": 325500000,
+          "dilution_pct_5y": 0.611,
+          "intrinsic_value_per_share": 273.81,
+          "upside_pct": 79.7,
+          "narrative": "consensus revenue, trailing 3y CAGR extends, linear margin convergence to ad-platform mid-range, historical dilution persists"
+        },
+        "bull": {
+          "y1_revenue": 4888152303,
+          "y2_5_rev_cagr": 0.5924,
+          "exit_multiple": 8.4,
+          "terminal_margin": 0.30,
+          "dilution_rate": 0.05,
+          "fcf_inflection_year": 1,
+          "shares_y5": 257900000,
+          "dilution_pct_5y": 0.276,
+          "intrinsic_value_per_share": 733.61,
+          "upside_pct": 381.6,
+          "narrative": "revenue beat, operating leverage extends runway, IPO grant cliff exits dilution schedule, comp multiples expand above META"
+        }
+      },
+      "range_vs_price": "WITHIN BEAR-BASE",
+      "sensitivity": {
+        "dominant_driver": "exit_multiple",
+        "note": "Exit multiple dominates — ±1.0x moves base IV by ±14.5% (vs ±9% for dilution ±200 bps, ±5% for WACC ±100 bps, ±0.6% for terminal margin ±300 bps); margin matters less because exit anchors on revenue not FCF"
+      },
+      "manual_inputs": [
+        {"field": "base_wacc", "source": "user_paste"},
+        {"field": "base_exit_multiple", "source": "user_paste"},
+        {"field": "terminal_margin_target", "source": "user_paste"},
+        {"field": "sbc_dilution_base", "source": "user_paste"}
+      ],
+      "caveat": "RDDT already inflected to positive FCF in FY2024; pre-profit variant invoked via --pre-profit override because thin profitable history (2y) does not support stable Gordon-growth terminal — exit-multiple framing remains honest, but FCF inflection year is degenerate (Y1 for all scenarios)."
+    },
+    "signal": {
+      "verdict": "WATCH",
+      "profit_stage": "ESTABLISHED",
+      "track": "GROWTH",
+      "ai_layer": "N/A",
+      "clean_eps_ttm": 1.80,
+      "sbc_stripped": true,
+      "sbc_adjustment_per_share": 1.70,
+      "peg_ratio": 1.11,
+      "ps_ratio": 11.86,
+      "rule_of_40": null,
+      "qualitative": "PASS",
+      "qualitative_note": "Transition year (FY2025 second full profitable year, FCF margin 31.1%); PEG 1.11 (clean fwd P/E 32.1 / derived 5y g 29.0%) supports WATCH. AI layer N/A — UGC platform monetised via ads, not AI thesis.",
+      "signal": "WATCH",
+      "model_ready": "CONDITIONAL",
+      "condition": "Confirm 2nd profitable year before running Model — earnings history too short for reliable Gordon-growth terminal; pre-profit variant (--pre-profit) recommended over standard DCF."
+    },
     "screen": {
       "verdict": "WATCH",
       "profit_stage": "ESTABLISHED",
@@ -43,13 +135,19 @@
       "gross_margin_gate": null,
       "rule_of_40": null,
       "ev_ntm_revenue": null,
-      "rationale": "Transition-year inflection — all 9 Q-signals true (first profitable year, SBC intensity collapsed 62%→16% of revenue as one-time IPO awards rolled off) but Magic Formula WATCH (EY 1.56%, rank 5 of 5 — operating income still small relative to EV; ROIC N/A — MCP-constrained per ABA-70). Quality ratio 1.0 ≥ 75% but MF=WATCH caps verdict at WATCH; ESTABLISHED classification by P/E 43.7."
+      "rationale": "Transition-year inflection — all 9 Q-signals true (first profitable year, SBC intensity collapsed 62%->16% of revenue as one-time IPO awards rolled off) but Magic Formula WATCH (EY 1.56%, rank 5 of 5 — operating income still small relative to EV; ROIC N/A — MCP-constrained per ABA-70). Quality ratio 1.0 >= 75% but MF=WATCH caps verdict at WATCH; ESTABLISHED classification by P/E 43.7."
     }
   },
   "meta": {
     "profit_stage": "ESTABLISHED",
     "track": "GROWTH",
-    "ai_layer": null,
-    "confidence": "HIGH"
+    "ai_layer": "N/A",
+    "confidence": "MEDIUM",
+    "manual_inputs": [
+      {"field": "base_wacc", "source": "user_paste"},
+      {"field": "base_exit_multiple", "source": "user_paste"},
+      {"field": "terminal_margin_target", "source": "user_paste"},
+      {"field": "sbc_dilution_base", "source": "user_paste"}
+    ]
   }
 }
