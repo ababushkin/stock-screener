@@ -255,22 +255,48 @@ Every skill appends or creates a report file at `reports/TICKER_YYYYMMDD.json`. 
       "condition": null
     },
     "model": {
-      "verdict": "BUY",
+      "method": "two-stage DCF",
       "profit_stage": "ESTABLISHED",
-      "dcf_intrinsic_value": 142.50,
+      "route_override": null,
       "current_price": 137.20,
-      "upside_pct": 3.9,
-      "wacc": 0.09,
-      "terminal_growth": 0.03,
-      "revenue_cagr_5y": 0.22,
-      "sensitivity": {
-        "bear": 98.0,
-        "base": 142.5,
-        "bull": 201.0
+      "shares_diluted": 24500000000,
+      "net_debt": -50000000000,
+      "fcf_ttm": 60000000000,
+      "fcf_margin_ttm": 0.34,
+      "fcf_cagr_3y": 0.28,
+      "ntm_revenue": 200000000000,
+      "base_wacc": 0.09,
+      "scenarios": {
+        "bear": { "y1_fcf": 55000000000, "y2_5_cagr": 0.12, "terminal_growth": 0.02, "wacc": 0.10, "intrinsic_value_per_share": 98.0, "upside_pct": -28.6, "narrative": "deceleration, multiple compression" },
+        "base": { "y1_fcf": 65000000000, "y2_5_cagr": 0.22, "terminal_growth": 0.03, "wacc": 0.09, "intrinsic_value_per_share": 142.5, "upside_pct": 3.9, "narrative": "consensus delivers" },
+        "bull": { "y1_fcf": 75000000000, "y2_5_cagr": 0.30, "terminal_growth": 0.035, "wacc": 0.08, "intrinsic_value_per_share": 201.0, "upside_pct": 46.5, "narrative": "AI tailwind, operating leverage" }
       },
-      "position_sizing": "2-3% of portfolio",
-      "confidence": "HIGH"
+      "intrinsic_value_range": { "bear": 98.0, "base": 142.5, "bull": 201.0 },
+      "range_vs_price": "WITHIN BASE-BULL",
+      "sensitivity": { "dominant_driver": "WACC", "note": "±100 bps WACC moves base IV by ±15%" },
+      "sensitivity_table": {
+        "wacc_axis": [0.08, 0.085, 0.09, 0.095, 0.10],
+        "terminal_growth_axis": [0.02, 0.025, 0.03, 0.035, 0.04],
+        "intrinsic_value_per_share": [[ "...5x5 grid..." ]],
+        "base_cell": { "row": 2, "col": 2 }
+      },
+      "position_sizing": {
+        "band": "2–3% of portfolio",
+        "lower_pct": 2,
+        "upper_pct": 3,
+        "signal_verdict": "BUY",
+        "range_vs_price": "WITHIN BASE-BULL",
+        "margin_of_safety_pct": 3.9,
+        "confidence_cap_applied": false,
+        "rationale": "BUY × WITHIN BASE-BULL → 2–3% band; HIGH confidence cap not binding."
+      },
+      "manual_inputs": [{ "field": "base_wacc", "source": "user_paste" }]
     },
+    /* Pre-profit variant (--pre-profit override or EMERGING profile) replaces
+       scenario contents with: y1_revenue, y2_5_rev_cagr, exit_multiple, terminal_margin,
+       dilution_rate, fcf_inflection_year, shares_y5, dilution_pct_5y; and the model block
+       adds top-level fields: revenue_ttm, rev_cagr_3y, comp_set[], base_exit_multiple,
+       terminal_margin_target, sbc_dilution_base, sbc_dilution_3y_trailing, caveat. */
     "timing": {
       "verdict": "WAIT_FOR_CATALYST",
       "current_price": 137.20,
