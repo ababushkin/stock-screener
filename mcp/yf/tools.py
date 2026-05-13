@@ -5,6 +5,8 @@ from typing import Optional
 
 import pandas as pd
 import yfinance as yf
+from bs4 import BeautifulSoup
+from curl_cffi import requests as creq
 
 
 class YFNoDataError(Exception):
@@ -13,6 +15,10 @@ class YFNoDataError(Exception):
 
 class FXNoDataError(Exception):
     """yfinance returned no usable FX rate for this currency pair."""
+
+
+class _ScrapeError(Exception):
+    """Yahoo HTML page was unreachable or unparseable."""
 
 
 def get_fx_rate(base: str, quote: str) -> dict:
@@ -285,6 +291,125 @@ def get_analyst_targets(ticker: str) -> dict:
         "hold_count": hold_count,
         "sell_count": sell_count,
         "date": date.today().isoformat(),
+    }
+
+
+_SI_SUFFIX = {"T": 1e12, "B": 1e9, "M": 1e6, "k": 1e3, "K": 1e3}
+
+
+def _parse_si_number(s: str) -> Optional[float]:
+    """Parse Yahoo's "16.24B" / "189.88M" / "2.42T" / "7.15" / "--" strings.
+
+    Returns None when the value is a Yahoo placeholder (`--`, empty) or
+    unparseable. Strips commas and percent signs.
+    """
+    if s is None:
+        return None
+    s = s.strip().replace(",", "")
+    if not s or s in ("--", "N/A"):
+        return None
+    pct = s.endswith("%")
+    if pct:
+        s = s[:-1]
+    mult = 1.0
+    if s and s[-1] in _SI_SUFFIX:
+        mult = _SI_SUFFIX[s[-1]]
+        s = s[:-1]
+    try:
+        v = float(s) * mult
+    except ValueError:
+        return None
+    return v / 100.0 if pct else v
+
+
+def _parse_valuation_table(soup: BeautifulSoup) -> dict:
+    """Extract the Valuation Measures `{label: current_value}` from a Yahoo
+    key-statistics page.
+
+    The table lives at `<section data-testid="qsp-statistics">` → first
+    `<table>` inside. Each `<tr>` has cells: label, Current, 5 historical
+    quarters. We take the "Current" cell (index 1).
+
+    Returns an empty dict if the section is absent or empty — caller decides
+    whether that is fatal.
+    """
+    section = soup.find("section", attrs={"data-testid": "qsp-statistics"})
+    if section is None:
+        return {}
+    table = section.find("table")
+    if table is None:
+        return {}
+    out: dict[str, Optional[float]] = {}
+    for tr in table.find_all("tr"):
+        cells = [c.get_text(" ", strip=True) for c in tr.find_all(["td", "th"])]
+        if len(cells) < 2:
+            continue
+        label = cells[0]
+        current = cells[1]
+        # Skip header rows whose "current" cell is a date
+        if not label or any(ch.isdigit() and "/" in current for ch in current):
+            continue
+        out[label] = _parse_si_number(current)
+    return out
+
+
+_YH_HEADERS: dict = {}  # curl_cffi handles browser headers via impersonate=
+
+
+def _fetch_yahoo_html(url: str, timeout: float = 5.0) -> str:
+    """Fetch a Yahoo HTML page with Chrome TLS impersonation.
+
+    Raises `_ScrapeError` on non-200 or network failure. Single-attempt;
+    retries are layered on top by `_fetch_with_retry` in Slice 2.
+    """
+    try:
+        r = creq.get(url, impersonate="chrome", timeout=timeout)
+    except Exception as e:  # curl_cffi raises a variety of error types
+        raise _ScrapeError(f"network error fetching {url}: {e}") from e
+    if r.status_code != 200:
+        raise _ScrapeError(f"HTTP {r.status_code} fetching {url}")
+    return r.text
+
+
+def _ratios_from_html(ticker: str) -> dict:
+    """Fetch and parse Yahoo's key-statistics page for `ticker`.
+
+    Returns a dict with the same valuation fields the API path returns,
+    sourced from the Valuation Measures "Current" column. Raises
+    `_ScrapeError` if the page is unreachable or the valuation section is
+    missing/empty.
+
+    `reporting_currency` is NOT set here — the HTML page does not surface
+    `financialCurrency`. Caller layers it on from `Ticker.info`.
+    """
+    start = time.monotonic()
+    url = f"https://finance.yahoo.com/quote/{ticker}/key-statistics/"
+    html = _fetch_yahoo_html(url)
+    elapsed = time.monotonic() - start
+    print(f"[yf] _ratios_from_html({ticker}) fetched in {elapsed:.2f}s", file=sys.stderr)
+
+    soup = BeautifulSoup(html, "html.parser")
+    vm = _parse_valuation_table(soup)
+    if not vm:
+        raise _ScrapeError(
+            f"Yahoo key-statistics page for {ticker} has no Valuation Measures table"
+        )
+
+    pe = vm.get("Trailing P/E")
+    ps = vm.get("Price/Sales")
+    if pe is None and ps is None:
+        raise _ScrapeError(
+            f"Yahoo key-statistics page for {ticker} returned no P/E and no P/S "
+            f"(table shape may have changed)"
+        )
+
+    return {
+        "pe_ratio": pe,
+        "ps_ratio": ps,
+        "ev_ebitda": vm.get("Enterprise Value/EBITDA"),
+        "ev_revenue": vm.get("Enterprise Value/Revenue"),
+        "marketCap": vm.get("Market Cap"),
+        "enterpriseValue": vm.get("Enterprise Value"),
     }
 
 
