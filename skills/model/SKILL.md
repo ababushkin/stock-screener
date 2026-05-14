@@ -169,7 +169,33 @@ If extraction fails (regex doesn't match, or numbers are non-numeric, or YoY can
 - `abs(yoy_change) >= 0.02 AND abs(yoy_change) < 0.08` → `direction = sign(yoy_change)`, `magnitude = "mild"`.
 - `abs(yoy_change) >= 0.08` → `direction = sign(yoy_change)`, `magnitude = "strong"`.
 
+**Step 5b — Revision-direction agreement guardrail** (spike-decision §"Lead vs confirm").
+
+Fetch Yahoo Finance's live `/analysis/` page to read the trailing 30-day EPS revision direction. The modifier is reframed as a **confirmer** (not a predictor): when engagement direction agrees with the post-print revision direction the market has already begun to record, the modifier applies; when they strictly disagree, the modifier suppresses to neutral.
+
+1. **Fetch.** `WebFetch https://finance.yahoo.com/quote/<TICKER>/analysis/`. One retry with 2 s backoff on transient 5xx / network error (mirrors design-doc §316).
+
+2. **Extract EPS Trend.** Locate the "EPS Trend" table. Read the **Next Year** column's "Current Estimate" and "30 Days Ago" rows. Compute `revision_pct = (current - thirty_days_ago) / thirty_days_ago`. Direction: `+1` if `revision_pct > 0`, `-1` if `< 0`, `0` if exactly zero.
+
+3. **Fetch / parse failure** (HTTP error after retry, page DOM changed, regex miss, non-numeric values) → set `revision: {metric: "eps_ntm_30d", revision_pct: null, direction: null, source_url: "<attempted URL>"}` and `agreement: null`. Apply the modifier per C3/C4 unchanged — this is the legacy "revision-data unavailable" fall-through. Proceed to Step 6.
+
+4. **Compute agreement.** `agreement = (revision.direction == direction) OR (revision.direction == 0) OR (direction == 0)`. A neutral side (KPI deadband or zero revision) is treated as compatible — there's no signal to disagree with.
+
+5. **`agreement == false` (strict disagreement).** Emit `status: "direction_disagreement"`, `base_anchor_multiplier = 1.00`, `clamped_from = null`, `user_confirmed: false`. Populate the audit trail fully (kpi block, revision block, `agreement: false`). **Skip Step 6 (MIP)** — there is no modifier to confirm. Proceed to COMPUTE; the base scenario is unperturbed (Step 2b becomes a no-op; Step 6b does not run).
+
+6. **`agreement == true`** (or revision unavailable per case 3) → preserve `base_anchor_multiplier` from Step 5 and continue to Step 6 (MIP).
+
+7. **Forward-log emission (Task 10b).** Whether the modifier applies, suppresses, or falls through, append one line to `tests/fixtures/engagement_kpi/forward_log.jsonl` (create the file with mode 0644 if absent):
+
+   ```jsonl
+   {"ticker": "<T>", "period": "<Q1 2026>", "engagement_direction": -1|0|1, "revision_direction_30d": -1|0|1|null, "agreement": true|false|null, "run_ts": "<ISO8601 UTC>"}
+   ```
+
+   Append-only. Never edited, rotated, or culled. This is the dataset NFR7 (≥60% direction agreement on n≥24) is evaluated against once enough forward samples accumulate. Per spike-decision §"NFR7 — deferred, not deleted", the log records the pre-suppression decision too — `engagement_direction` is the Step-5 KPI direction, not the post-guardrail multiplier sign — so the accumulated dataset preserves the engagement-only direction-agreement evidence for the eventual NFR7 evaluation. Emission failures (disk full, permission denied) **never** block the model run — log a warning and proceed; the forward log is telemetry, not a contract artefact.
+
 **Step 6 — Manual Input Protocol confirmation (FR2, NFR5).**
+
+Skip this step entirely when Step 5b emitted `status: "direction_disagreement"` (modifier already suppressed).
 
 Present the extracted values to the user via the grouped paste-in pattern:
 
@@ -198,7 +224,7 @@ Confirm? (y / n / paste a corrected value)
 
 **Step 7 — Hand off to COMPUTE.**
 
-When `status = "applied"`, COMPUTE Step 2 (Year-1 FCF anchor) uses `base_anchor_multiplier` from this sub-section on the **base** scenario only. Wiring is in Slice 9b — for now, COMPUTE proceeds with the multiplier available in scope but does not yet consume it (this slice lands the GATHER + audit trail; the application step lands next).
+When `status = "applied"`, COMPUTE Step 2 (Year-1 FCF anchor) uses `base_anchor_multiplier` from this sub-section on the **base** scenario only. The output cap (Step 6b in COMPUTE) may further clamp the multiplier; `clamped_from` records the pre-clamp value. When `status ∈ {unavailable, no_kpi_mapping, user_skipped, direction_disagreement}`, `base_anchor_multiplier = 1.00` and COMPUTE Step 2b is a no-op.
 
 ### COMPUTE — Two-stage DCF
 
@@ -228,7 +254,7 @@ Bear and bull are **never** modifier-perturbed — scenario-axis independence (C
 
 **Output cap (C4 / FR4b / NFR4 — applied AFTER Step 6 produces base IV.)** Per the ADR, the modifier's effect on the base scenario's per-share intrinsic value is additionally capped at ≤5%. This cap is evaluated post-COMPUTE in **Step 6b** below (after the equity bridge produces `intrinsic_value_per_share`), because the input multiplier alone cannot predict the IV impact — DCF leverage means a 4% Y1 nudge can translate to anywhere from 2% to 9% on per-share IV depending on the WACC / terminal-growth regime.
 
-**Revision-direction agreement guardrail** (spike-decision §"Lead vs confirm") fires when Task 10 wires the Yahoo live `/analysis/` fetch. Until Task 10 lands, the modifier applies per C3/C4 unconditionally — the "revision-data unavailable" legacy fall-through path. The audit trail records `agreement: null` in that interim, and `agreement: true|false` once Task 10 is in place.
+**Revision-direction agreement guardrail** (spike-decision §"Lead vs confirm", wired in GATHER Step 5b). When engagement direction and the trailing 30-day EPS revision direction strictly disagree, GATHER emits `status: "direction_disagreement"` with `base_anchor_multiplier = 1.00`, and this step is a no-op. When they agree (or revision data is unavailable — legacy fall-through), the modifier applies per C3/C4 and the audit trail records `agreement: true | null` respectively.
 
 **Step 3 — Years 2–5 FCF growth per scenario.**
 
@@ -493,7 +519,7 @@ Run `mkdir -p reports` and read-modify-write the existing file (it already conta
 }
 ```
 
-The `engagement_modifier` block is emitted only when `--engagement-modifier` was passed. When the flag is absent, omit the block entirely (FR6 / spike-decision). When the flag is present but the modifier was not applied (any non-`applied` status), populate `status` and `status_reason` and emit the remaining fields as `null` — preserving the schema shape for replay diffing. When `status == "applied"`, all populated fields are required (NFR3). `kpi_map_schema_version` mirrors the top-level field of `skills/_shared/engagement_kpi_map.json` at run time per Task 8 ADR D5. `clamped_from` is non-null only when the output-cap clamp fired (Step 6b); otherwise `null`. `revision` and `agreement` are populated by Task 10 (Yahoo `/analysis/` EPS Trend fetch); Slice 9b emits them as `null` until then. `agreement == false` triggers the `direction_disagreement` status, in which case `base_anchor_multiplier = 1.00` (modifier suppressed per spike-decision guardrail).
+The `engagement_modifier` block is emitted only when `--engagement-modifier` was passed. When the flag is absent, omit the block entirely (FR6 / spike-decision). When the flag is present but the modifier was not applied (any non-`applied` status), populate `status` and `status_reason` and emit the remaining fields as `null` — preserving the schema shape for replay diffing. When `status == "applied"`, all populated fields are required (NFR3). `kpi_map_schema_version` mirrors the top-level field of `skills/_shared/engagement_kpi_map.json` at run time per Task 8 ADR D5. `clamped_from` is non-null only when the output-cap clamp fired (Step 6b); otherwise `null`. `revision` and `agreement` are populated by GATHER Step 5b (Yahoo `/analysis/` EPS Trend fetch); when the fetch fails or parsing returns no values, `revision.revision_pct` and `revision.direction` are `null` and `agreement` is `null` (legacy fall-through — modifier still applies per C3/C4). `agreement == false` triggers the `direction_disagreement` status, in which case `base_anchor_multiplier = 1.00` (modifier suppressed per spike-decision guardrail).
 
 `intrinsic_value_range` is a flat extract of `scenarios.{bear,base,bull}.intrinsic_value_per_share` for UI convenience — must reconcile cell-for-cell with the scenarios block.
 
