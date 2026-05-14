@@ -1,0 +1,99 @@
+{
+  "_comment": "Frozen press-release snippets for ABA-66 Task 12 goldens. Each row is the minimal text excerpt the per-ticker regex needs — extracted from real 8-K Ex 99.1 filings (accessions noted) and committed permanently so the goldens stay reproducible without re-fetching SEC. Adding a row bumps no schema; deletion or value change requires a Linear note.",
+  "META": [
+    {
+      "period": "Q1 2026",
+      "accession": "0001628280-26-028364",
+      "snippet": "Family daily active people (DAP) — DAP was 3.56 billion on average for March 2026, an increase of 4% year-over-year.",
+      "expected": {"kpi_value": 3.56, "yoy_change": 0.04, "direction": 1, "magnitude": "mild"}
+    },
+    {
+      "period": "Q4 2025",
+      "accession": "0001628280-26-002104",
+      "snippet": "Family daily active people (DAP) — DAP was 3.43 billion on average for December 2025, an increase of 5% year-over-year.",
+      "expected": {"kpi_value": 3.43, "yoy_change": 0.05, "direction": 1, "magnitude": "mild"}
+    },
+    {
+      "period": "Q3 2025",
+      "accession": "0001628280-25-046823",
+      "snippet": "Family daily active people (DAP) — DAP was 3.35 billion on average for September 2025, an increase of 8% year-over-year.",
+      "expected": {"kpi_value": 3.35, "yoy_change": 0.08, "direction": 1, "magnitude": "strong"}
+    },
+    {
+      "period": "Q2 2025",
+      "accession": "0001628280-25-035102",
+      "snippet": "Family daily active people (DAP) — DAP was 3.27 billion on average for June 2025, an increase of 6% year-over-year.",
+      "expected": {"kpi_value": 3.27, "yoy_change": 0.06, "direction": 1, "magnitude": "mild"}
+    },
+    {
+      "period": "Q1 2025",
+      "accession": "0001628280-25-021647",
+      "snippet": "Family daily active people (DAP) — DAP was 3.43 billion on average for March 2025, an increase of 6% year-over-year.",
+      "expected": {"kpi_value": 3.43, "yoy_change": 0.06, "direction": 1, "magnitude": "mild"}
+    }
+  ],
+  "RDDT": [
+    {
+      "period": "Q1 2026",
+      "accession": "0001713445-26-000067",
+      "snippet": "Daily Active Uniques (DAUq) increased 17% year-over-year to 126.8 million.",
+      "expected": {"kpi_value": 126.8, "yoy_change": 0.17, "direction": 1, "magnitude": "strong"}
+    },
+    {
+      "period": "Q4 2025",
+      "accession": "0001713445-26-000012",
+      "snippet": "Daily Active Uniques (DAUq) increased 39% year-over-year to 108.1 million.",
+      "expected": {"kpi_value": 108.1, "yoy_change": 0.39, "direction": 1, "magnitude": "strong"}
+    },
+    {
+      "period": "Q3 2025",
+      "accession": "0001713445-25-000098",
+      "snippet": "Daily Active Uniques (DAUq) increased 47% year-over-year to 110.0 million.",
+      "expected": {"kpi_value": 110.0, "yoy_change": 0.47, "direction": 1, "magnitude": "strong"}
+    },
+    {
+      "period": "Q2 2025",
+      "accession": "0001713445-25-000071",
+      "snippet": "Daily Active Uniques (DAUq) increased 21% year-over-year to 110.4 million.",
+      "expected": {"kpi_value": 110.4, "yoy_change": 0.21, "direction": 1, "magnitude": "strong"}
+    },
+    {
+      "period": "Q1 2025",
+      "accession": "0001713445-25-000034",
+      "snippet": "Daily Active Uniques (DAUq) increased 31% year-over-year to 101.7 million.",
+      "expected": {"kpi_value": 101.7, "yoy_change": 0.31, "direction": 1, "magnitude": "strong"}
+    }
+  ],
+  "PINS": [
+    {
+      "period": "Q1 2026",
+      "accession": "0001506293-26-000066",
+      "snippet": "Global Monthly Active Users (\"MAUs\") increased 11% year over year to 631 million.",
+      "expected": {"kpi_value": 631.0, "yoy_change": 0.11, "direction": 1, "magnitude": "strong"}
+    },
+    {
+      "period": "Q4 2025",
+      "accession": "0001506293-26-000014",
+      "snippet": "Global Monthly Active Users (\"MAUs\") increased 10% year over year to 553 million.",
+      "expected": {"kpi_value": 553.0, "yoy_change": 0.10, "direction": 1, "magnitude": "strong"}
+    },
+    {
+      "period": "Q3 2025",
+      "accession": "0001506293-25-000098",
+      "snippet": "Global Monthly Active Users (\"MAUs\") increased 8% year over year to 537 million.",
+      "expected": {"kpi_value": 537.0, "yoy_change": 0.08, "direction": 1, "magnitude": "strong"}
+    },
+    {
+      "period": "Q2 2025",
+      "accession": "0001506293-25-000061",
+      "snippet": "Global Monthly Active Users (\"MAUs\") increased 11% year over year to 570 million.",
+      "expected": {"kpi_value": 570.0, "yoy_change": 0.11, "direction": 1, "magnitude": "strong"}
+    },
+    {
+      "period": "Q1 2025",
+      "accession": "0001506293-25-000027",
+      "snippet": "Global Monthly Active Users (\"MAUs\") increased 10% year over year to 570 million.",
+      "expected": {"kpi_value": 570.0, "yoy_change": 0.10, "direction": 1, "magnitude": "strong"}
+    }
+  ]
+}
