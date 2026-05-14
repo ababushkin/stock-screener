@@ -8,6 +8,8 @@ This document is the authoritative implementation reference. The project brief (
 
 A personal equity research assistant for a tech-focused investor. The pack implements a structured three-stage research process — screen → signal → model — with a timing overlay callable at any stage. Target universe: AI companies (infrastructure, application, model layers) through to established profitable tech (Meta, Google, Nvidia). Occasional pre-IPO coverage.
 
+**Scope is tech-only by design.** Non-tech names (auto OEMs, banks, cyclicals, yield-track equities) are explicitly out of scope — the skills will run but verdicts won't be trustworthy. See `README.md` for the full scope statement and known failure modes for non-tech inputs.
+
 **Primary users:** Individual investor running their own portfolio. Secondarily: validating or challenging sell-side analyst calls.
 
 **Educational intent:** Every output explains the methodology and the numbers — it does not just produce a verdict.
