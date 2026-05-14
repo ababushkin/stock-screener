@@ -39,6 +39,7 @@ v1.2 (ABA-31) lands the standard two-stage DCF for ESTABLISHED profile. v1.3 (AB
 1. Parse the ticker from the command argument. Uppercase it (e.g. `nvda` → `NVDA`). If blank, refuse immediately with: "Usage: `/stock:model TICKER [--confirm] [--pre-profit]`".
 2. Parse the optional `--confirm` flag. Its only effect is to allow a CONDITIONAL Signal to pass through (see GATE step 3 below).
 3. Parse the optional `--pre-profit` flag. Its effect is to force the pre-profit variant in ROUTE regardless of the upstream `profit_stage`. Accepted spellings: `--pre-profit`, `-- pre-profit` (separator tolerant). When set, record `route_override = "pre-profit"` for the OUTPUT block.
+4. Parse the optional `--engagement-modifier` flag. **Default: off.** When absent, the engagement-modifier GATHER sub-step is skipped entirely and the `engagement_modifier` JSON block is omitted (FR6 / spike-decision: advisory + flag-gated default-off until n≥24 forward samples accumulate; see `docs/design-docs/engagement-kpi-enrichment/spike-decision.md`). When present, the sub-step runs per the rules in **GATHER — Engagement modifier** below (ESTABLISHED path only — EMERGING path always skips per FR6). Accepted spellings: `--engagement-modifier`, `-- engagement-modifier` (separator tolerant).
 
 ### GATE — Resolve upstream Signal, then branch on MODEL_READY
 
@@ -126,6 +127,78 @@ Run these MCP calls in this order. Every retrieved figure is held with its raw v
 - **Always** for **base WACC** — yfinance does not expose risk-free rate, beta, or capital structure inputs that would let the skill derive WACC honestly. Ask the user once via grouped paste-in: `base WACC %` (single number, e.g. `9.0`). Never default this value.
 
 Any field accepted via paste-in is tagged `source: "user_paste"` and added to `meta.manual_inputs`; overall `meta.confidence` caps at MEDIUM.
+
+### GATHER — Engagement modifier (ESTABLISHED path, opt-in)
+
+**Runs only when `--engagement-modifier` was passed.** When the flag is absent, skip this entire sub-section and proceed directly to COMPUTE; the `engagement_modifier` JSON block is omitted from output and no OUTPUT line is emitted.
+
+When the flag is present, execute the steps below. Every terminal state writes a `stages.model.engagement_modifier` block per the JSON contract in OUTPUT below — `status ∈ {applied, unavailable, no_kpi_mapping, user_skipped}`. Non-applied states must populate `status_reason` from the enum `{missing_ai_layer, no_recent_print, source_unreachable, extraction_failed, non_interactive}` (FR5, NFR3).
+
+**Step 1 — AI-layer gate (FR1).**
+
+Read `upstream_signal.ai_layer` (from the SIGNAL OUTPUT block resolved in GATE, or `stages.signal.ai_layer` in the on-disk fallback).
+
+- `ai_layer ∈ {APPLICATION, INCUMBENT}` → continue to Step 2.
+- `ai_layer ∈ {INFRASTRUCTURE, FOUNDATION, NONE}` → emit `status: "unavailable", status_reason: "missing_ai_layer"` (ai_layer doesn't qualify, not strictly missing — but the enum's `missing_ai_layer` covers both "absent" and "present-but-non-qualifying" per spike-decision linkage; the audit trail records the actual value in `ai_layer_observed`). Skip to COMPUTE.
+- `ai_layer` absent (upstream Signal predates AI-layer field) → emit `status: "unavailable", status_reason: "missing_ai_layer"`, with `ai_layer_observed: null`. Skip to COMPUTE. **Do not second-guess the upstream classification — re-run `/stock:signal` if the user believes it's wrong.**
+
+**Step 2 — KPI-map lookup (FR7).**
+
+Read `skills/_shared/engagement_kpi_map.json`. Record `kpi_map_schema_version` from the top-level field for the audit trail (Task 8 ADR D5).
+
+- Ticker is in `tickers` → take the `primary_kpi` (and `evidence.exhibit_url` as a starting hint) and continue to Step 3.
+- Ticker is in `excluded_tickers` → emit `status: "no_kpi_mapping"`, with `excluded_reason` copied from the map's `reason` field. Skip to COMPUTE.
+- Ticker is absent from both → emit `status: "no_kpi_mapping"`, `status_reason: null` (the enum doesn't cover "ticker not mapped" because that's a `status`, not a reason). Skip to COMPUTE.
+
+**Step 3 — Locate the latest 8-K Ex 99.1 (FR8 source resolution order).**
+
+1. Try EDGAR MCP `get_8k_exhibit(ticker, latest=true)` if the server is reachable. Returns the Exhibit 99.1 content + filing date + accession.
+2. Fallback: direct EDGAR HTTP. Resolve the latest 8-K via the submissions API (`https://data.sec.gov/submissions/CIK<10digit>.json`), traverse `recent.accessionNumber` + `recent.primaryDocument` to find the Ex 99.1 URL. SEC requires a custom User-Agent header (`Stock Review Skill-Pack <email>`); use it on every request.
+3. If both the EDGAR MCP and the direct HTTP path fail (network error, 5xx persisting past one retry with 2 s backoff per design doc §316) → emit `status: "unavailable", status_reason: "source_unreachable"`. Skip to COMPUTE.
+4. If the latest 8-K is older than 90 days (mid-quarter run between earnings) → fall through to `WebSearch` for the most recent earnings press release. Mark the audit trail with `source_type: "websearch_fallback"`. If the WebSearch returns no plausible recent release → `status: "unavailable", status_reason: "no_recent_print"`.
+
+**Step 4 — Extract the KPI value and YoY.**
+
+Use the `primary_kpi.source_phrase` from the map as the regex anchor. Pull the latest-period value AND the YoY-prior-period value from the Ex 99.1 document (most press releases disclose both in the same sentence: *"DAP increased 6% year over year to 3.43 billion"*). Compute `yoy_change = (current / prior_year) - 1` from the two raw numbers — do not trust a stated "%" without numerical cross-check.
+
+If extraction fails (regex doesn't match, or numbers are non-numeric, or YoY can't be derived) → emit `status: "unavailable", status_reason: "extraction_failed"`. Skip to COMPUTE.
+
+**Step 5 — Classify direction × magnitude per pre-registered constants** (ADR `engagement-modifier-constants.md`, C1/C2):
+
+- `abs(yoy_change) < 0.02` → `direction = 0`, `magnitude = "neutral"`. The modifier is a no-op (`base_anchor_multiplier = 1.00`). Status is still `applied` — the audit trail records that the modifier ran and concluded "no signal."
+- `abs(yoy_change) >= 0.02 AND abs(yoy_change) < 0.08` → `direction = sign(yoy_change)`, `magnitude = "mild"`.
+- `abs(yoy_change) >= 0.08` → `direction = sign(yoy_change)`, `magnitude = "strong"`.
+
+**Step 6 — Manual Input Protocol confirmation (FR2, NFR5).**
+
+Present the extracted values to the user via the grouped paste-in pattern:
+
+```
+ENGAGEMENT MODIFIER — confirm before applying:
+  Ticker:        META
+  KPI:           DAP (Family Daily Active People)
+  Latest period: Q1 2026 (filed 2026-04-29, accession 0001628280-26-028364)
+  Value:         3.43 billion (prior-year period: 3.23 billion)
+  YoY change:    +6.2%
+  Direction:     +1 (positive)
+  Magnitude:     mild (|YoY| in [2%, 8%))
+  Source:        https://www.sec.gov/Archives/edgar/data/1326801/...
+  Will apply:    base_anchor_multiplier = 1.02 (+2% on Y1 base anchor, base scenario only)
+
+Confirm? (y / n / paste a corrected value)
+```
+
+- User confirms (`y`) → `user_confirmed: true`, proceed to COMPUTE with the applied multiplier.
+- User skips (`n`) → emit `status: "user_skipped", status_reason: null`. Skip to COMPUTE.
+- User pastes a correction (e.g. `kpi_value=3.41, yoy_change=0.054`) → re-run Step 5 with the corrected values, then loop back to Step 6 once. A second correction is treated as `user_skipped` to avoid an infinite confirmation loop.
+
+**Non-interactive runs** (e.g. CI / batch mode where stdin is closed): the MIP gate cannot be satisfied. Emit `status: "user_skipped", status_reason: "non_interactive"`. Skip to COMPUTE. Per design-doc §309 this is the correct behaviour — silent application without user confirmation violates FR2.
+
+**Confidence cap (NFR5).** Any run that emits `status: "applied"` caps `meta.confidence` at MEDIUM (LLM-extracted-and-user-confirmed is not a structured-data source). Do not raise prior-stage confidence; the modifier cap is one-way.
+
+**Step 7 — Hand off to COMPUTE.**
+
+When `status = "applied"`, COMPUTE Step 2 (Year-1 FCF anchor) uses `base_anchor_multiplier` from this sub-section on the **base** scenario only. Wiring is in Slice 9b — for now, COMPUTE proceeds with the multiplier available in scope but does not yet consume it (this slice lands the GATHER + audit trail; the application step lands next).
 
 ### COMPUTE — Two-stage DCF
 
