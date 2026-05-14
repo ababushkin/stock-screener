@@ -383,8 +383,11 @@ MODEL OUTPUT
     Narrative: revenue miss, decelerating growth, tighter cost of capital
 
   Base: $X.XX / share — [N]% [up|down]side
-    Y1 FCF: $X.XB (NTM consensus)  |  Y2-5 CAGR: X%  |  g: 2.5%  |  WACC: X%
+    Y1 FCF: $X.XB (NTM consensus × base_anchor_multiplier)  |  Y2-5 CAGR: X%  |  g: 2.5%  |  WACC: X%
     Narrative: consensus delivers, growth normalises to GDP+
+    Engagement modifier (base only): [KPI_NAME] [+/-X.X]% YoY ([PERIOD]) → [+/-X]% anchor uplift ([mild|strong] [positive|negative], [user-confirmed|user-skipped|...])
+      Source: [URL]
+    (Emitted only when `--engagement-modifier` was passed AND `engagement_modifier.status == "applied"`. Other statuses replace with a single line: `Engagement modifier: <status> (<status_reason>)`. Flag absent → line omitted entirely.)
 
   Bull: $X.XX / share — [N]% [up|down]side
     Y1 FCF: $X.XB (NTM × 1.10)  |  Y2-5 CAGR: X%  |  g: 3.5%  |  WACC: X%
@@ -463,9 +466,34 @@ Run `mkdir -p reports` and read-modify-write the existing file (it already conta
     "margin_of_safety_pct": <number>,
     "confidence_cap_applied": <boolean>,
     "rationale": "..."
+  },
+  "engagement_modifier": {
+    "status": "applied | unavailable | no_kpi_mapping | user_skipped | direction_disagreement",
+    "status_reason": "missing_ai_layer | no_recent_print | source_unreachable | extraction_failed | non_interactive | null",
+    "kpi_map_schema_version": <integer>,
+    "kpi_name": "<e.g. DAP>",
+    "kpi_value": <number>,
+    "kpi_unit": "<e.g. billion>",
+    "kpi_period": "<e.g. Q1 2026>",
+    "yoy_change": <number>,
+    "direction": -1 | 0 | 1,
+    "magnitude": "deadband | mild | strong",
+    "base_anchor_multiplier": <number>,
+    "clamped_from": <number | null>,
+    "revision": {
+      "metric": "eps_ntm_30d",
+      "revision_pct": <number | null>,
+      "direction": -1 | 0 | 1 | null,
+      "source_url": "<yahoo /analysis/ URL>"
+    },
+    "agreement": <boolean | null>,
+    "source_url": "<8-K Ex 99.1 URL>",
+    "user_confirmed": <boolean>
   }
 }
 ```
+
+The `engagement_modifier` block is emitted only when `--engagement-modifier` was passed. When the flag is absent, omit the block entirely (FR6 / spike-decision). When the flag is present but the modifier was not applied (any non-`applied` status), populate `status` and `status_reason` and emit the remaining fields as `null` — preserving the schema shape for replay diffing. When `status == "applied"`, all populated fields are required (NFR3). `kpi_map_schema_version` mirrors the top-level field of `skills/_shared/engagement_kpi_map.json` at run time per Task 8 ADR D5. `clamped_from` is non-null only when the output-cap clamp fired (Step 6b); otherwise `null`. `revision` and `agreement` are populated by Task 10 (Yahoo `/analysis/` EPS Trend fetch); Slice 9b emits them as `null` until then. `agreement == false` triggers the `direction_disagreement` status, in which case `base_anchor_multiplier = 1.00` (modifier suppressed per spike-decision guardrail).
 
 `intrinsic_value_range` is a flat extract of `scenarios.{bear,base,bull}.intrinsic_value_per_share` for UI convenience — must reconcile cell-for-cell with the scenarios block.
 
@@ -693,6 +721,8 @@ If any scenario's inflection year is `beyond Y5`, the line reads `FCF inflection
 ```
 
 `sensitivity_table` is `null` for the pre-profit variant — the 5×5 WACC × terminal-g grid is meaningless when there is no Gordon-growth terminal. The per-driver dominant-driver note in `sensitivity` remains the only sensitivity artefact for this path. `intrinsic_value_range` is a flat extract of `scenarios.{bear,base,bull}.intrinsic_value_per_share` — must reconcile.
+
+The `engagement_modifier` block is **never emitted on the EMERGING path** regardless of the `--engagement-modifier` flag (FR6 — pre-profit revenue scaffolding has no incumbent KPI baseline). If the flag is passed alongside an EMERGING ticker, emit a one-line notice to the user: `--engagement-modifier ignored: EMERGING path (FR6)` and proceed without it.
 
 After writing, print:
 
