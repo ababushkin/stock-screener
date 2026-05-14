@@ -217,8 +217,18 @@ Year-1 FCF is anchored on NTM consensus, then perturbed per scenario. Compute `f
 | Scenario | Y1 FCF |
 |---|---|
 | Bear | `fcf_y1_consensus × 0.85` — revenue miss + 200 bps margin compression |
-| Base | `fcf_y1_consensus` — NTM consensus delivers, margin stable |
+| Base | `fcf_y1_consensus × base_anchor_multiplier` — NTM consensus, perturbed by the engagement modifier (see Step 2b) |
 | Bull | `fcf_y1_consensus × 1.10` — revenue beat + operating leverage |
+
+**Step 2b — Engagement modifier on base scenario (FR3/FR4, C3/C4/C5).**
+
+When the engagement-modifier GATHER sub-step emitted `status: "applied"`, the base scenario's Y1 FCF anchor is perturbed by `base_anchor_multiplier ∈ [0.96, 1.04]` from that sub-step. When `status ∈ {unavailable, no_kpi_mapping, user_skipped, direction_disagreement}` OR when the `--engagement-modifier` flag was absent, `base_anchor_multiplier = 1.00` and this step is a no-op (the base scenario's Y1 anchor equals `fcf_y1_consensus` unchanged).
+
+Bear and bull are **never** modifier-perturbed — scenario-axis independence (C5) and the range-integrity invariant `bear_iv < base_iv < bull_iv` both depend on the modifier touching base alone.
+
+**Output cap (C4 / FR4b / NFR4 — applied AFTER Step 6 produces base IV.)** Per the ADR, the modifier's effect on the base scenario's per-share intrinsic value is additionally capped at ≤5%. This cap is evaluated post-COMPUTE in **Step 6b** below (after the equity bridge produces `intrinsic_value_per_share`), because the input multiplier alone cannot predict the IV impact — DCF leverage means a 4% Y1 nudge can translate to anywhere from 2% to 9% on per-share IV depending on the WACC / terminal-growth regime.
+
+**Revision-direction agreement guardrail** (spike-decision §"Lead vs confirm") fires when Task 10 wires the Yahoo live `/analysis/` fetch. Until Task 10 lands, the modifier applies per C3/C4 unconditionally — the "revision-data unavailable" legacy fall-through path. The audit trail records `agreement: null` in that interim, and `agreement: true|false` once Task 10 is in place.
 
 **Step 3 — Years 2–5 FCF growth per scenario.**
 
@@ -258,9 +268,24 @@ EV = Σ_{n=1..5} fcf_y_n / (1 + wacc)^n  +  TV / (1 + wacc)^5
 - `intrinsic_value_per_share = equity_value / shares`
 - `upside_pct = (intrinsic_value_per_share / currentPrice − 1) × 100`
 
+**Step 6b — Engagement modifier output-cap clamp (FR4b / NFR4).**
+
+Runs only when the engagement modifier emitted `status: "applied"` AND `base_anchor_multiplier ≠ 1.00`. When the modifier was a no-op (deadband / not applied), skip this step.
+
+1. Recompute the **base scenario only** with `base_anchor_multiplier = 1.00` (i.e. unperturbed `fcf_y1_consensus`) using Steps 2–6 with all other inputs held constant. Call the result `base_iv_unmodified`.
+2. Compute `iv_impact_pct = abs(scenarios.base.intrinsic_value_per_share / base_iv_unmodified − 1)`.
+3. If `iv_impact_pct ≤ 0.05` → cap holds, no clamp needed. Record `engagement_modifier.clamped_from = null` in the JSON.
+4. If `iv_impact_pct > 0.05` → bisect on `base_anchor_multiplier` between `1.00` and the original applied multiplier to find the largest multiplier such that `iv_impact_pct ≤ 0.05`. Apply that clamped multiplier and re-run Steps 2–6 for the base scenario. Record `engagement_modifier.clamped_from = <original_multiplier>` (the pre-clamp value) and set `engagement_modifier.base_anchor_multiplier = <clamped_value>` in the JSON. Bear and bull are not recomputed (they were never modifier-perturbed).
+
+Bisection tolerance: 0.001 on the multiplier or 0.001 on `iv_impact_pct`, whichever is reached first. Three iterations is usually sufficient.
+
+The cap defends against DCF-leverage edge cases where a 4% Y1 anchor nudge translates to a >5% per-share IV swing — input bound (C3) and output bound (C4) work in concert, neither alone is sufficient (ADR §C3/C4 alternative-considered).
+
 **Step 7 — Range integrity check.**
 
 Compute all three scenarios. The acceptance contract requires `bear_iv < base_iv < bull_iv`. If the inequality fails, the assumption sets have collided — stop, print the three scenario inputs and outputs, and ask the user to widen the WACC or growth deltas. Never silently re-order or hand-tune. (This is the "demonstrably different assumption sets" guardrail in executable form.)
+
+The engagement modifier (Step 6b) can narrow the bear–base gap (negative direction) or widen the base–bull gap (positive direction). It cannot, by construction, invert the ordering: the input cap C3 is ±4% on Y1 anchor and the output cap C4 is ≤5% on base IV; bear and bull are unperturbed; the smallest gaps in the seed set are wider than 5%. If a future ticker has tighter scenarios and the modifier *does* threaten inversion, Step 7's existing refusal path catches it — the user widens scenario deltas or disables the modifier with `--engagement-modifier` absent.
 
 **Step 8 — Sensitivity note (dominant driver).**
 
