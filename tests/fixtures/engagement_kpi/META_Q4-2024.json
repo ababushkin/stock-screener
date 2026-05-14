@@ -1,0 +1,33 @@
+{
+  "ticker": "META",
+  "period": "Q4-2024",
+  "accession": "0001326801-25-000014",
+  "filing_date": "2025-01-29",
+  "ex991_url": "https://www.sec.gov/Archives/edgar/data/1326801/000132680125000014/meta-12312024xexhibit991.htm",
+  "kpi": {
+    "status": "ok",
+    "kpi_value": 3.35,
+    "yoy_change": 0.05,
+    "direction": 1
+  },
+  "revisions": {
+    "t0_target": "2025-01-30",
+    "t1_target": "2025-02-26",
+    "t0": {
+      "status": "ok",
+      "snap_ts": "20250130152612",
+      "snap_url": "https://web.archive.org/web/20250130152612/https://finance.yahoo.com/quote/META/analysis/",
+      "drift_days": 0,
+      "year": 2026,
+      "avg_estimate_usd": 41550000000.0
+    },
+    "t1": {
+      "status": "fetch_failed",
+      "error": "curl failed for https://web.archive.org/web/20250215002355/https://finance.yahoo.com/quote/META/analysis/ after 3 retries: curl: (7) Failed to connect to web.archive.org port 443 after 176 ms: Couldn'",
+      "snap_url": "https://web.archive.org/web/20250215002355/https://finance.yahoo.com/quote/META/analysis/"
+    }
+  },
+  "signal": {
+    "status": "incomplete"
+  }
+}

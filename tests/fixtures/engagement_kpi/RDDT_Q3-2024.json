@@ -1,0 +1,28 @@
+{
+  "ticker": "RDDT",
+  "period": "Q3-2024",
+  "accession": "0001713445-24-000099",
+  "filing_date": "2024-10-29",
+  "ex991_url": "https://www.sec.gov/Archives/edgar/data/1713445/000171344524000099/earningspressreleaseq324.htm",
+  "kpi": {
+    "status": "ok",
+    "kpi_value": 97.2,
+    "yoy_change": 0.47,
+    "direction": 1
+  },
+  "revisions": {
+    "t0_target": "2024-10-30",
+    "t1_target": "2024-11-26",
+    "t0": {
+      "status": "drift_too_large",
+      "snap_ts": "20240927112412",
+      "drift_days": 33
+    },
+    "t1": {
+      "status": "no_snapshot"
+    }
+  },
+  "signal": {
+    "status": "incomplete"
+  }
+}

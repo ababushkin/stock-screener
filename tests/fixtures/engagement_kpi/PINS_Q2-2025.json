@@ -1,0 +1,30 @@
+{
+  "ticker": "PINS",
+  "period": "Q2-2025",
+  "accession": "0001506293-25-000195",
+  "filing_date": "2025-08-07",
+  "ex991_url": "https://www.sec.gov/Archives/edgar/data/1506293/000150629325000195/q2-25xpressrelease.htm",
+  "kpi": {
+    "status": "ok",
+    "kpi_value": 578.0,
+    "yoy_change": 0.11,
+    "direction": 1
+  },
+  "revisions": {
+    "t0_target": "2025-08-08",
+    "t1_target": "2025-09-04",
+    "t0": {
+      "status": "drift_too_large",
+      "snap_ts": "20250211080209",
+      "drift_days": 178
+    },
+    "t1": {
+      "status": "drift_too_large",
+      "snap_ts": "20250211080209",
+      "drift_days": 205
+    }
+  },
+  "signal": {
+    "status": "incomplete"
+  }
+}

@@ -1,0 +1,33 @@
+{
+  "ticker": "RDDT",
+  "period": "Q1-2024",
+  "accession": "0001713445-24-000003",
+  "filing_date": "2024-05-07",
+  "ex991_url": "https://www.sec.gov/Archives/edgar/data/1713445/000171344524000003/earningspressreleaseq124.htm",
+  "kpi": {
+    "status": "ok",
+    "kpi_value": 82.7,
+    "yoy_change": 0.37,
+    "direction": 1
+  },
+  "revisions": {
+    "t0_target": "2024-05-08",
+    "t1_target": "2024-06-04",
+    "t0": {
+      "status": "ok",
+      "snap_ts": "20240510103837",
+      "snap_url": "https://web.archive.org/web/20240510103837/https://finance.yahoo.com/quote/RDDT/analysis",
+      "drift_days": 2,
+      "year": 2025,
+      "avg_estimate_usd": 246970000.0
+    },
+    "t1": {
+      "status": "fetch_failed",
+      "error": "curl failed for https://web.archive.org/web/20240618154338/https://finance.yahoo.com/quote/RDDT/analysis/ after 3 retries: curl: (7) Failed to connect to web.archive.org port 443 after 177 ms: Couldn'",
+      "snap_url": "https://web.archive.org/web/20240618154338/https://finance.yahoo.com/quote/RDDT/analysis/"
+    }
+  },
+  "signal": {
+    "status": "incomplete"
+  }
+}

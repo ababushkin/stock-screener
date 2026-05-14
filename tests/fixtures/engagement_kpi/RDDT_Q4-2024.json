@@ -1,0 +1,41 @@
+{
+  "ticker": "RDDT",
+  "period": "Q4-2024",
+  "accession": "0001713445-25-000016",
+  "filing_date": "2025-02-12",
+  "ex991_url": "https://www.sec.gov/Archives/edgar/data/1713445/000171344525000016/earningspressreleaseq424.htm",
+  "kpi": {
+    "status": "ok",
+    "kpi_value": 101.7,
+    "yoy_change": 0.39,
+    "direction": 1
+  },
+  "revisions": {
+    "t0_target": "2025-02-13",
+    "t1_target": "2025-03-12",
+    "t0": {
+      "status": "ok",
+      "snap_ts": "20250213001654",
+      "snap_url": "https://web.archive.org/web/20250213001654/https://finance.yahoo.com/quote/RDDT/analysis/",
+      "drift_days": 0,
+      "year": 2026,
+      "avg_estimate_usd": 358440000.0
+    },
+    "t1": {
+      "status": "ok",
+      "snap_ts": "20250309024935",
+      "snap_url": "https://web.archive.org/web/20250309024935/https://finance.yahoo.com/quote/RDDT/analysis/",
+      "drift_days": 3,
+      "year": 2026,
+      "avg_estimate_usd": 369570000.0
+    }
+  },
+  "signal": {
+    "status": "ok",
+    "year": 2026,
+    "t0_est_usd": 358440000.0,
+    "t1_est_usd": 369570000.0,
+    "revision_pct": 0.03105,
+    "direction": 1
+  }
+}
