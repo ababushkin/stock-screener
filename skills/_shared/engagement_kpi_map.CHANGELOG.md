@@ -6,6 +6,27 @@ Schema version is monotonic-integer; bumps require an ADR.
 
 ---
 
+## v2 — 2026-05-14 — Add PINS for Task 6 backtest sample floor
+
+**Schema version:** 2
+**Author:** Anton Babushkin
+**Linear:** [ABA-66](https://linear.app/ababushkin/issue/ABA-66) — Task 6 prerequisite per `docs/design-docs/engagement-kpi-enrichment/backtest-data-source.md`
+**Spike branch:** `anton/aba-66-eng-kpi-spike`
+
+### Tickers added
+
+- **PINS** — primary `MAU` (Global Monthly Active Users), secondary `ARPU` (Global). Both disclosed YoY in 8-K Exhibit 99.1 every quarter since IPO (2019). Source phrase: "Global Monthly Active Users (\"MAUs\") increased 11% year over year to 631 million" — Q1 2026 press release (accession `0001506293-26-000066`, filed 2026-05-04). Adding PINS brings the backtest candidate pool from 21 (META 12 + RDDT 9) to ~29 ticker-quarters — comfortably clearing the NFR7 ≥24 floor with attrition headroom.
+
+### Why PINS only (not PINS+SNAP+SPOT)
+
+Task 4 feasibility note recommended PINS/SNAP/SPOT to comfortably hit the 40-target. Smallest-batch principle (universal P8): one ticker addition is enough to clear the ≥24 floor with headroom (29 candidates). Adding SNAP/SPOT is deferred to a follow-up only if Task 6's hit rate is borderline and the larger sample would tighten the binomial p-value materially. This avoids authoring 3 ticker maps before knowing whether even one extra is needed.
+
+### Schema bump rationale
+
+Per the versioning convention, adding a new ticker bumps `schema_version` from 1 → 2. Future Task 8 will produce the versioning ADR formally — this v2 bump is the first practical instance the ADR will codify.
+
+---
+
 ## v1 — 2026-05-14 — Seed map for ABA-66 walking skeleton
 
 **Schema version:** 1

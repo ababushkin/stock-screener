@@ -1,5 +1,5 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "_comment": "Authoritative KPI map for /stock:model engagement-modifier (ABA-66). Tickers not present here route to status='no_kpi_mapping'. Every change is recorded in engagement_kpi_map.CHANGELOG.md.",
   "tickers": {
     "META": {
@@ -48,6 +48,30 @@
         "latest_8k_accession": "0001713445-26-000067",
         "filing_date": "2026-04-30",
         "exhibit_url": "https://www.sec.gov/Archives/edgar/data/1713445/000171344526000067/earningspressreleaseq126.htm"
+      }
+    },
+    "PINS": {
+      "ai_layer": "APPLICATION",
+      "primary_kpi": {
+        "name": "MAU",
+        "long_name": "Global Monthly Active Users",
+        "unit": "million",
+        "comparison_basis": "YoY",
+        "signal_type": "growth",
+        "source_phrase": "Global Monthly Active Users"
+      },
+      "secondary_kpi": {
+        "name": "ARPU",
+        "long_name": "Average Revenue per User (Global)",
+        "unit": "USD",
+        "comparison_basis": "YoY",
+        "signal_type": "monetization",
+        "source_phrase": "ARPU - Global"
+      },
+      "evidence": {
+        "latest_8k_accession": "0001506293-26-000066",
+        "filing_date": "2026-05-04",
+        "exhibit_url": "https://www.sec.gov/Archives/edgar/data/1506293/000150629326000066/q1-26xpressrelease.htm"
       }
     }
   },
