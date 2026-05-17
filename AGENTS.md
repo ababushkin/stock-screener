@@ -6,7 +6,7 @@ Instructions for any coding agent (Claude Code, Codex, etc.) working in this rep
 
 A personal equity research skill-pack for a tech-focused investor. See `CHARTER.md` for what this pack is for and which boundaries are locked, and `DESIGN.md` for the architectural reference.
 
-Tasks and milestones live in Linear: https://linear.app/ababushkin/project/ai-equity-research-skill-pack-b8446cbaab6b/overview
+Tasks and milestones live in Linear: https://linear.app/ababushkin/project/equity-skill-pack-b8446cbaab6b/overview
 
 ## Operating principle — pointer
 
