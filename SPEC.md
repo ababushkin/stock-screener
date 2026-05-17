@@ -16,6 +16,26 @@ A personal equity research assistant for a tech-focused investor. The pack imple
 
 ---
 
+## Operating Principle — Depth over Breadth
+
+This pack optimises for **depth on a curated tech watchlist** (see `WATCHLIST.md`), not breadth across thousands of tickers. The intended use is high-conviction decision-making — and later, prediction — on a small number of names the user actually holds or considers. It is not a market-wide screener.
+
+The user's stated frame: *"I don't care if we don't know how to value GM, but I do very much care that we know with incredible detail how to value META — otherwise it's just a stupid number I won't use or trust."*
+
+Implications for every implementation decision:
+
+1. **Ticker-specific knowledge beats generalised heuristics.** When a watchlist ticker has a known capex-cycle position, segment mix, governance fact, or sell-side disagreement axis that materially affects valuation, encode it in `playbooks/TICKER.md` (see *Playbook Layer* below). Smoothing ticker-specific knowledge into industry-average defaults is the failure mode this pack exists to avoid.
+
+2. **Auditability is non-negotiable.** Every assumption surfaced in output, every scenario axis disclosed, every cap / override / manual input named. Opaque algorithmic blending is rejected even when it produces better point estimates — a number the user cannot argue with is a number the user will not trust.
+
+3. **Generic improvements are deprioritised against watchlist depth.** When choosing between (a) a methodology improvement that helps every ticker marginally and (b) a watchlist-specific deepening, choose (b). Exception: correctness fixes (e.g. SBC stripping in the DCF base — ABA-110) remain P0 because they are table stakes for any number being usable.
+
+4. **Off-watchlist tickers run on generic fallback logic.** That is a deliberate cost. Confidence caps at MEDIUM by default for off-watchlist invocations; users should expect a less informative answer for non-core names.
+
+5. **Backtesting is how the engine gets sharper.** Quarterly historical replays against the watchlist (see *Testing Strategy*) feed methodology drift back into the skills. Drift CI catches format breaks; backtesting catches methodology drift.
+
+---
+
 ## Architecture Overview
 
 ```
@@ -183,6 +203,35 @@ Transcripts, news, qualitative context:
 ```
 
 When a skill cannot resolve an input from sources 1–3, it states the gap, uses the most recent available data as a placeholder, sets `CONFIDENCE = MEDIUM` or `LOW`, and asks the user to confirm before proceeding.
+
+---
+
+## Playbook Layer
+
+For watchlist tickers (see `WATCHLIST.md`), `/stock:model` loads ticker-specific overrides from `playbooks/TICKER.md` (uppercase ticker symbol; period-suffixed exchange codes preserved verbatim, e.g. `playbooks/ADYEN.AS.md`). Off-watchlist tickers run with generic ESTABLISHED / EMERGING defaults. Implementation tracked in ABA-112; blocked by ABA-110 + ABA-111 (correctness fixes must land first so playbook overrides modulate a trustworthy base).
+
+**File format.** Markdown with YAML frontmatter.
+
+Frontmatter — machine-readable overrides consumed by `/stock:model`:
+- `base_wacc` — overrides the MIP-asked default (suppresses the WACC question)
+- `growth_ceiling` — overrides the generic 18% fallback ceiling on base Y2-Y5 CAGR (see ABA-111)
+- `terminal_margin` — overrides the SBC-stripped TTM margin as the Y5 anchor (see ABA-110)
+- `scenario_axes` — optional per-scenario overrides (used when the catalyst structure demands discrete outcomes vs smooth scenarios, e.g. "TikTok divested" as a binary)
+- `narrative.{bear,base,bull}` — replace generic per-scenario one-liners with thesis-grounded narratives
+- `failure_modes` — surfaced in output as a separate `Monitor:` section
+- `confidence_anchor` — playbook-set max confidence (e.g. cap NVDA at MEDIUM until customer concentration risk is resolved)
+
+Body — human-reference content: business architecture, segment splits, capex-cycle position, active catalysts, sell-side disagreement axes, historical reset-and-recover priors, failure-mode commentary.
+
+**Loader behaviour in `/stock:model`** (implementation in ABA-112):
+
+1. After GATE passes, before GATHER, check `playbooks/TICKER.md`.
+2. Absent: emit `No playbook for TICKER — using generic ESTABLISHED/EMERGING logic.` and proceed unchanged.
+3. Present: load frontmatter, surface `Playbook loaded: playbooks/TICKER.md (last updated YYYY-MM-DD). Overrides applied: [list].` Apply overrides per the hierarchy below; record audit trail in `stages.model.playbook` JSON block.
+
+**Override hierarchy.** Playbook beats generic default; runtime user override (e.g. `--wacc=9.0`) beats playbook.
+
+**Audit trail.** Every playbook-sourced field appears in `stages.model.playbook.overrides_applied` with the source named. Confidence cap from playbook is the binding cap when stricter than the runtime-derived value. Silent application of any override is forbidden — the OUTPUT block names every overridden field.
 
 ---
 
@@ -407,16 +456,18 @@ For companies where current-period ratios are lagging indicators, `/stock:model`
 These enrichments do not affect `/stock:signal` verdicts or PEG computation. They are `/stock:model`-only and are implemented when `/stock:model` is built.
 
 ### Always do
-- Strip SBC before any earnings calculation in every skill
+- Strip SBC before any earnings calculation in every skill — and from the FCF base in `/stock:model` (ABA-110)
 - State data sources and assumptions in every output
 - Flag `CONFIDENCE = MEDIUM` or `LOW` when any input is estimated
 - Include methodology explanation alongside every verdict
 - Apply AI layer classification (infrastructure / application / model / incumbent / N/A) in Signal qualitative filters
+- Load playbook overrides for watchlist tickers and surface which overrides applied in every output (see *Playbook Layer*)
 
 ### Ask first
 - Before running Model without a Signal output in context
 - Before using user-provided numbers as primary inputs (confirm the source)
 - Before applying the yield track (confirm this is genuinely an income thesis, not a misclassification)
+- Before adding or removing tickers from the watchlist (`WATCHLIST.md`) — composition is deliberate, not casual
 
 ### Never do
 - Run a standard P/E or PEG ratio on a pre-profit company without flagging it as invalid
@@ -424,6 +475,8 @@ These enrichments do not affect `/stock:signal` verdicts or PEG computation. The
 - Skip SBC stripping on grounds that SBC is "immaterial" — always check, always note
 - Re-litigate the design decisions listed in the project brief (see Appendix)
 - Add features not described in this spec or the brief without user instruction
+- Silently apply playbook overrides — the OUTPUT block must name every overridden field and its source
+- Treat off-watchlist `/stock:model` runs as decision-grade — confidence caps at MEDIUM by default and the user must be told
 
 ---
 

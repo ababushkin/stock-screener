@@ -6,7 +6,7 @@ Off-watchlist tickers fall back to generic ESTABLISHED / EMERGING logic. That's 
 
 See `CLAUDE.md` → "Operating principle — depth over breadth" for why.
 
-## The six
+## The seven
 
 | Ticker | Stage | AI layer | Investment thesis (one line) | Playbook status |
 |---|---|---|---|---|
@@ -16,6 +16,7 @@ See `CLAUDE.md` → "Operating principle — depth over breadth" for why.
 | **NVDA** | ESTABLISHED | INFRASTRUCTURE | Data-centre GPU TAM penetration + AI training-to-inference mix shift + customer concentration risk | Not yet |
 | **ASML** | ESTABLISHED | INFRASTRUCTURE | EUV monopoly + High-NA ramp + China export-control overhang, with the semiconductor cap-ex cycle as the dominant input | Not yet |
 | **NFLX** | ESTABLISHED | APPLICATION | Subscriber growth maturity + ad-tier monetisation + content-cost discipline + password-sharing-crackdown durability | Not yet |
+| **ADYEN.AS** | ESTABLISHED | N/A | European unified-payments platform; take-rate stability + EBITDA margin recovery from the 2023 growth reset + cross-border e-commerce share gain, with the European regulatory moat against US incumbents as the durable edge | Not yet |
 
 ## Playbook structure (target)
 
@@ -36,6 +37,12 @@ Playbooks unlock depth, but only after the foundation is honest:
 - **ABA-110** (SBC strip) and **ABA-111** (growth-rate ceiling) — must land first; playbook overrides on top of broken base = noise on top of bias
 - **ABA-NEXT** (playbook loader) — infrastructure for `/stock:model` to load `playbooks/TICKER.md` when present
 - Then: six playbook tickets, one per watchlist name. Each is a discrete artifact, ~1-2 days of research + write-up.
+
+## Composition notes
+
+Six of the seven names (GOOG, META, AMZN, NVDA, ASML, NFLX) are AI-exposed in some way — incumbent AI deployers, AI infrastructure providers, or AI-enabled application-layer SaaS. The watchlist is fundamentally an AI-tech specialist book.
+
+**ADYEN.AS is the deliberate non-AI tech name** on the list, included for cycle and geographic diversification: European exposure, payments-infrastructure cycle (uncorrelated with the AI capex cycle), euro-denominated revenue. Its AI layer is `N/A` — Adyen's internal ML (fraud detection, risk scoring) is operational rather than customer-facing or revenue-driving. If the AI thesis on the other six names mean-reverts hard, ADYEN is the diversifier expected to absorb less of the drawdown.
 
 ## Adding / removing tickers
 
