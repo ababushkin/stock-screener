@@ -1,0 +1,93 @@
+{
+  "schema_version": 2,
+  "_comment": "Authoritative KPI map for /stock:model engagement-modifier (ABA-66). Tickers not present here route to status='no_kpi_mapping'. Every change is recorded in engagement_kpi_map.CHANGELOG.md.",
+  "tickers": {
+    "META": {
+      "ai_layer": "INCUMBENT",
+      "primary_kpi": {
+        "name": "DAP",
+        "long_name": "Family Daily Active People",
+        "unit": "billion",
+        "comparison_basis": "YoY",
+        "signal_type": "growth",
+        "source_phrase": "Family daily active people"
+      },
+      "secondary_kpi": {
+        "name": "ad_impressions",
+        "long_name": "Ad impressions delivered across Family of Apps",
+        "unit": "percent_yoy",
+        "comparison_basis": "YoY",
+        "signal_type": "growth",
+        "source_phrase": "Ad impressions"
+      },
+      "evidence": {
+        "latest_8k_accession": "0001628280-26-028364",
+        "filing_date": "2026-04-29",
+        "exhibit_url": "https://www.sec.gov/Archives/edgar/data/1326801/000162828026028364/meta-03312026xexhibit991.htm"
+      }
+    },
+    "RDDT": {
+      "ai_layer": "APPLICATION",
+      "primary_kpi": {
+        "name": "DAUq",
+        "long_name": "Daily Active Uniques",
+        "unit": "million",
+        "comparison_basis": "YoY",
+        "signal_type": "growth",
+        "source_phrase": "Daily Active Uniques"
+      },
+      "secondary_kpi": {
+        "name": "ARPU",
+        "long_name": "Average Revenue per Unique",
+        "unit": "USD",
+        "comparison_basis": "YoY",
+        "signal_type": "monetization",
+        "source_phrase": "ARPU"
+      },
+      "evidence": {
+        "latest_8k_accession": "0001713445-26-000067",
+        "filing_date": "2026-04-30",
+        "exhibit_url": "https://www.sec.gov/Archives/edgar/data/1713445/000171344526000067/earningspressreleaseq126.htm"
+      }
+    },
+    "PINS": {
+      "ai_layer": "APPLICATION",
+      "primary_kpi": {
+        "name": "MAU",
+        "long_name": "Global Monthly Active Users",
+        "unit": "million",
+        "comparison_basis": "YoY",
+        "signal_type": "growth",
+        "source_phrase": "Global Monthly Active Users"
+      },
+      "secondary_kpi": {
+        "name": "ARPU",
+        "long_name": "Average Revenue per User (Global)",
+        "unit": "USD",
+        "comparison_basis": "YoY",
+        "signal_type": "monetization",
+        "source_phrase": "ARPU - Global"
+      },
+      "evidence": {
+        "latest_8k_accession": "0001506293-26-000066",
+        "filing_date": "2026-05-04",
+        "exhibit_url": "https://www.sec.gov/Archives/edgar/data/1506293/000150629326000066/q1-26xpressrelease.htm"
+      }
+    }
+  },
+  "excluded_tickers": {
+    "NFLX": {
+      "reason": "Stopped quarterly disclosure of paid-sub net adds in Q1 2025. Q1 2026 shareholder letter contains only qualitative engagement language ('primary internal quality metric hit an all-time high') and headline revenue (+16% YoY) / operating-income (+18% YoY) — no leading-indicator engagement KPI suitable for the modifier. Revenue-on-revenue is circular (the modifier perturbs Y1 revenue using consensus already informed by the latest print).",
+      "evidence_8k_accession": "0001065280-26-000137",
+      "filing_date": "2026-04-16",
+      "exhibit_url": "https://www.sec.gov/Archives/edgar/data/1065280/000106528026000137/ex991_q126.htm",
+      "resolves": "OQ3",
+      "revisit_when": "NFLX reintroduces a quarterly engagement disclosure (e.g. view-hours per active member) OR the bi-annual Engagement Report cadence becomes per-quarter."
+    },
+    "GOOGL": {
+      "reason": "No quarterly Search-CPM or impression-volume disclosure in 10-Q or earnings press release. 'Paid clicks' and 'cost-per-click' are disclosed as YoY % only, not absolute values; YouTube revenue is a segment line but not an engagement KPI. No defensible primary mapping for v1.",
+      "resolves": "OQ6",
+      "revisit_when": "Alphabet expands segment disclosure to per-quarter clicks/CPC absolutes OR YouTube engagement (view-hours) becomes quarterly."
+    }
+  }
+}

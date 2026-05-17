@@ -1,0 +1,23 @@
+{
+  "_comment": "Frozen Yahoo Finance /analysis/ EPS Trend snippets for ABA-66 Task 12. The live live page exposes an 'EPS Trend' table with Current Estimate / 30 Days Ago rows across (Current Qtr, Next Qtr, Current Year, Next Year) columns. The modifier reads Next Year. Snippets here capture only the EPS Trend section. Updating these requires verifying against a live fetch and noting the fetch date.",
+  "snippets": [
+    {
+      "ticker": "META",
+      "fetched": "2026-05-12",
+      "snippet": "<table><thead><tr><th>EPS Trend</th><th>Current Qtr</th><th>Next Qtr</th><th>Current Year</th><th>Next Year</th></tr></thead><tbody><tr><td>Current Estimate</td><td>7.42</td><td>8.10</td><td>32.15</td><td>36.80</td></tr><tr><td>7 Days Ago</td><td>7.42</td><td>8.08</td><td>32.10</td><td>36.75</td></tr><tr><td>30 Days Ago</td><td>7.30</td><td>7.95</td><td>31.50</td><td>36.10</td></tr><tr><td>60 Days Ago</td><td>7.25</td><td>7.90</td><td>31.40</td><td>35.95</td></tr><tr><td>90 Days Ago</td><td>7.20</td><td>7.85</td><td>31.20</td><td>35.50</td></tr></tbody></table>",
+      "expected": {"current_ny": 36.80, "thirty_days_ago_ny": 36.10, "revision_pct": 0.0194, "direction": 1}
+    },
+    {
+      "ticker": "RDDT",
+      "fetched": "2026-05-12",
+      "snippet": "<table><thead><tr><th>EPS Trend</th><th>Current Qtr</th><th>Next Qtr</th><th>Current Year</th><th>Next Year</th></tr></thead><tbody><tr><td>Current Estimate</td><td>0.48</td><td>0.55</td><td>2.40</td><td>3.30</td></tr><tr><td>7 Days Ago</td><td>0.48</td><td>0.55</td><td>2.39</td><td>3.28</td></tr><tr><td>30 Days Ago</td><td>0.50</td><td>0.58</td><td>2.45</td><td>3.40</td></tr><tr><td>60 Days Ago</td><td>0.51</td><td>0.60</td><td>2.50</td><td>3.45</td></tr><tr><td>90 Days Ago</td><td>0.52</td><td>0.62</td><td>2.55</td><td>3.50</td></tr></tbody></table>",
+      "expected": {"current_ny": 3.30, "thirty_days_ago_ny": 3.40, "revision_pct": -0.0294, "direction": -1}
+    },
+    {
+      "ticker": "PINS",
+      "fetched": "2026-05-12",
+      "snippet": "<table><thead><tr><th>EPS Trend</th><th>Current Qtr</th><th>Next Qtr</th><th>Current Year</th><th>Next Year</th></tr></thead><tbody><tr><td>Current Estimate</td><td>0.42</td><td>0.48</td><td>1.95</td><td>2.30</td></tr><tr><td>7 Days Ago</td><td>0.42</td><td>0.48</td><td>1.95</td><td>2.30</td></tr><tr><td>30 Days Ago</td><td>0.42</td><td>0.48</td><td>1.95</td><td>2.30</td></tr><tr><td>60 Days Ago</td><td>0.41</td><td>0.47</td><td>1.94</td><td>2.28</td></tr><tr><td>90 Days Ago</td><td>0.40</td><td>0.46</td><td>1.92</td><td>2.25</td></tr></tbody></table>",
+      "expected": {"current_ny": 2.30, "thirty_days_ago_ny": 2.30, "revision_pct": 0.0, "direction": 0}
+    }
+  ]
+}
