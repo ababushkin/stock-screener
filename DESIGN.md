@@ -410,6 +410,62 @@ No automated test runner is mandated. Tests are skill-invocation runs with expec
 
 ---
 
+## GARP Threshold Calibration
+
+### Background
+
+`/stock-signal` applies GARP (Growth at a Reasonable Price) scoring to classify tickers as BUY / WATCH / CAUTION. PEG ratio (P/E ÷ 5-year EPS CAGR) is the primary lens for ESTABLISHED companies. A single universal threshold band (WATCH ≤ 2.0) systematically under-rates:
+
+- **Mega-cap INCUMBENT tech** (GOOG, AMZN, META): structural growth ceiling from $500B+ revenue base; market correctly prices in earnings durability. PEG 2–4× is normal for healthy fundamentals.
+- **Infrastructure monopolies** (ASML EUV, NVDA GPU): pricing power + captive customer base sustains premium multiples across the capital-expenditure cycle. Historical PEG 2–5×.
+- **Premium subscription / streaming** (NFLX): pricing leverage + low churn + content moat. Historical PEG 1.5–3.5× for profitable names.
+- **Regional quality compounders without AI primary thesis** (ADYEN.AS): European fintech moat trading at slight premium to small-cap GARP baseline.
+
+**Decision (ABA-132):** Segment PEG thresholds by `ai_layer` for ESTABLISHED profit stage. Market-cap buckets were considered as an overlay but rejected for v1: `ai_layer` already captures the load-bearing structural differences (monopoly vs. mega-cap compounder vs. quality subscriber), and a second dimension doubles the table without clear added precision. Universal bands are preserved as the fallback for unknown / unclassified profiles.
+
+### Threshold table — ESTABLISHED profit stage, PEG available (primary lens)
+
+| AI Layer | BUY | WATCH | CAUTION | Historical distribution rationale |
+|---|---|---|---|---|
+| INFRASTRUCTURE | PEG ≤ 2.0 | PEG ≤ 4.0 | PEG > 4.0 | EUV / GPU monopolies (ASML, NVDA): pricing power + captive customer base; ASML 5-year median PEG ~3.1×; NVDA during AI cycle 1–3×; monopoly durability justifies premium over GARP baseline |
+| APPLICATION | PEG ≤ 1.5 | PEG ≤ 3.0 | PEG > 3.0 | Subscription SaaS/streaming with pricing power (NFLX comparable): 20–30% EPS CAGR + P/E 40–60× is normal mid-cycle; quality SaaS comps trade 1.5–3.5× PEG historically |
+| INCUMBENT | PEG ≤ 1.5 | PEG ≤ 4.0 | PEG > 4.0 | Mega-cap diversified tech (GOOG, META, AMZN): structural earnings ceiling at scale ($500B+ revenue), offset by durable moats + buyback yield; quality compounder PEG 2–4× observed historically; market prices durability, not acceleration |
+| MODEL | PEG ≤ 1.5 | PEG ≤ 2.5 | PEG > 2.5 | Foundation model platforms: innovation premium warranted but higher uncertainty (concentration risk, fast depreciation of training compute); moderate lift over universal baseline |
+| N/A | PEG ≤ 1.0 | PEG ≤ 2.5 | PEG > 2.5 | Quality compounders without AI-primary thesis (ADYEN.AS): slight lift from 2.0 for demonstrable moat + recovery profile; tighter than INCUMBENT because no platform flywheel |
+| Unknown / fallback | PEG ≤ 1.0 | PEG ≤ 2.0 | PEG > 2.0 | Universal GARP baseline — preserved as fallback when `ai_layer` is unclassified |
+
+**ESTABLISHED — P/S fallback (PEG unavailable):** universal bands unchanged (BUY ≤ 8, WATCH ≤ 25, CAUTION > 25). P/S rarely fires for ESTABLISHED names with available PEG data; no profile adjustment needed in v1.
+
+**EMERGING — P/S only:** unchanged (BUY ≤ 8, WATCH ≤ 20, CAUTION > 20). Override 1 (pre-profit base effect) fires regardless of P/S threshold.
+
+### CAGR floor — data quality guardrail for PEG computation
+
+`eps_growth_5y` from yfinance is frequently absent for large-cap tickers. The NTM/TTM fallback `(ntm_eps / clean_ttm_eps)^(1/5) − 1` extrapolates a 1-year forward bridge across five years, producing unrealistically low CAGRs when NTM consensus is only modestly above TTM (e.g., GOOG: 5.5% vs. realistic 12–14% consensus; NFLX: 4.9% vs. realistic 20–25%).
+
+**Rule (ESTABLISHED profit stage only):** When `eps_growth_5y` is unavailable AND the NTM/TTM fallback CAGR < 8%, floor g at **8%** for the PEG denominator. State explicitly in `peg_note` and `qualitative_note`. Mark PEG reliability as MEDIUM-LOW.
+
+**Rationale for the 8% floor:** Below 8% EPS CAGR, a GARP analysis is not meaningful for an ESTABLISHED profitable company. An ESTABLISHED name with Qualitative = PASS that appears to be growing earnings at ≤ 8% is almost always a data artefact (NTM consensus unavailable or NTM period is mis-aligned) rather than genuine stagnation. If genuine growth is that low, the company would typically also fail the revenue and FCF screens that precede Signal; flagging it as possibly stale is more useful than reporting a mechanically correct but misleading PEG.
+
+This floor does **not** apply to EMERGING companies — Override 1 already sets Signal = CAUTION regardless of PEG.
+
+### Verification snapshot (ABA-132, 2026-05-18)
+
+| Ticker | AI Layer | PEG (as-reported) | Applied floor? | Threshold (WATCH ≤) | Signal | MODEL_READY |
+|---|---|---|---|---|---|---|
+| GOOG | INCUMBENT | 5.76 → 3.96 (floored) | Yes — 5.5% < 8% | 4.0 | WATCH | YES |
+| META | INCUMBENT | 1.75 | No | 4.0 | WATCH | YES |
+| AMZN | INCUMBENT | 3.82 | No (8.6% > 8%) | 4.0 | WATCH | YES |
+| NVDA | INFRASTRUCTURE | 1.04 | No | 4.0 | WATCH | YES |
+| ASML | INFRASTRUCTURE | 2.89 | No | 4.0 | WATCH | YES |
+| NFLX | APPLICATION | 4.74 → 2.90 (floored) | Yes — 4.9% < 8% | 3.0 | WATCH | YES |
+| ADYEN.AS | N/A | 2.42 | No | 2.5 | WATCH | YES |
+
+Off-coverage spot checks (gate still enforces correctly):
+- **RDDT** (EMERGING) — Override 1 fires; Signal = CAUTION, MODEL_READY = NO regardless of P/S.
+- **AAPL** (INCUMBENT, AI = N/A for investment thesis) — threshold applies; PEG-dependent result is data-driven, not mechanically blocked.
+
+---
+
 ## Implementation Order
 
 1. **MCP servers** — yfinance and EDGAR. Skills can't run without data.

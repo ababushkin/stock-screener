@@ -1,6 +1,6 @@
 ---
 name: stock-model
-description: DCF/valuation model for a tech stock. Invoked as `/stock-model TICKER [--confirm] [--pre-profit]`. Reads MODEL_READY from the upstream `/stock-signal` (conversation context preferred, same-day `reports/TICKER_YYYYMMDD.json` fallback) and branches: YES → run DCF and emit a bear/base/bull intrinsic-value range; CONDITIONAL → halt and surface `condition` (or proceed when `--confirm` is passed); NO → refuse and surface `qualitative_note` (exception: tickers in COVERAGE.md bypass the gate and run unconditionally — signal verdict is preserved in output). ESTABLISHED profile uses two-stage DCF (5y FCF + Gordon terminal). EMERGING profile (or any ticker invoked with `--pre-profit`) uses revenue-multiple exit + FCF inflection + SBC dilution schedule. Use whenever the user asks for an intrinsic value, fair-value range, DCF, or "what's it worth" on a ticker.
+description: DCF/valuation model for a tech stock. Invoked as `/stock-model TICKER [--confirm] [--pre-profit]`. Reads MODEL_READY from the upstream `/stock-signal` (conversation context preferred, same-day `reports/TICKER_YYYYMMDD.json` fallback) and branches: YES → run DCF and emit a bear/base/bull intrinsic-value range; CONDITIONAL → halt and surface `condition` (or proceed when `--confirm` is passed); NO → refuse and surface `qualitative_note`. ESTABLISHED profile uses two-stage DCF (5y FCF + Gordon terminal). EMERGING profile (or any ticker invoked with `--pre-profit`) uses revenue-multiple exit + FCF inflection + SBC dilution schedule. Use whenever the user asks for an intrinsic value, fair-value range, DCF, or "what's it worth" on a ticker.
 ---
 
 # Model — DCF & Intrinsic Value
@@ -28,7 +28,7 @@ The gate also routes on `model_ready`. Signal's classification is the authoritat
 - `CONDITIONAL` — a specific user-confirmable risk exists. Halt and surface the `condition` string; require `--confirm` on re-invocation before continuing.
 - `NO` — Signal has already ruled the DCF out (pre-profit, qualitative FAIL, or hard CAUTION). Refuse and point back to Signal.
 
-v1.9 (ABA-130) adds a COVERAGE.md bypass: tickers on the curated specialist list (`COVERAGE.md` → "Currently supported") run unconditionally regardless of `model_ready`. The GARP gate is informational for these names — mega-cap incumbents (GOOG, AMZN) and premium-multiple compounders (ASML, NFLX, ADYEN.AS) structurally fail PEG ≤ 2 and would otherwise never be modelled. The bypass preserves the signal verdict in the output rather than discarding the GARP read. Off-coverage tickers keep the current gate behaviour. Threshold recalibration per `profit_stage × ai_layer` is tracked separately in ABA-132.
+v1.10 (ABA-132) removes the COVERAGE.md bypass introduced in v1.9 (ABA-130). The underlying mis-calibration is now fixed: `/stock-signal` uses profile-keyed PEG thresholds per `ai_layer` (INFRASTRUCTURE / APPLICATION / INCUMBENT / MODEL / N/A) and an 8% CAGR floor when `eps_growth_5y` is unavailable. All 7 COVERAGE.md tickers now produce `MODEL_READY=YES` through correctly calibrated thresholds rather than an exception path. The gate enforces uniformly; off-coverage tickers were always enforced and continue to be.
 
 v1.2 (ABA-31) lands the standard two-stage DCF for ESTABLISHED profile. v1.3 (ABA-34) lands the pre-profit variant — revenue-multiple exit, explicit FCF inflection year per scenario, and SBC-driven dilution schedule. The `--pre-profit` flag forces the pre-profit variant even on an ESTABLISHED upstream classification (useful for transition-year tickers like RDDT whose recent profitability does not yet support a stable terminal-value calculation). v1.7 (ABA-110) strips SBC from the FCF base on both paths — `fcf_ttm`, `fcf_margin_ttm`, and `fcf_cagr_3y` are now clean (SBC-stripped) on the ESTABLISHED path, and `margin_ttm` is clean on the pre-profit path. This brings Model into methodology consistency with Signal Step 5, which has always stripped SBC from EPS. v1.8 (ABA-111) caps the Y2–Y5 CAGR against `get_estimates.eps_growth_5y` (or an 18% fallback on ESTABLISHED / 35% on pre-profit) — trailing CAGR off a depressed base year is a useful floor signal but a poor central case; the cap prevents the entire scenario range from inheriting a trough-extrapolation. Both v1.7 and v1.8 are pre-requisites for any `/stock-model` report to be treated as decision-grade.
 
@@ -89,27 +89,19 @@ Surface the `<condition>` string from the upstream Signal **verbatim** (no parap
 
 Then continue to **ROUTE** below.
 
-**`NO` — coverage bypass check:** Before refusing, check whether the ticker appears in the "Currently supported" table in `COVERAGE.md` (read the file; do not rely on memory — coverage changes). The supported tickers are the bolded entries in the `| Ticker |` column (e.g. `GOOG`, `META`, `AMZN`, `NVDA`, `ASML`, `NFLX`, `ADYEN.AS`). Matching is case-insensitive and must handle the dot in `ADYEN.AS`.
+**`NO`:** Refuse. Emit:
 
-- **Ticker IS in COVERAGE.md:** Bypass the gate. Record `gate_bypass: "coverage"` in the JSON output. Emit:
+> Signal for TICKER is MODEL_READY=NO — Model will not run. Reason: `<qualitative_note>`. Re-run `/stock-signal TICKER` if conditions have changed.
 
-  > Gate bypassed (covered ticker): SIGNAL OUTPUT for TICKER found (source=SOURCE, verdict=VERDICT, MODEL_READY=NO). Coverage-list tickers run unconditionally — GARP gate is informational only. Signal note: `<qualitative_note>`. Proceeding to DCF.
+Surface the `qualitative_note` from the upstream Signal verbatim. Do not proceed; do not call any MCP tool; do not write any file.
 
-  Surface the `qualitative_note` verbatim in the bypass acknowledgement. Then continue to **ROUTE** below. The signal verdict (CAUTION / WATCH / etc.) is preserved in the MODEL OUTPUT `signal_verdict` field and disclosed in the Position Sizing section — it is **not** discarded.
-
-- **Ticker is NOT in COVERAGE.md:** Refuse normally. Emit:
-
-  > Signal for TICKER is MODEL_READY=NO — Model will not run. Reason: `<qualitative_note>`. Re-run `/stock-signal TICKER` if conditions have changed.
-
-  Surface the `qualitative_note` from the upstream Signal verbatim. Do not proceed; do not call any MCP tool; do not write any file.
-
-**`CONDITIONAL` — coverage bypass:** When `model_ready = CONDITIONAL` and the ticker is in COVERAGE.md, the `--confirm` flag is still required (the condition names a specific user-confirmable risk, not a GARP screen). Coverage bypass applies only to `model_ready = NO`.
+Note: the COVERAGE.md bypass (ABA-130 / v1.9) has been removed (ABA-132 / v1.10). `/stock-signal` now uses profile-keyed thresholds per `ai_layer`, so all COVERAGE.md tickers produce `MODEL_READY=YES` through correct calibration rather than an exception path.
 
 **Ticker mismatch** (SIGNAL OUTPUT in context is for a different ticker, AND no same-day JSON for the requested ticker exists) is treated as "no upstream Signal" — use the Step 1 refusal message.
 
 ### ROUTE — Branch on `profit_stage` (with `--pre-profit` override)
 
-After the gate passes (`model_ready = YES`, `CONDITIONAL` with `--confirm`, or coverage bypass for a COVERAGE.md ticker), pick a variant:
+After the gate passes (`model_ready = YES`, or `CONDITIONAL` with `--confirm`), pick a variant:
 
 | `profit_stage` | `--pre-profit` flag | Variant |
 |---|---|---|
@@ -885,8 +877,6 @@ RDDT — pre-profit DCF bear/base/bull = $X / $Y / $Z (price $P, WITHIN BEAR–B
 | "Position sizing is just a vibe — I'll write '2-3%' without showing the lookup." | The band must be derivable from the table (Signal verdict × range_vs_price), the MoS %, and the confidence cap. The rationale string names all three load-bearing inputs so the user can audit the call. "Felt right" is not a sizing methodology. |
 | "BUY × MARGIN OF SAFETY is rare — I'll bump the band to 6–8% to express conviction." | Forbidden. The bands are fixed by the table and capped by confidence. Single-name tech caps at 6% upper even at maximum conviction; expressing more conviction than the table allows is exactly the discipline failure the table exists to prevent. |
 | "CAUTION but the price is far below bear IV — surely a 1–2% starter is justified?" | Forbidden. CAUTION from Signal means a qualitative or governance concern (FAIL or hard-flag), not a price concern. Price-cheapness does not unlock CAUTION; the concern needs to be resolved at the Signal layer first. The table caps CAUTION × MARGIN OF SAFETY at 0–1% for this reason. |
-| "The ticker is in COVERAGE.md but MODEL_READY=NO — skip the bypass, just refuse cleanly." | Forbidden. The bypass is a deliberate policy decision (ABA-130): COVERAGE.md names tickers that warrant depth regardless of where the GARP screen lands on a given day. Mega-cap incumbents (GOOG, AMZN) and premium-multiple compounders (ASML, NFLX, ADYEN.AS) structurally fail PEG ≤ 2 — refusing them silently breaks the pack's headline workflow. The bypass surfaces the signal verdict in the output; it does not hide the GARP read. |
-| "I don't need to read COVERAGE.md — I know which tickers are covered." | Forbidden. Coverage changes via PR; relying on training-time memory is hallucination risk. Always read `COVERAGE.md` at run time when evaluating the bypass. |
 | "Pre-profit run; I should still produce a sensitivity_table by sweeping exit multiple × dilution." | Forbidden in v1. The `sensitivity_table` JSON field is the WACC × terminal-g grid only (ESTABLISHED path). Pre-profit emits `sensitivity_table: null` and relies on the single-driver `sensitivity` note. A second-axis grid for pre-profit is a future-tier concern, not v1. |
 | "I'll skip `intrinsic_value_range` — the consumer can read `scenarios.{bear,base,bull}.intrinsic_value_per_share` itself." | Forbidden. `intrinsic_value_range` is a contract field for downstream consumers (UI, router, position-sizing logic) so they don't need to know the scenario-block shape. Drop it and the next change to the scenario shape silently breaks every consumer. |
 
@@ -978,12 +968,8 @@ RDDT — pre-profit DCF bear/base/bull = $X / $Y / $Z (price $P, WITHIN BEAR–B
 56. **META + NVDA cap-fired smoke (with consensus null) →** the 18% fallback fires for both; `cap_source == "fallback_ceiling"`; base IV materially lower than the pre-cap value; OUTPUT discloses the cap source.
 57. **Rationalisations table covers growth cap →** the "trailing CAGR is what the data shows — capping it is fabrication" rebuttal is present and refers to ABA-111. The null-consensus and fallback-tweak rationalisations are also covered.
 
-### v1.9 — ABA-130 (COVERAGE.md bypass for GARP gate)
+### v1.10 — ABA-132 (profile-keyed GARP thresholds; COVERAGE.md bypass removed)
 
-58. **Covered ticker with MODEL_READY=NO runs unconditionally →** invoking `/stock-model GOOG` (or any other COVERAGE.md ticker) after a Signal with `model_ready=NO` proceeds past the gate and emits the "Gate bypassed (covered ticker)" acknowledgement, surfacing the `qualitative_note` verbatim and naming `gate_bypass: "coverage"`.
-59. **Signal verdict preserved in output →** the MODEL OUTPUT `signal_verdict` field carries the upstream Signal verdict (e.g. `CAUTION`) for every bypass run; it is not dropped or replaced with a synthetic value.
-60. **`gate_bypass` field in JSON →** `stages.model.gate_bypass` is `"coverage"` for bypass runs and absent (or `null`) for non-bypass runs.
-61. **Off-coverage ticker with MODEL_READY=NO still refuses →** invoking `/stock-model RDDT` (not in COVERAGE.md) after a NO signal emits the standard refusal message and does not proceed.
-62. **COVERAGE.md read at run time →** the bypass check reads `COVERAGE.md` via the filesystem rather than relying on a hardcoded list — so coverage additions and removals take effect without a skill edit.
-63. **CONDITIONAL bypass does not apply →** a covered ticker with `model_ready=CONDITIONAL` still requires `--confirm`; the bypass is only for `model_ready=NO`.
-64. **Rationalisations table covers the bypass →** the "covered ticker but MODEL_READY=NO — skip the bypass" and "I know which tickers are covered" rebuttals are present and refer to ABA-130.
+58. **COVERAGE.md bypass removed →** the v1.9 bypass (gate_bypass: "coverage") is removed. All COVERAGE.md tickers produce `MODEL_READY=YES` through correctly calibrated thresholds in `/stock-signal`. The gate enforces uniformly for all tickers.
+59. **MODEL_READY=NO refusal unchanged →** invoking `/stock-model` on any ticker with `model_ready=NO` emits the standard refusal regardless of whether the ticker is in COVERAGE.md.
+60. **`gate_bypass` field retired →** `stages.model.gate_bypass` is no longer emitted. Existing report files may contain the field; it is ignored on read.

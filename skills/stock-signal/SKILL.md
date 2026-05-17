@@ -108,6 +108,7 @@ Examples:
 - META → INCUMBENT — core revenue from ad targeting; AI (LLaMA, Reels ranking) is an optionality layer, not the product
 - AAPL → N/A — AI features (Apple Intelligence) are product polish, not a revenue driver or investment thesis
 - MSFT → INFRASTRUCTURE — Azure AI and Copilot integration make AI a primary revenue driver across cloud and productivity
+- NFLX → APPLICATION — subscription streaming platform where AI-powered recommendation drives churn reduction and engagement; AI is materially embedded in the product (not merely optionality), and the business model is subscription-based
 
 **Step 3 — TAM penetration check (INFRASTRUCTURE companies only):**
 
@@ -170,8 +171,9 @@ Steps:
    a. Use yfinance 5-year growth estimate from `get_estimates` if present (field: `eps_growth_5y` or similar)
    b. Fallback: derive `g = (ntm_eps / clean_ttm_eps)^(1/5) − 1` (1-year bridge × compounding approximation)
    c. If g ≤ 0: PEG = N/A — negative/zero growth makes PEG undefined
+   d. **CAGR floor (ESTABLISHED only):** If `eps_growth_5y` was unavailable AND the fallback g < 8%, floor g at 8%. State in `peg_note`: "eps_growth_5y unavailable; NTM/TTM fallback CAGR [raw]% floored at 8% minimum for ESTABLISHED GARP analysis — raw fallback likely understates true 5-year consensus. PEG reliability: MEDIUM-LOW." This floor does not apply when `eps_growth_5y` is present, even if the value is < 8%.
 3. PEG ratio = clean forward P/E ÷ (g × 100)  [g expressed as whole number, e.g. 15 not 0.15]
-4. State the computation: "PEG = [clean fwd P/E] ÷ [g]% = [result]"
+4. State the computation: "PEG = [clean fwd P/E] ÷ [g]% = [result]" (if g was floored, note the floor)
 
 **P/S as primary fallback:**
 - For EMERGING companies: P/S is the primary metric. State explicitly: "P/E and PEG are undefined for pre-profit companies; using P/S as primary valuation metric."
@@ -186,17 +188,20 @@ Steps:
 
 ### THRESHOLD
 
-Always state which lens is active and why.
+Always state which lens is active and why. For the PEG lens, also state which `ai_layer` profile was applied and what the profile's WATCH threshold is.
 
-**ESTABLISHED — PEG available (primary lens):**
+**ESTABLISHED — PEG available (primary lens), profile-keyed by `ai_layer`:**
 
-| Signal  | Condition |
-|---------|-----------|
-| BUY     | PEG ≤ 1.0 |
-| WATCH   | PEG ≤ 2.0 |
-| CAUTION | PEG > 2.0 |
+| AI Layer | BUY | WATCH | CAUTION | Rationale |
+|---|---|---|---|---|
+| INFRASTRUCTURE | PEG ≤ 2.0 | PEG ≤ 4.0 | PEG > 4.0 | Monopoly / near-monopoly position (ASML EUV, NVDA GPU) warrants durability premium; historical PEG 2–5× across semiconductor cycles |
+| APPLICATION | PEG ≤ 1.5 | PEG ≤ 3.0 | PEG > 3.0 | Subscription/streaming with pricing power (NFLX): 20–30% EPS CAGR + high P/E is mid-cycle normal; quality SaaS comps 1.5–3.5× PEG historically |
+| INCUMBENT | PEG ≤ 1.5 | PEG ≤ 4.0 | PEG > 4.0 | Mega-cap diversified tech (GOOG, META, AMZN): structural earnings ceiling at scale, offset by durable moats + buyback yield; quality compounder PEG 2–4× historically |
+| MODEL | PEG ≤ 1.5 | PEG ≤ 2.5 | PEG > 2.5 | Foundation model platforms: innovation premium warranted, moderated by concentration risk and fast compute depreciation |
+| N/A | PEG ≤ 1.0 | PEG ≤ 2.5 | PEG > 2.5 | Quality compounders without AI-primary thesis (ADYEN.AS): slight lift from universal 2.0 for demonstrable moat; tighter than INCUMBENT — no platform flywheel |
+| Unknown / unclassified | PEG ≤ 1.0 | PEG ≤ 2.0 | PEG > 2.0 | Universal GARP baseline — fallback when `ai_layer` cannot be determined |
 
-**ESTABLISHED — PEG = N/A, fall back to P/S:**
+**ESTABLISHED — PEG = N/A, fall back to P/S (unchanged — universal bands):**
 
 | Signal  | Condition |
 |---------|-----------|
@@ -204,7 +209,7 @@ Always state which lens is active and why.
 | WATCH   | P/S ≤ 25  |
 | CAUTION | P/S > 25  |
 
-**EMERGING — P/S only (PEG never applies):**
+**EMERGING — P/S only (PEG never applies, Override 1 fires regardless):**
 
 | Signal  | Condition |
 |---------|-----------|
@@ -548,3 +553,7 @@ All four active override rules and the qualitative overrides from TAM/optionalit
 | "C3.ai shows a WATCH or BUY result from the P/S threshold so I'll give WATCH or BUY" | Override 1 fires for all EMERGING companies regardless of P/S threshold verdict. AI (C3.ai) is pre-profit (EMERGING), so Signal = CAUTION and MODEL_READY = NO unconditionally. The P/S threshold is computed and shown for transparency but is overridden. |
 | "Clean EPS is negative so Qualitative must be FAIL and MODEL_READY = NO" | Not when SBC is the sole cause and the company is GAAP-profitable + FCF-positive. Override 2.5 routes this case to Qualitative = FLAG and MODEL_READY = CONDITIONAL so the pre-profit `/stock-model` variant can value the company via revenue/FCF multiple with explicit dilution scheduling. Reserve FAIL for governance / accounting / going-concern issues where price-cheapness doesn't fix the thesis. |
 | "Adding Override 2.5 just lets users bypass SBC discipline" | The opposite. The pre-profit variant is the *only* DCF lens that explicitly schedules SBC dilution into year-5 share count. The current NO refusal lets users argue away the dilution by retreating to reported EPS; Override 2.5 channels them into a model that confronts dilution head-on. The verdict cap at WATCH also prevents the threshold lens from producing a BUY signal while clean economics are underwater. |
+| "I'll use the universal PEG ≤ 2.0 threshold for all ESTABLISHED companies" | The THRESHOLD section now uses profile-keyed bands per `ai_layer`. INFRASTRUCTURE and INCUMBENT tickers have WATCH ≤ 4.0; APPLICATION WATCH ≤ 3.0; N/A WATCH ≤ 2.5. The universal 2.0 threshold is only the fallback for unclassified profiles. Always state which profile was applied and the corresponding WATCH threshold. |
+| "The ai_layer is APPLICATION but NFLX has PEG 4.7 so it's CAUTION" | Check whether the PEG was computed using a floored CAGR. If `eps_growth_5y` is unavailable and the NTM/TTM fallback CAGR < 8%, the CAGR should be floored at 8%. For NFLX at clean fwd P/E ~23, floored PEG = 23/8 = 2.9 → WATCH under APPLICATION threshold of 3.0. |
+| "I'll skip the CAGR floor because the methodology says to use the fallback formula" | The fallback formula is methodologically correct but systematically low for ESTABLISHED quality companies when NTM consensus barely exceeds TTM EPS. The floor prevents a data-gap artefact from overriding a valid GARP read. State the raw fallback value and the floored value so the user can audit both. |
+| "NFLX is N/A because AI recommendations are just a feature, not a product" | NFLX is APPLICATION. AI recommendation drives subscriber retention and content spend efficiency — it is materially embedded in the product, not merely a polish layer. The decision tree distinguishes optionality/defence (INCUMBENT) from AI-embedded SaaS/subscription (APPLICATION). Netflix is the latter. |
