@@ -158,3 +158,7 @@ Gaps
 - AMZN, ASML, NFLX, ADYEN.AS, GOOG all need `/stock-model` runs before the portfolio view becomes decision-grade — visible directly from the rendered sample.</result>
 <usage><total_tokens>102824</total_tokens><tool_uses>16</tool_uses><duration_ms>206949</duration_ms></usage>
 </task-notification>
+
+---
+
+merge into main, then push
