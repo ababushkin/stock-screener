@@ -1,0 +1,30 @@
+{
+  "ticker": "ADYEN.AS",
+  "company": "Adyen N.V.",
+  "date": "2026-05-15",
+  "stages": {
+    "signal": {
+      "verdict": "CAUTION",
+      "profit_stage": "ESTABLISHED",
+      "track": "GROWTH",
+      "ai_layer": "N/A",
+      "clean_eps_ttm": 32.33,
+      "sbc_stripped": true,
+      "sbc_adjustment_per_share": 1.29,
+      "peg_ratio": 2.43,
+      "ps_ratio": 11.771375,
+      "rule_of_40": null,
+      "qualitative": "PASS",
+      "qualitative_note": "Clean TTM EPS €32.33 after stripping €1.29/share SBC (€40.6M FY25 SBC ÷ 31.5M diluted shares — low SBC intensity ~1.5% of revenue). PEG 2.43 = clean fwd P/E 19.25 ÷ derived 5y EPS growth 7.93% (eps_growth_5y null in yfinance; fallback g = (NTM/clean-TTM)^(1/5) − 1). AI layer N/A — payments platform, AI not material to thesis.",
+      "signal": "CAUTION",
+      "model_ready": "NO",
+      "condition": null
+    }
+  },
+  "meta": {
+    "profit_stage": "ESTABLISHED",
+    "track": "GROWTH",
+    "ai_layer": "N/A",
+    "confidence": "MEDIUM"
+  }
+}

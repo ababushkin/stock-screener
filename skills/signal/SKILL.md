@@ -253,6 +253,26 @@ Detection heuristic: if `eps_growth_5y` is unavailable (no 5-year history) AND `
 Known transition-year companies — apply automatically without needing to detect:
 - **RDDT** — turned profitable late 2024; apply transition-year override
 
+**Override 2.5 — SBC-distorted earnings (clean EPS negative because SBC absorbs reported EPS):**
+
+Fires when the company is GAAP-profitable and FCF-positive, but stock-based compensation is large enough that clean (SBC-stripped) TTM EPS goes negative. Standard two-stage DCF cannot anchor here — there is no positive clean earnings base — but the company is too operationally mature for the pre-profit lens to fire naturally. The honest move is to route the user to the pre-profit `/stock:model` variant, which explicitly schedules dilution into year-5 share count and values the company on revenue / FCF rather than earnings. Reserve Override 3 (FAIL → NO) for governance, accounting, or going-concern problems where price-cheapness doesn't fix the thesis; SBC-driven dilution is a *valuation* problem the pre-profit lens is built to handle.
+
+```
+IF profit_stage = ESTABLISHED
+   AND clean_eps_ttm < 0
+   AND reported_diluted_eps > 0
+   AND fcf_ttm > 0
+   AND (sbc_per_share / reported_diluted_eps) >= 1.0:
+  Qualitative = FLAG  (NOT FAIL — pre-empts Override 3; SBC is dilution overhang, not quality failure)
+  Signal = min(threshold_verdict, WATCH)  (cap at WATCH; never upgrade — never report BUY when clean EPS is negative)
+  MODEL_READY = CONDITIONAL
+  Condition: "Clean TTM EPS is negative ($X.XX) because SBC ($Y.YY/sh) exceeds reported EPS ($Z.ZZ/sh).
+              Standard DCF cannot anchor. Re-invoke with `/stock:model TICKER --pre-profit --confirm`
+              to value via revenue/FCF multiple with explicit dilution schedule."
+```
+
+Evaluation order: this override is evaluated **after** Override 2 (transition year) and **before** Override 3 (qualitative FAIL). When it fires, Qualitative is set to FLAG before Override 3 sees the record, so Override 3 does not subsequently fire. If both Override 2 (transition year) and Override 2.5 fire on the same ticker, the conditions are merged into a single CONDITIONAL message naming both.
+
 **Override 3 — Qualitative failure:**
 
 ```
@@ -307,8 +327,8 @@ Evaluate after all four override rules have been applied. Precedence: NO > CONDI
 
 | MODEL_READY | Condition |
 |---|---|
-| YES | Signal = BUY or WATCH, AND Qualitative ≠ FAIL, AND no transition-year flag, AND profit_stage = ESTABLISHED |
-| CONDITIONAL | Signal = WATCH, AND (transition-year flag is set OR one or more stub fields are still pending) |
+| YES | Signal = BUY or WATCH, AND Qualitative ≠ FAIL, AND no transition-year flag, AND Override 2.5 did not fire, AND profit_stage = ESTABLISHED |
+| CONDITIONAL | Signal = WATCH, AND (transition-year flag is set OR Override 2.5 fired OR one or more stub fields are still pending) |
 | NO | Signal = CAUTION, OR Qualitative = FAIL, OR profit_stage = EMERGING |
 
 If MODEL_READY = CONDITIONAL, the `Condition` line MUST state what the user needs to confirm before running `/stock:model`. Never leave Condition blank on a CONDITIONAL result.
@@ -526,3 +546,5 @@ All four active override rules and the qualitative overrides from TAM/optionalit
 | "The TAM estimate is uncertain so I'll omit the TAM/Optionality line" | Uncertainty is exactly why this is a qualitative note rather than a precise metric. State the range ($150–400B), pick a point estimate, state your assumption, and compute the penetration. The output must include the line. |
 | "RDDT has a positive P/E so I'll mark MODEL_READY: YES" | RDDT is in its first profitable year (transition year). Override 2 applies: MODEL_READY = CONDITIONAL with condition stating to confirm 2nd profitable year. The positive P/E establishes ESTABLISHED stage and allows Signal to remain at the threshold verdict — but MODEL_READY is capped at CONDITIONAL until a second profitable year is confirmed. |
 | "C3.ai shows a WATCH or BUY result from the P/S threshold so I'll give WATCH or BUY" | Override 1 fires for all EMERGING companies regardless of P/S threshold verdict. AI (C3.ai) is pre-profit (EMERGING), so Signal = CAUTION and MODEL_READY = NO unconditionally. The P/S threshold is computed and shown for transparency but is overridden. |
+| "Clean EPS is negative so Qualitative must be FAIL and MODEL_READY = NO" | Not when SBC is the sole cause and the company is GAAP-profitable + FCF-positive. Override 2.5 routes this case to Qualitative = FLAG and MODEL_READY = CONDITIONAL so the pre-profit `/stock:model` variant can value the company via revenue/FCF multiple with explicit dilution scheduling. Reserve FAIL for governance / accounting / going-concern issues where price-cheapness doesn't fix the thesis. |
+| "Adding Override 2.5 just lets users bypass SBC discipline" | The opposite. The pre-profit variant is the *only* DCF lens that explicitly schedules SBC dilution into year-5 share count. The current NO refusal lets users argue away the dilution by retreating to reported EPS; Override 2.5 channels them into a model that confronts dilution head-on. The verdict cap at WATCH also prevents the threshold lens from producing a BUY signal while clean economics are underwater. |
