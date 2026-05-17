@@ -1,0 +1,99 @@
+# ABA-66 Task 13 — Weekly drift-CI gate for the engagement-KPI modifier.
+#
+# Two jobs:
+#
+# 1. drift_check (schedule + workflow_dispatch)
+#    Dry-runs `scripts/engagement_kpi_drift_check.py` against every ticker in
+#    `skills/_shared/engagement_kpi_map.json`. Per ADR D4, fails when any ticker
+#    is non-applied for ≥2 consecutive scheduled runs. Cross-run state is held
+#    in actions/cache.
+#
+# 2. file_pair_check (pull_request)
+#    Enforces ADR D4b — `engagement_kpi_map.json` and `engagement_kpi_map.CHANGELOG.md`
+#    must be modified together. Either both touched in the PR diff or neither.
+
+name: engagement-kpi-drift
+
+on:
+  schedule:
+    - cron: "0 9 * * 1"  # Mondays 09:00 UTC
+  workflow_dispatch:
+    inputs:
+      force_unavailable:
+        description: "Comma-separated tickers to force non-applied (failure-path test)"
+        required: false
+        default: ""
+  pull_request:
+    paths:
+      - "skills/_shared/engagement_kpi_map.json"
+      - "skills/_shared/engagement_kpi_map.CHANGELOG.md"
+
+permissions:
+  contents: read
+
+jobs:
+  drift_check:
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Restore drift state
+        uses: actions/cache@v4
+        with:
+          path: .github/drift-state
+          # Bump the suffix to reset consecutive-failure counters after an
+          # intentional map change (changelog explains why).
+          key: engagement-kpi-drift-state-v1
+          restore-keys: |
+            engagement-kpi-drift-state-
+
+      - name: Dry-run modifier against seed tickers
+        env:
+          FORCE_UNAVAILABLE: ${{ github.event.inputs.force_unavailable }}
+        run: |
+          python scripts/engagement_kpi_drift_check.py \
+            --force-unavailable "$FORCE_UNAVAILABLE"
+
+      - name: Upload drift state (post-run snapshot)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: engagement-kpi-drift-state
+          path: .github/drift-state/engagement_kpi.json
+          if-no-files-found: ignore
+
+  file_pair_check:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Enforce map + changelog move together (ADR D4b)
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          changed=$(git diff --name-only "$BASE_SHA" "$HEAD_SHA" \
+            | grep -E '^skills/_shared/engagement_kpi_map\.(json|CHANGELOG\.md)$' \
+            | sort -u || true)
+          json_changed=0
+          changelog_changed=0
+          echo "$changed" | grep -q 'engagement_kpi_map\.json$'        && json_changed=1 || true
+          echo "$changed" | grep -q 'engagement_kpi_map\.CHANGELOG\.md$' && changelog_changed=1 || true
+
+          if [ "$json_changed" -ne "$changelog_changed" ]; then
+            echo "FILE-PAIR CHECK FAILED (ADR D4b):"
+            echo "  engagement_kpi_map.json changed:        $json_changed"
+            echo "  engagement_kpi_map.CHANGELOG.md changed: $changelog_changed"
+            echo "Both files must move together — or neither."
+            exit 1
+          fi
+          echo "File-pair check OK (json=$json_changed, changelog=$changelog_changed)."
