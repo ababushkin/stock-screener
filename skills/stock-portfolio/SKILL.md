@@ -86,8 +86,8 @@ For each ticker:
 2. **MoS %** = `(base_iv / current_price − 1) × 100`. Round to one decimal. Null if either input is null.
 3. **Verdict source** = `stages.model.range_vs_price` from the same model file. If absent (older model report without the field), fall back to deriving it from the bear / base / bull values vs `current_price` using the exact rules from `skills/stock-model/SKILL.md` THRESHOLD section:
    - `current_price < bear_iv` → `MARGIN OF SAFETY`
-   - `bear_iv ≤ current_price < base_iv` → `WITHIN BEAR–BASE`
-   - `base_iv ≤ current_price ≤ bull_iv` → `WITHIN BASE–BULL`
+   - `bear_iv ≤ current_price < base_iv` → `WITHIN BEAR-BASE`
+   - `base_iv ≤ current_price ≤ bull_iv` → `WITHIN BASE-BULL`
    - `current_price > bull_iv` → `PRICE EXCEEDS RANGE`
 4. **Last updated** = the filename date of the model report (`YYYY-MM-DD`).
 5. **Days stale** = today − last updated.
@@ -98,7 +98,7 @@ For each ticker:
 The verdict column is the upstream `range_vs_price` label — no new threshold logic. Two derived labels are applied here only:
 
 - `NO_MODEL` — no model report exists for this ticker, or model is present but `base IV` is null.
-- `STALE_MODEL` — model exists but the report date is > 14 days old. Surfaced as an annotation suffixed to the underlying verdict, e.g. `WITHIN BEAR–BASE (STALE)`. Days-stale shown numerically in the JSON.
+- `STALE_MODEL` — model exists but the report date is > 14 days old. Surfaced as an annotation suffixed to the underlying verdict, e.g. `WITHIN BEAR-BASE (STALE)`. Days-stale shown numerically in the JSON.
 
 ### OUTPUT
 
@@ -256,7 +256,7 @@ None unique to this skill. All upstream conventions (SBC stripping, AI layer cla
 | Rationalisation | Counter |
 |---|---|
 | "I'll just call yfinance to fetch a fresh price — the price column will be more useful." | Out of scope for v1. The whole point is read-only aggregation; introducing a fetch path changes the failure modes (rate limits, MCP not connected, stale fallbacks). Note the freshest cached price's date instead. If live-price refresh proves valuable, that's a follow-up issue with its own appetite. |
-| "Let me invent ADD / HOLD / TRIM / AVOID bands — they're easier to read than 'WITHIN BEAR–BASE'." | Forbidden. The `/stock-model` skill already owns the verdict vocabulary. A second set of labels in this skill silently disagrees at the margins and forks the operator's mental model. Reuse the upstream labels; if a more compact display is needed, it's a UI concern, not a skill-output concern. |
+| "Let me invent ADD / HOLD / TRIM / AVOID bands — they're easier to read than 'WITHIN BEAR-BASE'." | Forbidden. The `/stock-model` skill already owns the verdict vocabulary. A second set of labels in this skill silently disagrees at the margins and forks the operator's mental model. Reuse the upstream labels; if a more compact display is needed, it's a UI concern, not a skill-output concern. |
 | "AMZN has no model — I'll just drop it from the table to keep things clean." | Forbidden. Silently dropping tickers hides the gap that the operator needs to see. Every covered ticker gets a row; missing inputs are flagged in the verdict column and the gaps list. |
 | "The newest report for GOOG is GOOGL — I'll just show GOOGL as the ticker." | The output uses the canonical `COVERAGE.md` ticker. Record `alias_used: "GOOGL"` in the JSON for audit, but display `GOOG` in the table — the canonical name is what the operator sees in `COVERAGE.md` and in playbooks. |
 | "I'll re-run `/stock-model` for the stale tickers as part of this skill — it's only a few calls." | Forbidden. v1 scope says read-only. Re-running model is expensive (manual inputs, WACC confirmations) and would defeat the "one invocation" contract. The skill surfaces staleness; the operator decides what to refresh. |
@@ -274,7 +274,7 @@ A `/stock-portfolio` run is correct when:
 3. Rows are sorted by MoS % descending; `NO_MODEL` rows sort to the bottom alphabetically.
 4. The JSON snapshot at `reports/PORTFOLIO_YYYYMMDD.json` is valid JSON, schema-conformant, and overwrites the same-day file if present.
 5. Every non-null price has `price_source` recorded in the JSON (`signal` | `screen` | `model`) with the source filename.
-6. Verdict labels are drawn from `{MARGIN OF SAFETY, WITHIN BEAR–BASE, WITHIN BASE–BULL, PRICE EXCEEDS RANGE, NO_MODEL, STALE_MODEL}` only. No new bands.
+6. Verdict labels are drawn from `{MARGIN OF SAFETY, WITHIN BEAR-BASE, WITHIN BASE-BULL, PRICE EXCEEDS RANGE, NO_MODEL, STALE_MODEL}` only. No new bands.
 7. The footer carries the v1 disclaimer about the verdict-source provenance and the staleness threshold.
 8. `benchmark_overlay` is `null` and the seam note for ABA-125 is present.
 9. The skill made no MCP calls and no network calls.
