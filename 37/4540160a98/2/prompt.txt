@@ -1,0 +1,60 @@
+Work on Linear issue ABA-132:
+
+<issue identifier="ABA-132">
+<title>Recalibrate /stock-signal GARP thresholds per profit_stage × ai_layer</title>
+<description>
+## Problem
+
+`/stock-signal` uses a single universal PEG/PS threshold band to assign GARP verdicts (PASS / WATCH / CAUTION / FAIL). The thresholds are calibrated for a small-cap GARP screen (PEG ≤ \~2 = PASS), which systematically mis-classifies:
+
+* **Mature mega-caps** (GOOG, AMZN, META at scale): structurally can't grow earnings >10%/yr from a $1T+ base, so PEG sits at 3–4 indefinitely — the universal gate treats this as CAUTION even when the qualitative read is healthy.
+* **Premium-multiple quality compounders** (ASML monopoly, NFLX pricing power, [ADYEN.AS](<http://ADYEN.AS>) European moat): the market correctly pays a premium for durability that PEG can't see.
+
+Result: 5 of 7 COVERAGE.md tickers get `model_ready=NO` for structural rather than informational reasons. <issue id="0b887766-037e-4080-abe7-a7f76eeecde8">ABA-130</issue> ships the immediate bypass for covered tickers; this issue fixes the underlying mis-calibration so the gate works correctly for *all* tickers.
+
+## Approach (multi-slice)
+
+**Slice 1 — Calibration design.** Decide the segmentation (likely `profit_stage × ai_layer`, possibly with a market-cap bucket overlay) and pick new PEG/PS bands per cohort with documented rationale. Inputs: historical PEG/PS distributions over 5–10y for representative names in each cohort (mega-cap incumbents, infrastructure picks-and-shovels, application SaaS, emerging growth). Output: a threshold table in a design note. Load-bearing slice — without this the implementation is guessing.
+
+**Slice 2 — Implementation.** Replace universal threshold constants in `/stock-signal` with a profile-keyed lookup. Preserve old thresholds as the fallback when profile is unknown. Update `qualitative_note` generation to reference the cohort and the band that fired.
+
+**Slice 3 — Verification + docs.** Re-run signal on all 7 covered tickers plus 2–3 off-coverage controls (one EMERGING, one outside-tech). Confirm verdicts now align with qualitative reality. Update DESIGN.md + `/stock-signal` SKILL.md with the new bands and rationale. Remove the coverage-bypass note from <issue id="0b887766-037e-4080-abe7-a7f76eeecde8">ABA-130</issue> once the recalibration carries the load.
+
+## Sequencing with playbook layer
+
+The playbook layer (<issue id="89e1f4f4-8b04-4c5b-9931-7f4f837de45f">ABA-110</issue>/111/112) lands per-ticker overrides (WACC, growth ceiling, terminal margin, scenarios). It could absorb per-ticker threshold overrides too. Two paths:
+
+1. **Recalibrate first, playbooks override later.** Universal thresholds get better for everyone; playbooks fine-tune for specific names. Recommended — recalibration helps off-coverage tickers too, which playbooks won't.
+2. **Skip recalibration, let playbooks carry it.** Cheaper but leaves the gate mis-calibrated for the long tail of off-coverage tickers users actually run on.
+
+Default to path 1 unless <issue id="89e1f4f4-8b04-4c5b-9931-7f4f837de45f">ABA-110</issue>/111/112 land sooner than expected.
+
+## Acceptance criteria
+
+* New threshold table documented in DESIGN.md with cohort definitions and the historical-distribution rationale per band.
+* `/stock-signal` uses the profile-keyed thresholds; unknown profiles fall back to the existing universal bands.
+* All 7 COVERAGE.md tickers produce `model_ready=YES` (or a `model_ready=NO` with a qualitatively-defensible reason, not "PEG > 2 mechanically").
+* Off-coverage spot checks: at least one EMERGING and one out-of-band ticker still get the gate enforced correctly.
+* Coverage-bypass shim from <issue id="0b887766-037e-4080-abe7-a7f76eeecde8">ABA-130</issue> can be removed; covered tickers should now pass naturally.
+
+## Dependencies
+
+* <issue id="0b887766-037e-4080-abe7-a7f76eeecde8">ABA-130</issue> (coverage bypass) — ships first, unblocks the workflow today.
+* <issue id="89e1f4f4-8b04-4c5b-9931-7f4f837de45f">ABA-110</issue> / <issue id="e78e36cd-49f1-441f-96a9-317acc594230">ABA-111</issue> / <issue id="70664e55-f843-4fed-8462-d8e6e78141cb">ABA-112</issue> (playbook layer) — related but not blocking; see sequencing note above.
+
+## Out of scope
+
+* Per-ticker overrides (those live in playbooks).
+* DCF model recalibration (separate concern, separate issues).
+</description>
+<team name="Personal"/>
+<project name="Equity skill pack">Cycle 1 (17–24 May): Goal 1 — portfolio complete (all 7 tickers unblocked, /stock-portfolio returns 7 rows). Goal 2 — signal calibrated (≥5/7 tickers model_ready=YES). Full brief → Linear doc "Cycle 1 — goals & success criteria".</project>
+<issue-relations>
+<related>
+<issue-ref identifier="ABA-130" title="/stock-model blocked on most COVERAGE.md tickers — /stock-portfolio unusable"/>
+<issue-ref identifier="ABA-110" title="/stock:model — strip SBC from FCF base (DCF methodology fix)"/>
+<issue-ref identifier="ABA-111" title="/stock:model — cap Y2-Y5 FCF CAGR against consensus / sanity ceiling"/>
+<issue-ref identifier="ABA-112" title="/stock:model — playbook loader for watchlist tickers (depth-over-breadth foundation)"/>
+</related>
+</issue-relations>
+</issue>
