@@ -1,0 +1,76 @@
+{
+  "ticker": "ADYEN.AS",
+  "company": "Adyen N.V.",
+  "date": "2026-05-14",
+  "stages": {
+    "screen": {
+      "verdict": "WATCH",
+      "profit_stage": "ESTABLISHED",
+      "ratios": {
+        "pe_ratio": 26.329567,
+        "ps_ratio": 11.747486,
+        "ev_ebitda": 14.35,
+        "pfcf": 52.25282163906092,
+        "ev_revenue": 7.228
+      },
+      "quality_signals": {
+        "score": 5,
+        "denominator": 9,
+        "ratio": 0.5556,
+        "methodology": "piotroski_mixed_v1",
+        "signals": {
+          "f1_roa_positive": true,
+          "f2_ocf_positive": true,
+          "f3_roa_improving": true,
+          "f4_accruals": false,
+          "f5_leverage_decreasing": false,
+          "f6_current_ratio_improving": true,
+          "f7_no_new_shares": false,
+          "f8_gross_margin_improving": false,
+          "f9_asset_turnover_improving": true
+        },
+        "signal_sources": {
+          "f1_roa_positive": "canonical",
+          "f2_ocf_positive": "canonical",
+          "f3_roa_improving": "canonical",
+          "f4_accruals": "canonical",
+          "f5_leverage_decreasing": "mcp_constrained_q7",
+          "f6_current_ratio_improving": "canonical",
+          "f7_no_new_shares": "canonical",
+          "f8_gross_margin_improving": "canonical",
+          "f9_asset_turnover_improving": "canonical"
+        },
+        "sbc_intensity_not_worsening": true
+      },
+      "magic_formula": {
+        "earnings_yield": 0.0618,
+        "roic": 0.2007,
+        "flag": "PASS"
+      },
+      "rationale": "Piotroski 5/9 = 55.6% (just clears 55% WATCH cutoff, below 75% PASS) with Magic Formula PASS (EY 6.18%, ROIC 20.07% — both clear single-ticker thresholds); methodology piotroski_mixed_v1 because long_term_debt is null so F5 fell back to total_debt trend (mcp_constrained_q7); strengths are positive ROA + improving trend, OCF, current-ratio improvement, and asset-turnover expansion; offset by accruals failure (NI > OCF — earnings outran cash), total-debt rising YoY, modest share-count increase, and slight gross-margin compression from already-high 89%."
+    },
+    "signal": {
+      "verdict": "CAUTION",
+      "profit_stage": "ESTABLISHED",
+      "track": "GROWTH",
+      "ai_layer": "N/A",
+      "clean_eps_ttm": 32.33,
+      "sbc_stripped": true,
+      "sbc_adjustment_per_share": 1.29,
+      "peg_ratio": 2.42,
+      "ps_ratio": 11.747486,
+      "rule_of_40": null,
+      "qualitative": "PASS",
+      "qualitative_note": "Clean TTM EPS €32.33 after stripping €1.29/share SBC (€40.6M TTM ÷ 31.5M shares — very low SBC intensity at ~1.5% of revenue, typical of EU fintech vs US tech). PEG 2.42 = clean fwd P/E 19.2 ÷ derived 5y EPS growth 7.94% (eps_growth_5y null in yfinance so fallback derivation used: NTM/clean-TTM compounded to 5y); PEG sensitive to the conservative compounding — 1-year NTM jump is +46% but compounded 5y derives 7.94%. AI layer N/A — payments platform, AI not material to thesis.",
+      "signal": "CAUTION",
+      "model_ready": "NO",
+      "condition": null
+    }
+  },
+  "meta": {
+    "profit_stage": "ESTABLISHED",
+    "track": "GROWTH",
+    "ai_layer": "N/A",
+    "confidence": "MEDIUM"
+  }
+}

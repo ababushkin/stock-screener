@@ -1,0 +1,38 @@
+{
+  "ticker": "KSPI",
+  "company": "Joint Stock Company Kaspi.kz",
+  "date": "2026-05-13",
+  "stages": {
+    "signal": {
+      "verdict": "WATCH",
+      "profit_stage": "ESTABLISHED",
+      "track": "GROWTH",
+      "ai_layer": "N/A",
+      "clean_eps_ttm": 12.06,
+      "sbc_stripped": true,
+      "sbc_adjustment_per_share": 0,
+      "peg_ratio": 1.14,
+      "ps_ratio": 1.91,
+      "rule_of_40": null,
+      "qualitative": "FLAG",
+      "qualitative_note": "Manual Input Protocol fired — get_ratios YFNoDataError for non-US ADR. Fields from research (Yahoo HTML, 2026-05-13): current_price 86.38 USD, ps_ratio 1.91, eps_ttm 12.06 USD, shares_outstanding 189.88M, usd_kzt_fx 466.19 (USDKZT=X). User paste: SBC=0. MCP provided financials + estimates in KZT. Country risk (Kazakhstan), KZT/USD FX exposure, Hepsiburada acquisition distorts YoY growth comparability; 5-yr CAGR fallback (4.92%) likely understates near-term growth versus visible FY25→NTM EPS trajectory (~27%).",
+      "signal": "WATCH",
+      "model_ready": "CONDITIONAL",
+      "condition": "Confirm (a) SBC=0 against latest 20-F cash flow statement; (b) organic vs inorganic split of FY25 revenue growth (Hepsiburada acquisition); (c) accept 5-yr CAGR proxy for growth or supply a primary-source 5-yr EPS growth estimate. Re-run /signal once ABA-72 (HTML-fallback get_ratios) and ABA-73 (get_fx_rate) ship to remove research-source provenance."
+    }
+  },
+  "meta": {
+    "profit_stage": "ESTABLISHED",
+    "track": "GROWTH",
+    "ai_layer": "N/A",
+    "confidence": "MEDIUM",
+    "manual_inputs": [
+      { "field": "current_price", "value": 86.38, "unit": "USD", "source": "research", "note": "scraped from finance.yahoo.com/quote/KSPI/ on 2026-05-13" },
+      { "field": "ps_ratio", "value": 1.91, "source": "research", "note": "scraped from finance.yahoo.com/quote/KSPI/key-statistics on 2026-05-13" },
+      { "field": "eps_ttm", "value": 12.06, "unit": "USD", "source": "research", "note": "scraped from finance.yahoo.com/quote/KSPI/key-statistics on 2026-05-13" },
+      { "field": "shares_outstanding", "value": 189880000, "source": "research", "note": "scraped from finance.yahoo.com/quote/KSPI/key-statistics on 2026-05-13" },
+      { "field": "usd_kzt_fx", "value": 466.19, "source": "research", "note": "scraped from finance.yahoo.com/quote/USDKZT=X on 2026-05-13" },
+      { "field": "sbc_ttm", "value": 0, "source": "user_paste", "note": "user asserted SBC=0; not independently 20-F-verified" }
+    ]
+  }
+}

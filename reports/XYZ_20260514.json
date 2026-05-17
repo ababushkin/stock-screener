@@ -1,0 +1,189 @@
+{
+  "ticker": "XYZ",
+  "company": "Block, Inc.",
+  "date": "2026-05-14",
+  "stages": {
+    "screen": {
+      "verdict": "WATCH",
+      "profit_stage": "ESTABLISHED",
+      "ratios": {
+        "pe_ratio": 54.515625,
+        "ps_ratio": 1.6966453,
+        "ev_ebitda": 26.85,
+        "pfcf": null,
+        "ev_revenue": 1.728
+      },
+      "quality_signals": {
+        "score": 6,
+        "denominator": 9,
+        "ratio": 0.6667,
+        "methodology": "piotroski_canonical_v1",
+        "signals": {
+          "f1_roa_positive": true,
+          "f2_ocf_positive": true,
+          "f3_roa_improving": false,
+          "f4_accruals": true,
+          "f5_leverage_decreasing": true,
+          "f6_current_ratio_improving": false,
+          "f7_no_new_shares": true,
+          "f8_gross_margin_improving": true,
+          "f9_asset_turnover_improving": false
+        },
+        "signal_sources": {
+          "f1_roa_positive": "canonical",
+          "f2_ocf_positive": "canonical",
+          "f3_roa_improving": "canonical",
+          "f4_accruals": "canonical",
+          "f5_leverage_decreasing": "canonical",
+          "f6_current_ratio_improving": "canonical",
+          "f7_no_new_shares": "canonical",
+          "f8_gross_margin_improving": "canonical",
+          "f9_asset_turnover_improving": "canonical"
+        },
+        "sbc_intensity_not_worsening": true
+      },
+      "magic_formula": {
+        "earnings_yield": 0.0778,
+        "roic": 0.1899,
+        "flag": "PASS"
+      },
+      "rationale": "Piotroski 6/9 = 66.7% (above 55% WATCH cutoff but below 75% PASS cutoff) with Magic Formula PASS (EY 7.78%, ROIC 19.0% — both clear single-ticker thresholds); methodology piotroski_canonical_v1; strengths are positive ROA + OCF, OCF-backed earnings (low accruals), declining LT-debt ratio, stable share count, and gross-margin expansion; offset by ROA decline YoY (net income fell from $2.90B to $1.31B), current-ratio dip, and asset-turnover decline."
+    },
+    "signal": {
+      "verdict": "WATCH",
+      "profit_stage": "ESTABLISHED",
+      "track": "GROWTH",
+      "ai_layer": "N/A",
+      "clean_eps_ttm": -0.99,
+      "sbc_stripped": true,
+      "sbc_adjustment_per_share": 2.27,
+      "peg_ratio": null,
+      "ps_ratio": 1.704669,
+      "rule_of_40": null,
+      "qualitative": "FLAG",
+      "qualitative_note": "Override 2.5 (SBC-distorted earnings): GAAP-profitable (reported EPS $1.28) and FCF-positive ($2.42B TTM), but SBC ($2.27/sh) fully absorbs reported EPS so clean TTM EPS is negative (-$0.99). Dilution overhang, not a quality failure — pre-empts Override 3 (Qualitative=FAIL).",
+      "signal": "WATCH",
+      "model_ready": "CONDITIONAL",
+      "condition": "Clean TTM EPS is negative (-$0.99) because SBC ($2.27/sh) exceeds reported EPS ($1.28/sh). Standard DCF cannot anchor. Re-invoke with `/stock:model XYZ --pre-profit --confirm` to value via revenue/FCF multiple with explicit dilution schedule."
+    },
+    "model": {
+      "method": "pre-profit (revenue-multiple exit + FCF inflection)",
+      "profit_stage": "ESTABLISHED",
+      "route_override": "pre-profit",
+      "current_price": 69.89,
+      "shares_today": 622838000,
+      "net_debt": -2369540000,
+      "revenue_ttm": 24193683000,
+      "rev_cagr_3y": 0.1132,
+      "fcf_margin_ttm": 0.1002,
+      "ntm_revenue": 29351438540,
+      "base_wacc": 0.09,
+      "comp_set": [
+        {"ticker": "PYPL", "ntm_ev_revenue": 2.0},
+        {"ticker": "FI", "ntm_ev_revenue": 3.5},
+        {"ticker": "GPN", "ntm_ev_revenue": 2.0},
+        {"ticker": "TOST", "ntm_ev_revenue": 3.5},
+        {"ticker": "ADYEN.AS", "ntm_ev_revenue": 10.0},
+        {"ticker": "SHOP", "ntm_ev_revenue": 12.0}
+      ],
+      "base_exit_multiple": 3.0,
+      "terminal_margin_target": 0.15,
+      "sbc_dilution_base": 0.025,
+      "sbc_dilution_3y_trailing": 0.0247,
+      "scenarios": {
+        "bear": {
+          "y1_revenue": 24948722759,
+          "y2_5_rev_cagr": 0.0566,
+          "exit_multiple": 1.8,
+          "terminal_margin": 0.10,
+          "dilution_rate": 0.0375,
+          "wacc": 0.10,
+          "fcf_inflection_year": 1,
+          "shares_y5": 748881000,
+          "dilution_pct_5y": 0.2023,
+          "intrinsic_value_per_share": 63.57,
+          "upside_pct": -9.04,
+          "narrative": "Revenue miss, margin stalls at TTM level, accelerated dilution, comp multiples compress to PYPL/GPN floor."
+        },
+        "base": {
+          "y1_revenue": 29351438540,
+          "y2_5_rev_cagr": 0.1132,
+          "exit_multiple": 3.0,
+          "terminal_margin": 0.15,
+          "dilution_rate": 0.025,
+          "wacc": 0.09,
+          "fcf_inflection_year": 1,
+          "shares_y5": 704680000,
+          "dilution_pct_5y": 0.1314,
+          "intrinsic_value_per_share": 154.08,
+          "upside_pct": 120.4,
+          "narrative": "Consensus revenue; FCF margin expands 500 bps over 5y via Cash App operating leverage; trailing dilution persists."
+        },
+        "bull": {
+          "y1_revenue": 33754154321,
+          "y2_5_rev_cagr": 0.1602,
+          "exit_multiple": 4.2,
+          "terminal_margin": 0.20,
+          "dilution_rate": 0.0125,
+          "wacc": 0.08,
+          "fcf_inflection_year": 1,
+          "shares_y5": 662722000,
+          "dilution_pct_5y": 0.0641,
+          "intrinsic_value_per_share": 311.91,
+          "upside_pct": 346.3,
+          "narrative": "Cash App ad monetisation + BNPL scale; margin lifts to ADYEN-like 20%; SBC tapers as RSU grants vest; multiples re-rate toward TOST."
+        }
+      },
+      "intrinsic_value_range": {
+        "bear": 63.57,
+        "base": 154.08,
+        "bull": 311.91
+      },
+      "range_vs_price": "WITHIN BEAR-BASE",
+      "sensitivity": {
+        "dominant_driver": "exit_multiple",
+        "note": "Exit multiple dominates — ±1.0× absolute swing moves base IV by ±27% (vs WACC ±100 bps ≈ ±7%, dilution ±200 bps ≈ ±10%, terminal margin ±300 bps ≈ ±2%)."
+      },
+      "sensitivity_table": null,
+      "position_sizing": {
+        "band": "2–3% of portfolio",
+        "lower_pct": 2,
+        "upper_pct": 3,
+        "signal_verdict": "WATCH",
+        "range_vs_price": "WITHIN BEAR-BASE",
+        "margin_of_safety_pct": 120.4,
+        "confidence_cap_applied": true,
+        "rationale": "WATCH × WITHIN BEAR–BASE (price $69.89 vs base IV $154.08, MoS +120.4%) → 2–3% band; MEDIUM-confidence cap (pre-profit variant always caps MEDIUM) does not bind at upper=3%."
+      }
+    },
+    "timing": {
+      "verdict": "NEUTRAL",
+      "sue": 1.4026,
+      "sue_window": "4q",
+      "sue_caveat": "4-quarter std-dev is statistically weaker than the 8-quarter window used in the academic literature; treat SUE > 1.5 as the noise floor for v1.",
+      "pead_window_status": "IN WINDOW",
+      "days_since_earnings": 44,
+      "pead_late_window": false,
+      "revision_direction": null,
+      "net_revisions_7d": null,
+      "net_revisions_30d": null,
+      "next_catalyst": "Estimated earnings ~2026-06-29",
+      "next_catalyst_date": "2026-06-29",
+      "days_to_catalyst": 46,
+      "catalyst_source": "estimated",
+      "rationale": "SUE 1.40 just below the 1.5 v1 noise floor — Q1'26 beat of +25.6% on EPS partly offset by Q3'25 miss of -18.1% inflating the surprise std-dev; PEAD IN WINDOW at day 44 of 60 (regular band, not late) on a positive SUE; revision direction N/A (yf MCP get_revisions tool not implemented); estimated next earnings 2026-06-29, 46 days out — well past the 7-day and 14-day override thresholds. Verdict NEUTRAL: drift is technically still in play but SUE doesn't clear the noise floor and revisions are blind."
+    }
+  },
+  "meta": {
+    "profit_stage": "ESTABLISHED",
+    "track": "GROWTH",
+    "ai_layer": "N/A",
+    "confidence": "MEDIUM",
+    "manual_inputs": [
+      {"field": "base_wacc", "value": 0.09, "source": "user_paste"},
+      {"field": "base_exit_multiple", "value": 3.0, "source": "user_paste"},
+      {"field": "terminal_margin_target", "value": 0.15, "source": "user_paste"},
+      {"field": "sbc_dilution_base", "value": 0.025, "source": "user_paste"}
+    ]
+  }
+}

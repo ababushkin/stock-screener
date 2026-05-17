@@ -1,0 +1,30 @@
+{
+  "ticker": "GM",
+  "company": "General Motors Company",
+  "date": "2026-05-14",
+  "stages": {
+    "signal": {
+      "verdict": "BUY",
+      "profit_stage": "ESTABLISHED",
+      "track": "GROWTH",
+      "ai_layer": "N/A",
+      "clean_eps_ttm": null,
+      "sbc_stripped": null,
+      "sbc_adjustment_per_share": null,
+      "peg_ratio": 0.14,
+      "ps_ratio": 0.37,
+      "rule_of_40": null,
+      "qualitative": "FLAG",
+      "qualitative_note": "TTM net income $2.7B vs $6.0B in 2024; NTM EPS consensus $14.07 vs TTM $2.74 — PEG rests on a fragile snapback assumption from a depressed TTM base. Auto cyclical + EV transition exposure.",
+      "signal": "BUY",
+      "model_ready": "YES",
+      "condition": null
+    }
+  },
+  "meta": {
+    "profit_stage": "ESTABLISHED",
+    "track": "GROWTH",
+    "ai_layer": "N/A",
+    "confidence": "MEDIUM"
+  }
+}

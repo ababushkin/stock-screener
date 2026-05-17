@@ -1,0 +1,106 @@
+{
+  "ticker": "META",
+  "company": "Meta Platforms, Inc.",
+  "date": "2026-05-17",
+  "stages": {
+    "signal": {
+      "verdict": "WATCH",
+      "profit_stage": "ESTABLISHED",
+      "track": "GROWTH",
+      "ai_layer": "INCUMBENT",
+      "clean_eps_ttm": 18.22,
+      "sbc_stripped": true,
+      "sbc_adjustment_per_share": 9.30,
+      "peg_ratio": 1.75,
+      "ps_ratio": 7.25,
+      "rule_of_40": null,
+      "qualitative": "PASS",
+      "qualitative_note": "PEG 1.75 in WATCH band; AI optionality premium 16% — proportionate to core business value (assumed ~70% of $69.7B TTM capex AI-attributed, 5x proxy multiple).",
+      "signal": "WATCH",
+      "model_ready": "YES",
+      "condition": null
+    },
+    "model": {
+      "method": "two-stage DCF",
+      "profit_stage": "ESTABLISHED",
+      "current_price": 614.23,
+      "shares_diluted": 2574000000,
+      "net_debt": 48024000000,
+      "fcf_ttm": 46109000000,
+      "fcf_margin_ttm": 0.2294,
+      "fcf_cagr_3y": 0.3373,
+      "ntm_revenue": 301635766990,
+      "base_wacc": 0.085,
+      "scenarios": {
+        "bear": {
+          "y1_fcf": 58824000000,
+          "y2_5_cagr": 0.1687,
+          "terminal_growth": 0.015,
+          "wacc": 0.095,
+          "intrinsic_value_per_share": 444.36,
+          "upside_pct": -27.66,
+          "narrative": "revenue miss, decelerating growth, tighter cost of capital"
+        },
+        "base": {
+          "y1_fcf": 69205000000,
+          "y2_5_cagr": 0.3373,
+          "terminal_growth": 0.025,
+          "wacc": 0.085,
+          "intrinsic_value_per_share": 1154.78,
+          "upside_pct": 88.00,
+          "narrative": "consensus delivers, trailing 3y FCF CAGR persists, growth normalises to GDP+"
+        },
+        "bull": {
+          "y1_fcf": 76126000000,
+          "y2_5_cagr": 0.4248,
+          "terminal_growth": 0.035,
+          "wacc": 0.075,
+          "intrinsic_value_per_share": 2439.51,
+          "upside_pct": 297.16,
+          "narrative": "revenue beat, AI ad-targeting operating leverage, rate-easing tailwind"
+        }
+      },
+      "intrinsic_value_range": {
+        "bear": 444.36,
+        "base": 1154.78,
+        "bull": 2439.51
+      },
+      "range_vs_price": "WITHIN BEAR-BASE",
+      "sensitivity": {
+        "dominant_driver": "WACC",
+        "note": "WACC dominates — ±100 bps WACC moves base IV by ~±19% (vs ~±15% for terminal g, ~±8.5% for Y2-5 CAGR)"
+      },
+      "sensitivity_table": {
+        "wacc_axis": [0.075, 0.080, 0.085, 0.090, 0.095],
+        "terminal_growth_axis": [0.015, 0.020, 0.025, 0.030, 0.035],
+        "intrinsic_value_per_share": [
+          [1197.54, 1295.17, 1412.23, 1555.56, 1734.25],
+          [1094.70, 1176.04, 1271.88, 1386.56, 1527.06],
+          [1007.12, 1075.30, 1154.78, 1248.81, 1361.65],
+          [931.15, 988.91, 1055.94, 1133.97, 1226.49],
+          [864.84, 914.64, 971.64, 1037.37, 1113.66]
+        ],
+        "base_cell": {"row": 2, "col": 2}
+      },
+      "position_sizing": {
+        "band": "2–3% of portfolio",
+        "lower_pct": 2,
+        "upper_pct": 3,
+        "signal_verdict": "WATCH",
+        "range_vs_price": "WITHIN BEAR-BASE",
+        "margin_of_safety_pct": 88.00,
+        "confidence_cap_applied": false,
+        "rationale": "WATCH × WITHIN BEAR–BASE (price $614.23 vs base IV $1,154.78, MoS +88.0%) → 2–3% band (HIGH confidence, no cap applied)."
+      }
+    }
+  },
+  "meta": {
+    "profit_stage": "ESTABLISHED",
+    "track": "GROWTH",
+    "ai_layer": "INCUMBENT",
+    "confidence": "HIGH",
+    "manual_inputs": [
+      {"field": "base_wacc", "value": 0.085, "source": "user_paste"}
+    ]
+  }
+}

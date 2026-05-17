@@ -1,0 +1,123 @@
+{
+  "ticker": "META",
+  "company": "Meta Platforms, Inc.",
+  "date": "2026-05-14",
+  "stages": {
+    "signal": {
+      "verdict": "WATCH",
+      "profit_stage": "ESTABLISHED",
+      "track": "GROWTH",
+      "ai_layer": "INCUMBENT",
+      "clean_eps_ttm": 18.20,
+      "sbc_stripped": true,
+      "sbc_adjustment_per_share": 9.30,
+      "peg_ratio": 1.72,
+      "ps_ratio": 7.15,
+      "rule_of_40": null,
+      "qualitative": "PASS",
+      "qualitative_note": "AI optionality premium 13.6% (TTM capex $69.69B × ~60% AI-attributed × 5× proxy / $1,537B mcap) — proportionate to core business value",
+      "signal": "WATCH",
+      "model_ready": "YES",
+      "condition": null
+    },
+    "timing": {
+      "verdict": "NEUTRAL",
+      "sue": 0.9426,
+      "sue_window": "4q",
+      "sue_caveat": "4-quarter std-dev is statistically weaker than the 8-quarter window used in the academic literature; treat SUE > 1.5 as the noise floor for v1.",
+      "pead_window_status": "IN WINDOW",
+      "days_since_earnings": 44,
+      "pead_late_window": false,
+      "revision_direction": null,
+      "net_revisions_7d": null,
+      "net_revisions_30d": null,
+      "next_catalyst": "Estimated earnings ~2026-06-29",
+      "next_catalyst_date": "2026-06-29",
+      "days_to_catalyst": 46,
+      "catalyst_source": "estimated",
+      "rationale": "SUE 0.94 below the 1.5 v1 noise floor (FY25-Q3 -84% miss inflates sample std-dev to ~4.01 even though Q1-2026 surprise was +$3.78); PEAD nominally IN WINDOW (day 44 of 60); revision direction N/A (yf MCP get_revisions not implemented, ABA-68); estimated catalyst ~46d out — no 7d override fires; ACT NOW unreachable without revisions."
+    },
+    "model": {
+      "method": "two-stage DCF",
+      "profit_stage": "ESTABLISHED",
+      "current_price": 605.37,
+      "shares_diluted": 2574000000,
+      "net_debt": 48024000000,
+      "fcf_ttm": 46109000000,
+      "fcf_margin_ttm": 0.2294,
+      "fcf_cagr_3y": 0.337,
+      "ntm_revenue": 301559475610,
+      "base_wacc": 0.09,
+      "scenarios": {
+        "bear": {
+          "y1_fcf": 58811000000,
+          "y2_5_cagr": 0.1685,
+          "terminal_growth": 0.015,
+          "wacc": 0.10,
+          "intrinsic_value_per_share": 414.78,
+          "upside_pct": -31.48,
+          "narrative": "revenue miss, decelerating growth, tighter cost of capital"
+        },
+        "base": {
+          "y1_fcf": 69190000000,
+          "y2_5_cagr": 0.337,
+          "terminal_growth": 0.025,
+          "wacc": 0.09,
+          "intrinsic_value_per_share": 1055.03,
+          "upside_pct": 74.28,
+          "narrative": "consensus delivers, growth normalises to GDP+"
+        },
+        "bull": {
+          "y1_fcf": 76109000000,
+          "y2_5_cagr": 0.4244,
+          "terminal_growth": 0.035,
+          "wacc": 0.08,
+          "intrinsic_value_per_share": 2143.49,
+          "upside_pct": 254.10,
+          "narrative": "revenue beat, operating leverage, rate-easing tailwind"
+        }
+      },
+      "intrinsic_value_range": {
+        "bear": 414.78,
+        "base": 1055.03,
+        "bull": 2143.49
+      },
+      "range_vs_price": "WITHIN BEAR-BASE",
+      "sensitivity": {
+        "dominant_driver": "WACC",
+        "note": "WACC dominates — ±100 bps WACC moves base IV by ±18% (vs ±14% for terminal g, ±8% for Y2-5 CAGR)"
+      },
+      "sensitivity_table": {
+        "wacc_axis": [0.08, 0.085, 0.09, 0.095, 0.10],
+        "terminal_growth_axis": [0.015, 0.02, 0.025, 0.03, 0.035],
+        "intrinsic_value_per_share": [
+          [1093.69, 1174.59, 1270.29, 1385.10, 1525.40],
+          [1006.03, 1074.14, 1153.59, 1247.54, 1360.20],
+          [930.18, 988.15, 1055.03, 1133.02, 1225.08],
+          [864.06, 913.69, 970.66, 1036.48, 1113.00],
+          [805.65, 848.79, 897.57, 953.55, 1018.04]
+        ],
+        "base_cell": {"row": 2, "col": 2}
+      },
+      "manual_inputs": [
+        {"field": "base_wacc", "source": "user_paste"}
+      ],
+      "position_sizing": {
+        "band": "2–3% of portfolio",
+        "lower_pct": 2,
+        "upper_pct": 3,
+        "signal_verdict": "WATCH",
+        "range_vs_price": "WITHIN BEAR-BASE",
+        "margin_of_safety_pct": 74.28,
+        "confidence_cap_applied": false,
+        "rationale": "WATCH × WITHIN BEAR-BASE (price $605.37 vs base IV $1055.03, MoS +74.3%) → 2–3% band (HIGH confidence, no cap applied)."
+      }
+    }
+  },
+  "meta": {
+    "profit_stage": "ESTABLISHED",
+    "track": "GROWTH",
+    "ai_layer": "INCUMBENT",
+    "confidence": "MEDIUM"
+  }
+}

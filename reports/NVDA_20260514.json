@@ -1,0 +1,188 @@
+{
+  "ticker": "NVDA",
+  "company": "NVIDIA Corporation",
+  "date": "2026-05-14",
+  "stages": {
+    "timing": {
+      "verdict": "NEUTRAL",
+      "sue": 4.365,
+      "sue_window": "4q",
+      "sue_caveat": "4-quarter std-dev is statistically weaker than the 8-quarter window used in the academic literature; treat SUE > 1.5 as the noise floor for v1.",
+      "pead_window_status": "OUTSIDE WINDOW",
+      "days_since_earnings": 103,
+      "pead_late_window": false,
+      "revision_direction": null,
+      "net_revisions_7d": null,
+      "net_revisions_30d": null,
+      "next_catalyst": "Estimated earnings ~2026-07-30",
+      "next_catalyst_date": "2026-07-30",
+      "days_to_catalyst": 77,
+      "catalyst_source": "estimated",
+      "rationale": "SUE 4.37 well above 1.5 v1 noise floor but PEAD window has closed (day 103, past 60d cap), so the post-earnings drift edge is no longer in play; revision direction N/A (yf MCP get_revisions tool not implemented); estimated next earnings ~77 days out (period-end + 90d, advanced once)."
+    },
+    "screen": {
+      "verdict": "SKIP",
+      "profit_stage": "ESTABLISHED",
+      "ratios": {
+        "pe_ratio": 46.259182,
+        "ps_ratio": 25.51182,
+        "ev_ebitda": 39.884,
+        "pfcf": 94.77566766373184,
+        "ev_revenue": 24.608
+      },
+      "quality_signals": {
+        "score": 4,
+        "denominator": 9,
+        "ratio": 0.4444,
+        "methodology": "piotroski_canonical_v1",
+        "signals": {
+          "f1_roa_positive": true,
+          "f2_ocf_positive": true,
+          "f3_roa_improving": false,
+          "f4_accruals": false,
+          "f5_leverage_decreasing": true,
+          "f6_current_ratio_improving": false,
+          "f7_no_new_shares": true,
+          "f8_gross_margin_improving": false,
+          "f9_asset_turnover_improving": false
+        },
+        "signal_sources": {
+          "f1_roa_positive": "canonical",
+          "f2_ocf_positive": "canonical",
+          "f3_roa_improving": "canonical",
+          "f4_accruals": "canonical",
+          "f5_leverage_decreasing": "canonical",
+          "f6_current_ratio_improving": "canonical",
+          "f7_no_new_shares": "canonical",
+          "f8_gross_margin_improving": "canonical",
+          "f9_asset_turnover_improving": "canonical"
+        },
+        "sbc_intensity_not_worsening": true
+      },
+      "magic_formula": {
+        "earnings_yield": 0.02367,
+        "roic": 0.8664,
+        "flag": "WATCH"
+      },
+      "gross_margin": null,
+      "gross_margin_gate": null,
+      "rule_of_40": null,
+      "ev_ntm_revenue": null,
+      "rationale": "Quality 4/9 = 44.4% (below 55% WATCH cutoff) forces SKIP regardless of Magic Formula WATCH (EY 2.4% misses 5% bar; ROIC 86.6% clears 15%); methodology piotroski_canonical_v1; drags = ROA declined as asset base doubled, OCF $103B < NI $120B (accruals), current ratio fell 4.44→3.91, gross margin contracted 75.0%→71.1%, asset turnover dropped 1.17→1.04; positives = NI/OCF positive, LT leverage down, share count down, SBC intensity not worsening."
+    },
+    "signal": {
+      "verdict": "WATCH",
+      "profit_stage": "ESTABLISHED",
+      "track": "GROWTH",
+      "ai_layer": "INFRASTRUCTURE",
+      "clean_eps_ttm": 4.64,
+      "sbc_stripped": true,
+      "sbc_adjustment_per_share": 0.26,
+      "peg_ratio": 1.04,
+      "ps_ratio": 25.51,
+      "rule_of_40": null,
+      "qualitative": "FLAG",
+      "qualitative_note": "TAM ceiling risk — data centre GPU TAM ~$300B est.; NVDA at ~$190B annualised DC revenue = ~63% penetration; meaningful ceiling risk at current trajectory.",
+      "signal": "WATCH",
+      "model_ready": "YES",
+      "condition": null
+    },
+    "model": {
+      "method": "pre-profit (revenue-multiple exit + FCF inflection)",
+      "profit_stage": "ESTABLISHED",
+      "route_override": "pre-profit",
+      "current_price": 226.045,
+      "shares_today": 24514000000,
+      "net_debt": 435000000,
+      "revenue_ttm": 215938000000,
+      "rev_cagr_3y": 1.0000,
+      "fcf_margin_ttm": 0.4477,
+      "ntm_revenue": 487757944020,
+      "base_wacc": 0.09,
+      "comp_set": [
+        {"ticker": "AVGO", "ntm_ev_revenue": 14.24},
+        {"ticker": "ASML", "ntm_ev_revenue": 14.2},
+        {"ticker": "TSM", "ntm_ev_revenue": 5.5},
+        {"ticker": "AMD", "ntm_ev_revenue": 13.0}
+      ],
+      "base_exit_multiple": 10.0,
+      "terminal_margin_target": 0.40,
+      "sbc_dilution_base": 0.0,
+      "sbc_dilution_3y_trailing": -0.0075,
+      "scenarios": {
+        "bear": {
+          "y1_revenue": 414594000000,
+          "y2_5_rev_cagr": 0.50,
+          "exit_multiple": 6.0,
+          "terminal_margin": 0.35,
+          "dilution_rate": 0.0,
+          "fcf_inflection_year": 1,
+          "shares_y5": 24514000000,
+          "dilution_pct_5y": 0.0,
+          "intrinsic_value_per_share": 378.26,
+          "upside_pct": 67.3,
+          "narrative": "revenue growth halves (still 50%/yr from base-year effect), margin compresses to 35%, comp multiples compress to 6× as TAM ceiling tightens"
+        },
+        "base": {
+          "y1_revenue": 487758000000,
+          "y2_5_rev_cagr": 1.00,
+          "exit_multiple": 10.0,
+          "terminal_margin": 0.40,
+          "dilution_rate": 0.0,
+          "fcf_inflection_year": 1,
+          "shares_y5": 24514000000,
+          "dilution_pct_5y": 0.0,
+          "intrinsic_value_per_share": 2246.10,
+          "upside_pct": 893.7,
+          "narrative": "NTM consensus delivers, trailing 3y revenue CAGR (100%) persists (base-year effect from FY23 pre-AI revenue), margin softens to 40%, exit at comp-cluster median"
+        },
+        "bull": {
+          "y1_revenue": 560922000000,
+          "y2_5_rev_cagr": 1.18,
+          "exit_multiple": 14.0,
+          "terminal_margin": 0.45,
+          "dilution_rate": 0.0,
+          "fcf_inflection_year": 1,
+          "shares_y5": 24514000000,
+          "dilution_pct_5y": 0.0,
+          "intrinsic_value_per_share": 5228.06,
+          "upside_pct": 2213.0,
+          "narrative": "revenue beat, operating leverage holds 45% margin, comp multiples re-rate to AVGO/ASML cluster, buybacks offset SBC"
+        }
+      },
+      "intrinsic_value_range": {
+        "bear": 378.26,
+        "base": 2246.10,
+        "bull": 5228.06
+      },
+      "range_vs_price": "MARGIN OF SAFETY",
+      "sensitivity": {
+        "dominant_driver": "exit_multiple",
+        "note": "Exit multiple ±1.0× absolute moves base IV by ~±9%; dilution ±200bps moves IV by ~±10% (close second); WACC ±100bps ±8%; terminal margin ±300bps <±1% (exit EV is revenue × multiple, not FCF × multiple, so margin only affects the small explicit-FCF PV). Caveat: revenue base-year effect (FY23 pre-AI) inflates base & bull; bear IV ($378) is the more defensible reference point."
+      },
+      "sensitivity_table": null,
+      "position_sizing": {
+        "band": "3–4% of portfolio",
+        "lower_pct": 3,
+        "upper_pct": 4,
+        "signal_verdict": "WATCH",
+        "range_vs_price": "MARGIN OF SAFETY",
+        "margin_of_safety_pct": 893.7,
+        "confidence_cap_applied": true,
+        "rationale": "WATCH × MARGIN OF SAFETY (price $226.05 vs base IV $2246.10, MoS +894%) → 3–4% band (pre-profit variant caps confidence at MEDIUM, upper bound = 4%). Caveat: base IV inflated by trailing 3y revenue CAGR (100%) — size off the bear IV ($378.26, MoS +67%), not base."
+      }
+    }
+  },
+  "meta": {
+    "profit_stage": "ESTABLISHED",
+    "track": "GROWTH",
+    "ai_layer": "INFRASTRUCTURE",
+    "confidence": "MEDIUM",
+    "manual_inputs": [
+      {"field": "base_wacc", "value": 0.09, "source": "user_paste"},
+      {"field": "base_exit_multiple", "value": 10.0, "source": "user_paste"},
+      {"field": "terminal_margin_target", "value": 0.40, "source": "user_paste"},
+      {"field": "sbc_dilution_base", "value": 0.0, "source": "user_paste"}
+    ]
+  }
+}

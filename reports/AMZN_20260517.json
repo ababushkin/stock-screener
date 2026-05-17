@@ -1,0 +1,30 @@
+{
+  "ticker": "AMZN",
+  "company": "Amazon.com, Inc.",
+  "date": "2026-05-17",
+  "stages": {
+    "signal": {
+      "verdict": "CAUTION",
+      "profit_stage": "ESTABLISHED",
+      "track": "GROWTH",
+      "ai_layer": "INCUMBENT",
+      "clean_eps_ttm": 6.54,
+      "sbc_stripped": true,
+      "sbc_adjustment_per_share": 1.81,
+      "peg_ratio": 3.82,
+      "ps_ratio": 3.83,
+      "rule_of_40": null,
+      "qualitative": "PASS",
+      "qualitative_note": "AI optionality premium ~14% — AI capex appears proportionate to core business value. No qualitative red flags; PEG-driven CAUTION reflects price relative to derived 5y growth (~8.6%).",
+      "signal": "CAUTION",
+      "model_ready": "NO",
+      "condition": null
+    }
+  },
+  "meta": {
+    "profit_stage": "ESTABLISHED",
+    "track": "GROWTH",
+    "ai_layer": "INCUMBENT",
+    "confidence": "HIGH"
+  }
+}

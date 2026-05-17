@@ -1,0 +1,88 @@
+{
+  "ticker": "AMZN",
+  "company": "Amazon.com, Inc.",
+  "date": "2026-05-13",
+  "stages": {
+    "screen": {
+      "verdict": "WATCH",
+      "profit_stage": "ESTABLISHED",
+      "ratios": {
+        "pe_ratio": 31.83473,
+        "ps_ratio": 3.8496869,
+        "ev_ebitda": 18.939,
+        "pfcf": 291.5840080728579,
+        "ev_revenue": 3.974
+      },
+      "quality_signals": {
+        "score": 7,
+        "denominator": 9,
+        "ratio": 0.7777777777777778,
+        "methodology": "mcp_constrained_v1",
+        "signals": {
+          "q1_net_income_positive": true,
+          "q2_fcf_positive": true,
+          "q3_net_income_improving": true,
+          "q4_fcf_improving": false,
+          "q5_revenue_growing": true,
+          "q6_operating_margin_improving": true,
+          "q7_leverage_not_increasing": false,
+          "q8_cash_buffer_improving": true,
+          "q9_sbc_intensity_not_worsening": true
+        },
+        "piotroski_canonical": null,
+        "piotroski_note": "Canonical Piotroski F-Score not computable from current yf MCP get_financials surface (missing total_assets, current_assets/liabilities, long-term debt split, gross_profit, operating_cash_flow, historical share counts). See ABA-70."
+      },
+      "magic_formula": {
+        "earnings_yield": 0.02733459489540266,
+        "roic": null,
+        "roic_note": "ROIC not computable from current yf MCP surface (canonical denominator requires total_assets, current_assets/liabilities, intangibles). See ABA-70.",
+        "flag": "WATCH"
+      },
+      "gross_margin": null,
+      "gross_margin_gate": null,
+      "rule_of_40": null,
+      "ev_ntm_revenue": null,
+      "rationale": "Quality ratio 7/9 = 78% (above PASS cutoff) but Magic Formula = WATCH (EY 2.73% below single-ticker 5% threshold; ROIC N/A — MCP-constrained per ABA-70) blocks PASS; verdict WATCH. Trend signals strong (NI, revenue, op-margin, cash all improving YoY; SBC intensity falling), but FCF collapsed (32.9B → 7.7B) on the capex ramp and total debt rose 17% — earnings yield depressed by trillion-dollar market cap."
+    },
+    "signal": {
+      "verdict": "CAUTION",
+      "profit_stage": "ESTABLISHED",
+      "track": "GROWTH",
+      "ai_layer": "INCUMBENT",
+      "clean_eps_ttm": 6.5403,
+      "sbc_stripped": true,
+      "sbc_adjustment_per_share": 1.8097,
+      "peg_ratio": 3.84,
+      "ps_ratio": 3.8496869,
+      "rule_of_40": null,
+      "qualitative": "PASS",
+      "qualitative_note": "AI optionality premium ~11% — AI capex investment appears proportionate to core business value (assumption: ~60% of est. ~$105B TTM capex AI-attributed; 5x revenue proxy on AI capex ÷ $2.86T market cap).",
+      "signal": "CAUTION",
+      "model_ready": "NO",
+      "condition": null
+    },
+    "timing": {
+      "verdict": "NEUTRAL",
+      "sue": 2.3628604898793596,
+      "sue_window": "4q",
+      "sue_caveat": "4-quarter std-dev is statistically weaker than the 8-quarter window used in the academic literature; treat SUE > 1.5 as the noise floor for v1.",
+      "pead_window_status": "IN WINDOW",
+      "days_since_earnings": 43,
+      "pead_late_window": false,
+      "revision_direction": null,
+      "net_revisions_7d": null,
+      "net_revisions_30d": null,
+      "next_catalyst": "Estimated earnings ~2026-06-29",
+      "next_catalyst_date": "2026-06-29",
+      "days_to_catalyst": 47,
+      "catalyst_source": "estimated",
+      "rationale": "SUE 2.36 well above the 1.5 v1 noise floor (Q1-2026 surprise +$1.13 vs prior-3q sample std-dev $0.48) and PEAD IN WINDOW (day 43 of 60, not yet late-window); revision direction N/A (yf MCP get_revisions tool not implemented, ABA-68); estimated catalyst ~47 days out (period-end + 90d, ABA-69). Verdict NEUTRAL because ACT NOW requires revisions = UP, which is unreachable in v1 — would flip to ACT NOW if revisions data confirms positive."
+    }
+  },
+  "meta": {
+    "profit_stage": "ESTABLISHED",
+    "track": "GROWTH",
+    "ai_layer": "INCUMBENT",
+    "confidence": "MEDIUM"
+  }
+}

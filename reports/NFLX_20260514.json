@@ -1,0 +1,80 @@
+{
+  "ticker": "NFLX",
+  "company": "Netflix, Inc.",
+  "date": "2026-05-14",
+  "stages": {
+    "screen": {
+      "verdict": "WATCH",
+      "profit_stage": "ESTABLISHED",
+      "ratios": {
+        "pe_ratio": 28.119354,
+        "ps_ratio": 7.8280096,
+        "ev_ebitda": 26.157,
+        "pfcf": 14.12094601222402,
+        "ev_revenue": 7.971
+      },
+      "quality_signals": {
+        "score": 7,
+        "denominator": 9,
+        "ratio": 0.7778,
+        "methodology": "piotroski_canonical_v1",
+        "signals": {
+          "f1_roa_positive": true,
+          "f2_ocf_positive": true,
+          "f3_roa_improving": true,
+          "f4_accruals": false,
+          "f5_leverage_decreasing": true,
+          "f6_current_ratio_improving": false,
+          "f7_no_new_shares": true,
+          "f8_gross_margin_improving": true,
+          "f9_asset_turnover_improving": true
+        },
+        "signal_sources": {
+          "f1_roa_positive": "canonical",
+          "f2_ocf_positive": "canonical",
+          "f3_roa_improving": "canonical",
+          "f4_accruals": "canonical",
+          "f5_leverage_decreasing": "canonical",
+          "f6_current_ratio_improving": "canonical",
+          "f7_no_new_shares": "canonical",
+          "f8_gross_margin_improving": "canonical",
+          "f9_asset_turnover_improving": "canonical"
+        },
+        "sbc_intensity_not_worsening": false
+      },
+      "magic_formula": {
+        "earnings_yield": 0.0358,
+        "roic": 1.126,
+        "flag": "WATCH"
+      },
+      "gross_margin": null,
+      "gross_margin_gate": null,
+      "rule_of_40": null,
+      "ev_ntm_revenue": null,
+      "rationale": "Piotroski 7/9 = 77.8% (above 75% PASS cutoff) with Magic Formula WATCH (EY 3.6% below single-ticker 5% threshold; ROIC 112.6% well above 15% on tangible-capital denominator); methodology piotroski_canonical_v1; quality driven by positive and improving ROA, OCF positive, declining LT-debt ratio, share-count reduction, gross-margin and asset-turnover expansion; offset by NI > OCF (accruals signal fails) and a small current-ratio dip. SBC intensity rose YoY (0.70% → 0.82% of revenue) — informational only."
+    },
+    "timing": {
+      "verdict": "WAIT FOR BETTER ENTRY",
+      "sue": -0.302,
+      "sue_window": "4q",
+      "sue_caveat": "4-quarter std-dev is statistically weaker than the 8-quarter window used in the academic literature; treat SUE > 1.5 as the noise floor for v1.",
+      "pead_window_status": "IN WINDOW (negative)",
+      "days_since_earnings": 44,
+      "pead_late_window": false,
+      "revision_direction": null,
+      "net_revisions_7d": null,
+      "net_revisions_30d": null,
+      "next_catalyst": "Estimated earnings ~2026-06-29",
+      "next_catalyst_date": "2026-06-29",
+      "days_to_catalyst": 46,
+      "catalyst_source": "estimated",
+      "rationale": "SUE -0.30 (most recent Q missed estimate by 1.4%) with PEAD window IN WINDOW (negative) at day 44 of 60 — negative drift signal still in play; revision direction N/A (yf MCP get_revisions tool not implemented); catalyst date estimated (period-end + 90d, ~46d away)."
+    }
+  },
+  "meta": {
+    "profit_stage": "ESTABLISHED",
+    "track": "GROWTH",
+    "ai_layer": null,
+    "confidence": "LOW"
+  }
+}
