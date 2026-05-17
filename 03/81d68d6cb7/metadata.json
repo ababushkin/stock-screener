@@ -5,6 +5,8 @@
   "branch": "main",
   "checkpoints_count": 3,
   "files_touched": [
+    "COVERAGE.md",
+    "playbooks/META.md",
     "skills/stock-model/SKILL.md"
   ],
   "sessions": [
@@ -13,13 +15,19 @@
       "transcript": "/03/81d68d6cb7/0/full.jsonl",
       "content_hash": "/03/81d68d6cb7/0/content_hash.txt",
       "prompt": "/03/81d68d6cb7/0/prompt.txt"
+    },
+    {
+      "metadata": "/03/81d68d6cb7/1/metadata.json",
+      "transcript": "/03/81d68d6cb7/1/full.jsonl",
+      "content_hash": "/03/81d68d6cb7/1/content_hash.txt",
+      "prompt": "/03/81d68d6cb7/1/prompt.txt"
     }
   ],
   "token_usage": {
-    "input_tokens": 33,
-    "cache_creation_tokens": 180928,
-    "cache_read_tokens": 2522987,
-    "output_tokens": 90188,
-    "api_call_count": 23
+    "input_tokens": 1986,
+    "cache_creation_tokens": 282521,
+    "cache_read_tokens": 6536323,
+    "output_tokens": 118651,
+    "api_call_count": 69
   }
 }
