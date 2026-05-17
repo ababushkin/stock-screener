@@ -28,7 +28,7 @@ The gate also routes on `model_ready`. Signal's classification is the authoritat
 - `CONDITIONAL` — a specific user-confirmable risk exists. Halt and surface the `condition` string; require `--confirm` on re-invocation before continuing.
 - `NO` — Signal has already ruled the DCF out (pre-profit, qualitative FAIL, or hard CAUTION). Refuse and point back to Signal.
 
-v1.2 (ABA-31) lands the standard two-stage DCF for ESTABLISHED profile. v1.3 (ABA-34) lands the pre-profit variant — revenue-multiple exit, explicit FCF inflection year per scenario, and SBC-driven dilution schedule. The `--pre-profit` flag forces the pre-profit variant even on an ESTABLISHED upstream classification (useful for transition-year tickers like RDDT whose recent profitability does not yet support a stable terminal-value calculation).
+v1.2 (ABA-31) lands the standard two-stage DCF for ESTABLISHED profile. v1.3 (ABA-34) lands the pre-profit variant — revenue-multiple exit, explicit FCF inflection year per scenario, and SBC-driven dilution schedule. The `--pre-profit` flag forces the pre-profit variant even on an ESTABLISHED upstream classification (useful for transition-year tickers like RDDT whose recent profitability does not yet support a stable terminal-value calculation). v1.7 (ABA-110) strips SBC from the FCF base on both paths — `fcf_ttm`, `fcf_margin_ttm`, and `fcf_cagr_3y` are now clean (SBC-stripped) on the ESTABLISHED path, and `margin_ttm` is clean on the pre-profit path. This brings Model into methodology consistency with Signal Step 5, which has always stripped SBC from EPS. v1.8 (ABA-111) caps the Y2–Y5 CAGR against `get_estimates.eps_growth_5y` (or an 18% fallback on ESTABLISHED / 35% on pre-profit) — trailing CAGR off a depressed base year is a useful floor signal but a poor central case; the cap prevents the entire scenario range from inheriting a trough-extrapolation. Both v1.7 and v1.8 are pre-requisites for any `/stock:model` report to be treated as decision-grade.
 
 ---
 
@@ -115,15 +115,17 @@ Run these MCP calls in this order. Every retrieved figure is held with its raw v
 2. **`get_financials(ticker)`** — used for:
    - `years[].free_cash_flow` (4y usable per ABA-47 — accept 4y base; 5th column is dropped server-side)
    - `years[].revenue` (for FCF margin derivation)
+   - `years[].stock_based_compensation` (required — stripped from FCF before margin / CAGR per ABA-110; methodology consistency with `/stock:signal` Step 5)
    - `years[].shares_outstanding_diluted` (latest year — primary shares figure for per-share IV)
    - `years[0].total_debt` and `years[0].cash` (net debt for EV→equity bridge)
-3. **`get_estimates(ticker)`** — fields used: `ntm_revenue`, `ntm_eps`. NTM revenue anchors Year-1 FCF projection; NTM EPS is used only for sanity-check.
+3. **`get_estimates(ticker)`** — fields used: `ntm_revenue`, `ntm_eps`, `eps_growth_5y`. NTM revenue anchors Year-1 FCF projection (Step 2); NTM EPS is used only for sanity-check; `eps_growth_5y` is the long-term sell-side consensus growth rate, consumed as the Y2–Y5 CAGR ceiling per ABA-111 (Step 3) — may be null, in which case the 18% fallback ceiling applies.
 
 **Manual Input Protocol (`skills/_shared/MANUAL_INPUT_PROTOCOL.md`) fires when:**
 
 - `currentPrice` is null (cannot compute upside/downside)
 - Fewer than 3 historical years of `free_cash_flow` are usable (trailing CAGR cannot be derived)
 - `years[0].total_debt`, `years[0].cash`, or `shares_outstanding_diluted` is null
+- `years[0].stock_based_compensation` is null — refuse with the message `SBC data unavailable; DCF cannot proceed without SBC-stripped FCF base. Use Manual Input Protocol to paste latest TTM SBC.` and ask the user via grouped paste-in for the latest TTM SBC in dollars (e.g. `20400000000` for $20.4B). Pasted SBC is tagged `source: "user_paste"` and caps `meta.confidence` at MEDIUM regardless of other inputs. If 4y SBC history is needed for `fcf_cagr_3y` and any prior year is also null, ask for the full series in the same paste-in.
 - **Always** for **base WACC** — yfinance does not expose risk-free rate, beta, or capital structure inputs that would let the skill derive WACC honestly. Ask the user once via grouped paste-in: `base WACC %` (single number, e.g. `9.0`). Never default this value.
 
 Any field accepted via paste-in is tagged `source: "user_paste"` and added to `meta.manual_inputs`; overall `meta.confidence` caps at MEDIUM.
@@ -230,11 +232,16 @@ When `status = "applied"`, COMPUTE Step 2 (Year-1 FCF anchor) uses `base_anchor_
 
 Execute in order. Show the working — every scenario must be reproducible from the printed assumptions.
 
-**Step 1 — Derive trailing FCF base and margin.**
+**Step 1 — Derive trailing FCF base and margin (SBC-stripped per ABA-110).**
 
-- `fcf_ttm` = `years[0].free_cash_flow` (latest reported FY; if quarterly TTM is unavailable, accept the latest annual figure).
-- `fcf_margin_ttm` = `fcf_ttm / years[0].revenue`.
-- `fcf_cagr_3y` = `(years[0].free_cash_flow / years[3].free_cash_flow) ^ (1/3) − 1` when 4y of FCF is available; if only 3y is available use `^(1/2)` with the oldest available year as the base; if only 2y is available, set `fcf_cagr_3y = (latest / prior) − 1` and flag confidence = MEDIUM. State which formulation was used.
+yfinance's OCF adds SBC back as a non-cash charge, so reported `free_cash_flow` silently treats stock-based compensation as free. `/stock:signal` already strips SBC from EPS (Step 5); the DCF base must do the same or the two skills disagree on the same company. Strip first, then derive margin and CAGR.
+
+- `sbc_ttm` = `years[0].stock_based_compensation` (refuse via the GATHER null-handler above if null — never substitute, never assume zero).
+- `fcf_ttm_reported` = `years[0].free_cash_flow` (latest reported FY; if quarterly TTM is unavailable, accept the latest annual figure). Held for the audit trail and the OUTPUT block; **not** used as the DCF anchor.
+- `fcf_ttm` = `fcf_ttm_reported − sbc_ttm` (the SBC-stripped, "clean" FCF — this is the DCF base).
+- `fcf_margin_ttm_reported` = `fcf_ttm_reported / years[0].revenue` (audit-trail only; surfaces in OUTPUT side-by-side with the clean margin).
+- `fcf_margin_ttm` = `fcf_ttm / years[0].revenue` (the **clean** SBC-stripped margin — this is the margin that anchors the Y1 FCF projection in Step 2).
+- `fcf_cagr_3y` is computed on **clean** FCF on both ends — never on reported. For each historical year used, derive `clean_fcf_y = years[y].free_cash_flow − years[y].stock_based_compensation`. Then `fcf_cagr_3y = (clean_fcf_y0 / clean_fcf_y3) ^ (1/3) − 1` when 4y of usable history is available; if only 3y is available use `^(1/2)` with the oldest available year as the base; if only 2y is available, set `fcf_cagr_3y = (clean_fcf_y0 / clean_fcf_yprior) − 1` and flag confidence = MEDIUM. State which formulation was used. If any historical-year `stock_based_compensation` is null, the SBC paste-in (GATHER null-handler) must cover the full required series — never silently fall back to reported-FCF CAGR for the missing year.
 
 **Step 2 — Year-1 FCF anchor under each scenario.**
 
@@ -256,17 +263,34 @@ Bear and bull are **never** modifier-perturbed — scenario-axis independence (C
 
 **Revision-direction agreement guardrail** (spike-decision §"Lead vs confirm", wired in GATHER Step 5b). When engagement direction and the trailing 30-day EPS revision direction strictly disagree, GATHER emits `status: "direction_disagreement"` with `base_anchor_multiplier = 1.00`, and this step is a no-op. When they agree (or revision data is unavailable — legacy fall-through), the modifier applies per C3/C4 and the audit trail records `agreement: true | null` respectively.
 
-**Step 3 — Years 2–5 FCF growth per scenario.**
+**Step 3 — Years 2–5 FCF growth per scenario (sanity-capped per ABA-111).**
 
-Each scenario uses its own growth axis — **not** a percentage haircut of the base growth rate.
+Trailing 3y CAGR is a useful **floor** signal (the company actually grew this fast recently) but a poor **central case** when the trailing window includes a depressed base year — extrapolating that rate produces mechanical, not analytical, terminal FCFs (META FY22 was the Reality Labs / cost-reset trough; NVDA FY23 pre-dated the AI boom). Cap base-scenario growth against a consensus or fallback ceiling, then drive bear/bull off the capped base so scenario-axis independence is preserved.
+
+```
+consensus_growth = get_estimates(ticker).eps_growth_5y     # long-term sell-side consensus; may be null
+fallback_ceiling = 0.18                                     # 18% — historical mature-tech ceiling
+ceiling          = consensus_growth if consensus_growth is not None else fallback_ceiling
+base_cagr        = min(fcf_cagr_3y, ceiling)
+cap_applied      = (base_cagr < fcf_cagr_3y)
+cap_source       = "consensus_5y_growth" if (consensus_growth is not None and cap_applied)
+                   else "fallback_ceiling" if cap_applied
+                   else None
+```
+
+The cap only narrows growth — it never raises it. If `fcf_cagr_3y` is already at or below the ceiling, `base_cagr = fcf_cagr_3y` and `cap_applied = false` (e.g. GOOG, whose trailing FCF CAGR runs near consensus — the cap does not fire and the output discloses that explicitly: `Y2-5 CAGR: X% (trailing 3y, within consensus ceiling)`).
+
+Bear and bull formulas operate on the **capped** `base_cagr`, not on the raw trailing CAGR. This preserves bear/base/bull axis independence (each scenario applies its own multiplier on a common anchor) while preventing the entire range from inheriting a trough-extrapolation.
 
 | Scenario | Y2–Y5 CAGR | Narrative |
 |---|---|---|
-| Bear | `max(fcf_cagr_3y × 0.50, 0.02)` | Secular deceleration; growth halves and floors at GDP |
-| Base | `fcf_cagr_3y` | Trailing 3y CAGR persists; consensus extrapolated |
-| Bull | `fcf_cagr_3y × 1.20 + 0.02` | Operating leverage extends runway; 200 bps uplift |
+| Bear | `max(base_cagr × 0.50, 0.02)` | Secular deceleration; growth halves and floors at GDP |
+| Base | `base_cagr` (capped per above) | Trailing 3y or consensus/fallback ceiling, whichever is lower |
+| Bull | `base_cagr × 1.20 + 0.02` | Operating leverage extends runway; 200 bps uplift on the capped base |
 
 Project: `fcf_y_n = fcf_y_(n−1) × (1 + cagr)` for n = 2, 3, 4, 5.
+
+When `cap_applied = true`, the OUTPUT block's Base scenario line must surface the cap explicitly (`Y2-5 CAGR: X.X% (capped from trailing Y.Y% by <cap_source>)`); silent caps are forbidden. The `growth_rate` JSON block (see OUTPUT) records all five fields (trailing rate, consensus value, fallback ceiling, applied rate, cap source) every run — even when the cap does not fire — so the audit trail is symmetric.
 
 **Step 4 — Terminal value (Gordon Growth) per scenario.**
 
@@ -400,7 +424,7 @@ MODEL OUTPUT
   Current price:   $X.XX
   Shares (dil.):   XXX.X M (source: get_financials.years[0].shares_outstanding_diluted | get_ratios.sharesOutstanding fallback)
   Net debt:        $X.X B (total_debt $X.X B − cash $X.X B, FY ending YYYY-MM-DD)
-  FCF (TTM):       $X.X B  |  margin: XX%  |  3y CAGR: XX%
+  FCF (TTM):       $X.X B reported  |  SBC: $X.X B  |  clean FCF: $X.X B  |  clean margin: XX% (reported margin: XX%)  |  clean 3y CAGR: XX%
   NTM revenue:     $X.X B (consensus, n=N analysts)
   Base WACC:       X.X% (source: user_paste)
 
@@ -409,7 +433,7 @@ MODEL OUTPUT
     Narrative: revenue miss, decelerating growth, tighter cost of capital
 
   Base: $X.XX / share — [N]% [up|down]side
-    Y1 FCF: $X.XB (NTM consensus × base_anchor_multiplier)  |  Y2-5 CAGR: X%  |  g: 2.5%  |  WACC: X%
+    Y1 FCF: $X.XB (NTM consensus × base_anchor_multiplier)  |  Y2-5 CAGR: X.X% [capped from trailing Y.Y% by <consensus_5y_growth | fallback_ceiling> | trailing 3y, within consensus ceiling]  |  g: 2.5%  |  WACC: X%
     Narrative: consensus delivers, growth normalises to GDP+
     Engagement modifier (base only): [KPI_NAME] [+/-X.X]% YoY ([PERIOD]) → [+/-X]% anchor uplift ([mild|strong] [positive|negative], [user-confirmed|user-skipped|...])
       Source: [URL]
@@ -448,8 +472,19 @@ Run `mkdir -p reports` and read-modify-write the existing file (it already conta
   "shares_diluted": <number>,
   "net_debt": <number>,
   "fcf_ttm": <number>,
+  "fcf_ttm_reported": <number>,
+  "sbc_ttm": <number>,
   "fcf_margin_ttm": <number>,
+  "fcf_margin_ttm_reported": <number>,
   "fcf_cagr_3y": <number>,
+  "growth_rate": {
+    "trailing_3y_cagr": <number>,
+    "consensus_5y_growth": <number | null>,
+    "fallback_ceiling": 0.18,
+    "applied_base_cagr": <number>,
+    "cap_applied": <boolean>,
+    "cap_source": "consensus_5y_growth | fallback_ceiling | null"
+  },
   "ntm_revenue": <number>,
   "base_wacc": <number>,
   "scenarios": {
@@ -521,6 +556,10 @@ Run `mkdir -p reports` and read-modify-write the existing file (it already conta
 
 The `engagement_modifier` block is emitted only when `--engagement-modifier` was passed. When the flag is absent, omit the block entirely (FR6 / spike-decision). When the flag is present but the modifier was not applied (any non-`applied` status), populate `status` and `status_reason` and emit the remaining fields as `null` — preserving the schema shape for replay diffing. When `status == "applied"`, all populated fields are required (NFR3). `kpi_map_schema_version` mirrors the top-level field of `skills/_shared/engagement_kpi_map.json` at run time per Task 8 ADR D5. `clamped_from` is non-null only when the output-cap clamp fired (Step 6b); otherwise `null`. `revision` and `agreement` are populated by GATHER Step 5b (Yahoo `/analysis/` EPS Trend fetch); when the fetch fails or parsing returns no values, `revision.revision_pct` and `revision.direction` are `null` and `agreement` is `null` (legacy fall-through — modifier still applies per C3/C4). `agreement == false` triggers the `direction_disagreement` status, in which case `base_anchor_multiplier = 1.00` (modifier suppressed per spike-decision guardrail).
 
+`fcf_ttm`, `fcf_margin_ttm`, and `fcf_cagr_3y` are the **SBC-stripped (clean)** values per ABA-110 — they anchor the DCF. `fcf_ttm_reported`, `fcf_margin_ttm_reported`, and `sbc_ttm` are audit-only fields exposing the pre-strip numbers so consumers can reconcile against yfinance's `free_cash_flow` and `stock_based_compensation` directly. The two pairs must satisfy `fcf_ttm == fcf_ttm_reported − sbc_ttm` and `fcf_margin_ttm == fcf_ttm / revenue_ttm` (within float tolerance).
+
+`growth_rate` is emitted every run per ABA-111. `trailing_3y_cagr` mirrors `fcf_cagr_3y` (the raw clean-FCF trailing CAGR, pre-cap). `consensus_5y_growth` is the value pulled from `get_estimates(ticker).eps_growth_5y` — `null` when yfinance has no long-term consensus. `fallback_ceiling` is the hard-coded 18% ceiling used when consensus is null. `applied_base_cagr` is `min(trailing_3y_cagr, ceiling)` — the value that drove the base scenario's Y2–Y5 projection (and the anchor that bear/bull scale off). `cap_applied` is `true` when `applied_base_cagr < trailing_3y_cagr`; `cap_source` is `consensus_5y_growth` / `fallback_ceiling` / `null` respectively. When the cap does not fire (trailing already at or below ceiling), `applied_base_cagr == trailing_3y_cagr` and `cap_source == null`.
+
 `intrinsic_value_range` is a flat extract of `scenarios.{bear,base,bull}.intrinsic_value_per_share` for UI convenience — must reconcile cell-for-cell with the scenarios block.
 
 Rows in `sensitivity_table.intrinsic_value_per_share` are indexed by `wacc_axis` (row 0 = lowest WACC); columns by `terminal_growth_axis` (col 0 = lowest g). `base_cell` names the index that should match `scenarios.base.intrinsic_value_per_share`. Suppressed cells (where `wacc ≤ g`) are emitted as `null`, not numbers.
@@ -534,9 +573,11 @@ META — DCF bear/base/bull = $X / $Y / $Z (price $P, WITHIN BEAR–BASE)
 
 **Confidence rules (`meta.confidence`):**
 
-- HIGH: 4y of FCF history, no manual inputs other than base WACC, scenario range check passed first time.
-- MEDIUM: 2–3y of FCF history, or any of net_debt / shares paste-in fired, or range integrity check required user re-input.
+- HIGH: 4y of FCF history, SBC retrieved from MCP for every year used (no SBC paste-in), no manual inputs other than base WACC, scenario range check passed first time.
+- MEDIUM: 2–3y of FCF history, or any of net_debt / shares paste-in fired, **or SBC paste-in fired for any year used in the DCF base or CAGR (per ABA-110)**, or range integrity check required user re-input.
 - LOW: <2y FCF history (should not reach COMPUTE — VALIDATE refuses earlier), or `wacc > g` constraint required mid-scenario override.
+
+The SBC paste-in cap is one-way and unconditional: if `years[].stock_based_compensation` for any year used in `fcf_ttm` or `fcf_cagr_3y` was sourced via Manual Input Protocol (`source: "user_paste"`), `meta.confidence` caps at MEDIUM regardless of other inputs. SBC is methodologically load-bearing — Signal and Model both depend on the same TTM SBC figure for consistency (acceptance criterion 5 on ABA-110), and a pasted figure has weaker provenance than a structured MCP fetch.
 
 Take the min of any prior stage's confidence and the model's own confidence — never upgrade prior-stage confidence here.
 
@@ -560,7 +601,7 @@ Run these MCP calls in this order. Every retrieved figure is held with its raw v
 
 - **Base WACC** — same rule as ESTABLISHED; yfinance has no risk-free-rate / beta surface. Never default.
 - **Exit EV/Revenue multiple — base case.** Present the comp list and ask the user to confirm or override the base multiple. Bear is `base × 0.6`, bull is `base × 1.4` (state these scenario axes; do not ask separately).
-- **Terminal FCF margin target.** Industry-anchored. Ask the user for the steady-state margin the company is expected to achieve by Year 5 under the base case. Bear is `target − 5 pp`, bull is `target + 5 pp`. Never default.
+- **Terminal clean FCF margin target.** Industry-anchored, **SBC-stripped** (per ABA-110). Ask the user for the steady-state *clean* FCF margin the company is expected to achieve by Year 5 under the base case — i.e. FCF after stock-based compensation has been deducted, not the industry-reported number. State the distinction explicitly in the prompt so users do not anchor on SBC-included margins. Bear is `target − 5 pp`, bull is `target + 5 pp`. Never default.
 - **SBC dilution rate (annual %).** Pre-fill with the trailing 3y dilution rate derived from `shares_outstanding_diluted` history: `dilution_3y = (years[0].shares / years[3].shares) ^ (1/3) − 1`. Surface this number and the historical share-count series, and ask the user to confirm or override. Bear is `confirmed × 1.5`, bull is `confirmed × 0.5` (dilution accelerates in bear, decelerates in bull) — state these axes; do not ask separately.
 
 Manual inputs are tagged `source: "user_paste"`; `meta.confidence` caps at MEDIUM. If the user accepts every pre-filled value with no override, still record `source: "user_confirmed"` — the value is load-bearing on the output.
@@ -571,23 +612,40 @@ If `get_financials` returns null `stock_based_compensation` for the latest year:
 
 Execute in order. The math anchors on revenue (not FCF) because pre-profit companies do not yet have a stable FCF base.
 
-**Step 1 — Revenue trajectory per scenario.**
+**Step 1 — Revenue trajectory per scenario (sanity-capped per ABA-111).**
 
 - `rev_cagr_3y = (years[0].revenue / years[3].revenue) ^ (1/3) − 1` (use shorter history with the same degraded formulations as ESTABLISHED Step 1 if 4y is unavailable).
-- Year-1 revenue is anchored on NTM consensus, perturbed per scenario:
+- Apply the same growth-ceiling pattern as ESTABLISHED Step 3, with a higher fallback because pre-profit tech routinely grows revenue 30–40% sustainably:
+
+  ```
+  consensus_rev_growth = derived from get_estimates if available  # currently null on yf — placeholder for when an EDGAR/sell-side revenue-growth estimate lands
+  fallback_ceiling     = 0.35                                      # 35% — pre-profit revenue ceiling
+  ceiling              = consensus_rev_growth if consensus_rev_growth is not None else fallback_ceiling
+  base_rev_cagr        = min(rev_cagr_3y, ceiling)
+  rev_cap_applied      = (base_rev_cagr < rev_cagr_3y)
+  rev_cap_source       = "consensus_rev_growth" if (consensus_rev_growth is not None and rev_cap_applied)
+                         else "fallback_ceiling" if rev_cap_applied
+                         else None
+  ```
+
+- Year-1 revenue is anchored on NTM consensus, perturbed per scenario. Y2–Y5 CAGRs operate on the **capped** `base_rev_cagr`:
 
 | Scenario | Y1 revenue | Y2–Y5 CAGR |
 |---|---|---|
-| Bear | `ntm_revenue × 0.85` | `max(rev_cagr_3y × 0.50, 0.05)` |
-| Base | `ntm_revenue` | `rev_cagr_3y` |
-| Bull | `ntm_revenue × 1.15` | `rev_cagr_3y × 1.15 + 0.03` |
+| Bear | `ntm_revenue × 0.85` | `max(base_rev_cagr × 0.50, 0.05)` |
+| Base | `ntm_revenue` | `base_rev_cagr` (capped) |
+| Bull | `ntm_revenue × 1.15` | `base_rev_cagr × 1.15 + 0.03` |
 
-Project `revenue_y_n = revenue_y_(n−1) × (1 + cagr)` for n = 2..5.
+Project `revenue_y_n = revenue_y_(n−1) × (1 + cagr)` for n = 2..5. When `rev_cap_applied = true`, the OUTPUT block's Base scenario revenue-CAGR figure must surface the cap explicitly (same disclosure pattern as ESTABLISHED), and the `growth_rate` JSON block (see OUTPUT) records the five fields every run.
 
 **Step 2 — FCF margin trajectory and inflection year.**
 
-- `margin_ttm = years[0].free_cash_flow / years[0].revenue` (may be negative).
-- Target Year-5 margin per scenario: `target − 5pp` (bear) / `target` (base) / `target + 5pp` (bull), where `target` is the user-confirmed terminal margin.
+- `sbc_ttm` = `years[0].stock_based_compensation` (already required by the GATHER refusal above — non-null by the time this step runs).
+- `fcf_ttm_reported = years[0].free_cash_flow` (audit-trail only).
+- `fcf_ttm_clean = fcf_ttm_reported − sbc_ttm` (SBC-stripped FCF — the cash-flow side of the trajectory).
+- `margin_ttm_reported = fcf_ttm_reported / years[0].revenue` (audit-trail only; surfaced in OUTPUT side-by-side with clean).
+- `margin_ttm = fcf_ttm_clean / years[0].revenue` (the **clean** SBC-stripped margin — this is the trajectory baseline, may be negative). The user-confirmed terminal margin in the GATHER MIP is a **clean FCF margin target** — surface this label explicitly in the prompt so users do not anchor on industry-reported (SBC-included) margins.
+- Target Year-5 margin per scenario: `target − 5pp` (bear) / `target` (base) / `target + 5pp` (bull), where `target` is the user-confirmed terminal clean FCF margin.
 - Linear interpolation across Years 1–5: `margin_y_n = margin_ttm + (target − margin_ttm) × (n / 5)`.
 - `fcf_y_n = revenue_y_n × margin_y_n` (negative in early years if the company is still cash-burning).
 - **FCF inflection year:** the smallest n ∈ {1..5} such that `fcf_y_n ≥ 0` AND `fcf_y_m ≥ 0` for all m ≥ n in {1..5} (i.e., first year of *sustained* positive FCF — not a one-off blip).
@@ -658,11 +716,11 @@ MODEL OUTPUT
   Current price:   $X.XX
   Shares today:    XXX.X M (diluted)
   Net debt:        $X.X B (total_debt $X.X B − cash $X.X B, FY ending YYYY-MM-DD)
-  Revenue (TTM):   $X.X B  |  3y CAGR: XX%  |  TTM FCF margin: -X% (cash-burning)
+  Revenue (TTM):   $X.X B  |  3y CAGR: XX%  |  TTM clean FCF margin: -X% (cash-burning; reported margin: -X%; SBC: $X.X B)
   NTM revenue:     $X.X B (consensus)
   Base WACC:       X.X% (source: user_paste)
   Comp set:        [TICKER1: NTM EV/Rev X.Xx, TICKER2: X.Xx, ...]  →  base exit multiple: X.Xx (user-confirmed)
-  Terminal margin target (base): XX% (user-confirmed)
+  Terminal clean FCF margin target (base): XX% (SBC-stripped, user-confirmed)
   SBC dilution (base): X.X% annual (3y trailing: X.X%, user-confirmed)
 
   Bear: $X.XX / share — [N]% [up|down]side
@@ -705,7 +763,18 @@ If any scenario's inflection year is `beyond Y5`, the line reads `FCF inflection
   "net_debt": <number>,
   "revenue_ttm": <number>,
   "rev_cagr_3y": <number>,
+  "growth_rate": {
+    "trailing_3y_cagr": <number>,
+    "consensus_5y_growth": <number | null>,
+    "fallback_ceiling": 0.35,
+    "applied_base_cagr": <number>,
+    "cap_applied": <boolean>,
+    "cap_source": "consensus_rev_growth | fallback_ceiling | null"
+  },
+  "fcf_ttm_reported": <number>,
+  "sbc_ttm": <number>,
   "fcf_margin_ttm": <number>,
+  "fcf_margin_ttm_reported": <number>,
   "ntm_revenue": <number>,
   "base_wacc": <number>,
   "comp_set": [{"ticker": "...", "ntm_ev_revenue": <number>}],
@@ -746,6 +815,10 @@ If any scenario's inflection year is `beyond Y5`, the line reads `FCF inflection
 }
 ```
 
+`growth_rate` on the pre-profit path is the **revenue** CAGR cap per ABA-111 (vs ESTABLISHED's FCF CAGR cap) — same five-field shape, but `trailing_3y_cagr` mirrors `rev_cagr_3y`, the `fallback_ceiling` is `0.35` (higher than ESTABLISHED's 0.18 because pre-profit tech routinely sustains 30–40% revenue growth), and `cap_source` reads `consensus_rev_growth` when an external revenue-growth estimate is available (currently always null on yf).
+
+`fcf_margin_ttm` and the per-scenario `terminal_margin` values are **SBC-stripped (clean)** per ABA-110. `fcf_ttm_reported`, `fcf_margin_ttm_reported`, and `sbc_ttm` are audit-only fields exposing the pre-strip numbers; consumers reconciling against yfinance directly should expect `fcf_margin_ttm == (fcf_ttm_reported − sbc_ttm) / revenue_ttm`. The user-confirmed `terminal_margin_target` is a clean FCF margin target (the MIP prompt states this explicitly).
+
 `sensitivity_table` is `null` for the pre-profit variant — the 5×5 WACC × terminal-g grid is meaningless when there is no Gordon-growth terminal. The per-driver dominant-driver note in `sensitivity` remains the only sensitivity artefact for this path. `intrinsic_value_range` is a flat extract of `scenarios.{bear,base,bull}.intrinsic_value_per_share` — must reconcile.
 
 The `engagement_modifier` block is **never emitted on the EMERGING path** regardless of the `--engagement-modifier` flag (FR6 — pre-profit revenue scaffolding has no incumbent KPI baseline). If the flag is passed alongside an EMERGING ticker, emit a one-line notice to the user: `--engagement-modifier ignored: EMERGING path (FR6)` and proceed without it.
@@ -780,6 +853,11 @@ RDDT — pre-profit DCF bear/base/bull = $X / $Y / $Z (price $P, WITHIN BEAR–B
 | "I'll save typing by applying the same growth haircut across bear/base/bull (e.g. base × 0.7 / 1.0 / 1.3)." | Forbidden. The acceptance contract is "demonstrably different assumption sets, not percentage haircuts of a single set." Each scenario must move on its own axes (Y1 anchor, Y2–5 CAGR, terminal g, WACC) with its own narrative. The skill's range-integrity check (Step 7) is the executable form of this rule. |
 | "Bear ends up above Base for this ticker — I'll just swap them." | Forbidden. If `bear_iv < base_iv < bull_iv` fails, the scenarios are mis-specified — stop, show the user the three input sets and outputs, and ask whether to widen the WACC or growth deltas. Silent re-ordering destroys the audit trail. |
 | "Year-1 FCF comes from NTM EPS × shares, that's faster than revenue × margin." | EPS × shares yields *net income*, not free cash flow. The Y1 anchor must be `ntm_revenue × fcf_margin_ttm`. NTM EPS is held only as a sanity check; never substitute it for FCF. |
+| "FCF already excludes SBC because OCF adds it back — let me skip the strip." | Forbidden. OCF adds SBC back **because it's non-cash**; the company still paid for it in dilution, and Signal already strips it from EPS at Step 5. Skipping the strip on the DCF side leaves Model and Signal disagreeing on the same company and inflates every ESTABLISHED IV by tens of percent (META 2026-05-17: 45% inflation on Y1 anchor). The DCF base is `fcf_ttm − sbc_ttm`. No exceptions. |
+| "SBC is null for this year so I'll fall back to reported FCF for this entry of the CAGR." | Forbidden. Mixing reported and clean values in the same `fcf_cagr_3y` computation produces a meaningless growth rate. If any year in the CAGR window has null SBC, fire the Manual Input Protocol for the full required SBC series before computing CAGR. Same discipline as `/stock:signal` Step 5: SBC stripping is mandatory step zero. |
+| "Trailing CAGR is what the data shows — capping it is fabrication." | Trailing CAGR off a depressed base year is mechanical extrapolation, not signal — META FY22 (Reality Labs cost reset) and NVDA FY23 (pre-AI-boom) both make the trailing window look explosive in ways no sell-side analyst would write down. The ABA-111 cap surfaces the disagreement explicitly via `growth_rate.cap_source` and the OUTPUT block's "capped from X% by Y" line. Trusting raw trailing CAGR without a ceiling and shipping the resulting four-times-FCF-in-five-years projection is the actual fabrication. |
+| "Consensus_5y_growth came back null, so I'll just use the trailing CAGR uncapped." | Forbidden. Null consensus does **not** unlock the cap — it switches the ceiling source from consensus to the 18% fallback (35% on pre-profit). The fallback ceiling exists precisely for this case (most yf tickers have null `eps_growth_5y`); skipping the cap because consensus is null defeats ABA-111. |
+| "The cap is reducing IV materially — let me raise the fallback to 25% so the number looks more familiar." | Forbidden. The fallback is a published constant (`0.18` for ESTABLISHED FCF CAGR, `0.35` for pre-profit revenue CAGR) and a change to it requires a spec edit and a written rationale, not an inline tweak to land on a particular IV. Per-ticker overrides land via the playbook layer (ABA-112), not by re-tuning the global fallback. |
 | "WACC > g failed in the bull scenario; I'll just use g = WACC − 0.001 to keep the formula valid." | Forbidden. If `wacc ≤ g`, narrow the WACC adjustment (e.g. reduce the bull WACC discount from −1.0 pp to −0.5 pp) and **state the override in the OUTPUT block** so the user can see why bull discount narrowed. Numerical tricks that hide a broken scenario from the reader are exactly what the rationalisations table exists to prevent. |
 | "The user just wants a number — I'll skip the sensitivity note." | The sensitivity note is required output. It tells the user which assumption their valuation is most fragile to; omitting it gives a confident-looking point estimate with no fragility disclosure. |
 | "Net debt is negative (net cash) so I'll set it to zero." | Forbidden. Net debt of −X means equity = EV + X; keep the sign. Net-cash tech companies are common and the equity bridge must reflect it. |
@@ -862,3 +940,26 @@ RDDT — pre-profit DCF bear/base/bull = $X / $Y / $Z (price $P, WITHIN BEAR–B
 38. **`stages.model.sensitivity_table` present →** ESTABLISHED emits the 5×5 WACC × terminal-g grid object (renamed from `sensitivity_grid` in v1.4) with `wacc_axis`, `terminal_growth_axis`, `intrinsic_value_per_share` 5×5 array, and `base_cell` index. EMERGING emits `sensitivity_table: null` (the grid is meaningless without a Gordon-growth terminal) and relies on the dominant-driver `sensitivity` note instead.
 39. **`stages.model.position_sizing` present →** the sizing block from v1.5 is emitted as a structured object (`band`, `lower_pct`, `upper_pct`, `signal_verdict`, `range_vs_price`, `margin_of_safety_pct`, `confidence_cap_applied`, `rationale`) — not just a string.
 40. **JSON validity preserved →** running `/stock:model META` writes a `reports/META_YYYYMMDD.json` that parses as valid JSON, with `stages.model` containing all four required fields and merging cleanly with any pre-existing `stages.signal` / `stages.screen` / `stages.timing` blocks (no overwrite of sibling stages).
+
+### v1.7 — ABA-110 (SBC stripped from FCF base, DCF methodology fix)
+
+41. **ESTABLISHED FCF base is SBC-stripped →** `stages.model.fcf_ttm` equals `years[0].free_cash_flow − years[0].stock_based_compensation`. `fcf_margin_ttm` and `fcf_cagr_3y` are computed from clean FCF on both ends (for CAGR, every historical-year FCF used has its SBC subtracted before the ratio is taken).
+42. **Audit fields present →** `stages.model.fcf_ttm_reported`, `stages.model.sbc_ttm`, and `stages.model.fcf_margin_ttm_reported` are emitted in every ESTABLISHED and pre-profit run, exposing the pre-strip yfinance numbers for reconciliation.
+43. **Signal/Model SBC consistency →** the per-share SBC adjustment used in `/stock:signal` Step 5 (`sbc_ttm / shares_outstanding`) matches the per-share SBC implied by Model's clean FCF math (`(fcf_ttm_reported − fcf_ttm) / shares_outstanding_diluted`) within $0.10. A larger gap means the two skills are reading different SBC figures or different share counts — reconcile before shipping the report.
+44. **SBC null handling →** if `years[0].stock_based_compensation` is null, the skill refuses with `SBC data unavailable; DCF cannot proceed without SBC-stripped FCF base. Use Manual Input Protocol to paste latest TTM SBC.` and fires MIP for a paste-in. Pasted SBC tags as `source: "user_paste"` and caps `meta.confidence` at MEDIUM.
+45. **META smoke (SBC strip) →** running `/stock:signal META` then `/stock:model META` with the current defaults (WACC=8.5%, g=2.5%) produces a base IV in the $650–$800 range — materially lower than the pre-fix figure (≈$1,155 on the 2026-05-17 run) — and the OUTPUT block surfaces `FCF (TTM): $X.X B reported  |  SBC: $X.X B  |  clean FCF: $X.X B  |  clean margin: XX% (reported margin: XX%)`.
+46. **NVDA smoke (SBC strip) →** the same flow on NVDA produces a base IV 30–50% lower than the SBC-included version; the OUTPUT block shows clean and reported margins side-by-side.
+47. **Pre-profit smoke (RDDT, SBC strip) →** `/stock:model RDDT --pre-profit` uses clean FCF margin in the trajectory; the FCF inflection year per scenario shifts later (1–2 years) vs the SBC-included version; the OUTPUT block surfaces clean and reported margins side-by-side.
+48. **Rationalisations table covers SBC →** the "FCF already excludes SBC because OCF adds it back" rebuttal is present and refers to ABA-110.
+
+### v1.8 — ABA-111 (Y2–Y5 CAGR sanity ceiling)
+
+49. **Base CAGR capped against consensus or fallback →** ESTABLISHED Step 3 computes `base_cagr = min(fcf_cagr_3y, ceiling)` where `ceiling = get_estimates.eps_growth_5y` when present, else `0.18`. Bear and bull formulas operate on this capped `base_cagr`, not on raw `fcf_cagr_3y`.
+50. **Pre-profit path uses the same pattern with a 35% ceiling →** pre-profit Step 1 caps `base_rev_cagr = min(rev_cagr_3y, 0.35)` when no external revenue-growth estimate is available.
+51. **`growth_rate` JSON block present every run →** ESTABLISHED and pre-profit both emit `stages.model.growth_rate` with all six fields (`trailing_3y_cagr`, `consensus_5y_growth`, `fallback_ceiling`, `applied_base_cagr`, `cap_applied`, `cap_source`). When the cap does not fire, `cap_applied = false` and `cap_source = null`.
+52. **OUTPUT disclosure when cap fires →** the Base scenario line reads `Y2-5 CAGR: X.X% (capped from trailing Y.Y% by <consensus_5y_growth | fallback_ceiling>)`. Silent caps are forbidden.
+53. **OUTPUT disclosure when cap does not fire →** the Base scenario line reads `Y2-5 CAGR: X.X% (trailing 3y, within consensus ceiling)`. The absence of capping is itself a disclosure.
+54. **Range integrity preserved across the cap →** `bear_iv < base_iv < bull_iv` holds in all smoke tests after the cap fires. Bear and bull move on independent multipliers on the same capped anchor; the cap does not invert their ordering.
+55. **GOOG cap-not-fired smoke →** with GOOG's trailing FCF CAGR near the consensus ceiling, the cap does not fire and the OUTPUT block surfaces that explicitly. `growth_rate.cap_applied == false`.
+56. **META + NVDA cap-fired smoke (with consensus null) →** the 18% fallback fires for both; `cap_source == "fallback_ceiling"`; base IV materially lower than the pre-cap value; OUTPUT discloses the cap source.
+57. **Rationalisations table covers growth cap →** the "trailing CAGR is what the data shows — capping it is fabrication" rebuttal is present and refers to ABA-111. The null-consensus and fallback-tweak rationalisations are also covered.
