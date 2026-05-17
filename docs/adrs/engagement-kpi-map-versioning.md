@@ -11,11 +11,11 @@ supersedes: none
 
 ## Status
 
-**Accepted.** Governs `skills/_shared/engagement_kpi_map.json`, the authoritative ticker→KPI mapping consumed by `/stock:model`'s engagement modifier. Codifies the schema-version bump rule, the changelog format, and the weekly drift-CI gate.
+**Accepted.** Governs `skills/_shared/engagement_kpi_map.json`, the authoritative ticker→KPI mapping consumed by `/stock-model`'s engagement modifier. Codifies the schema-version bump rule, the changelog format, and the weekly drift-CI gate.
 
 ## Context
 
-The KPI map is a small JSON file with outsized blast radius: every `/stock:model` run on an INCUMBENT or APPLICATION ticker reads it to locate the source phrase used by the EDGAR Ex 99.1 regex. A silent edit can change the KPI a ticker is measured against, which changes the modifier's direction and the audit trail without any code change visible in a PR diff to the model skill.
+The KPI map is a small JSON file with outsized blast radius: every `/stock-model` run on an INCUMBENT or APPLICATION ticker reads it to locate the source phrase used by the EDGAR Ex 99.1 regex. A silent edit can change the KPI a ticker is measured against, which changes the modifier's direction and the audit trail without any code change visible in a PR diff to the model skill.
 
 Two failure modes need to be made structurally hard:
 
@@ -88,7 +88,7 @@ The file-pair check (D4b) is a single grep in the workflow: `git diff --name-onl
 
 ### D5 — Replay reproducibility: model runs record the schema version
 
-Every `/stock:model` run that applies the engagement modifier records `kpi_map_schema_version` in the `stages.model.engagement_modifier` JSON block (Task 11 scope). This lets a replay against a stored report know which version of the map was in effect at run time, and surfaces a diff when a re-run against the current map produces a different KPI.
+Every `/stock-model` run that applies the engagement modifier records `kpi_map_schema_version` in the `stages.model.engagement_modifier` JSON block (Task 11 scope). This lets a replay against a stored report know which version of the map was in effect at run time, and surfaces a diff when a re-run against the current map produces a different KPI.
 
 ## Consequences
 

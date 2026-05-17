@@ -1,4 +1,4 @@
-# Manual Input Protocol (shared across /stock:signal, /stock:screen, /stock:timing, /stock:model)
+# Manual Input Protocol (shared across /stock-signal, /stock-screen, /stock-timing, /stock-model)
 
 When an MCP tool returns null (or raises `YFNoDataError`) on a field a skill needs, the skill MUST NOT silently degrade to N/A and MUST NOT fabricate the value. It MUST offer the user a structured paste-in fallback.
 
@@ -17,7 +17,7 @@ Any required field is `null` after the MCP call, OR the MCP call raised `YFNoDat
 
 The trigger does NOT fire when:
 - The field is genuinely not needed for the verdict path being taken (e.g. PEG inputs for an EMERGING ticker).
-- The MCP returned a valid `null` that the skill already handles via documented fallback (e.g. canonical Piotroski signal falling back to its MCP-constrained Q substitute — see `skills/screen/SKILL.md` Step 2).
+- The MCP returned a valid `null` that the skill already handles via documented fallback (e.g. canonical Piotroski signal falling back to its MCP-constrained Q substitute — see `skills/stock-screen/SKILL.md` Step 2).
 
 ## Question template
 
@@ -80,7 +80,7 @@ When `meta.manual_inputs` is non-empty:
 
 Each skill references this protocol from inside its GATHER / VALIDATE phase. The Common Rationalisations table at the bottom of each skill includes "ask, don't assume" as a row.
 
-- `/stock:signal` — fires when `get_ratios` raises or returns null on `ps_ratio` / `currentPrice` / `eps_ttm` / `sharesOutstanding`, or when `get_financials` returns null on `stock_based_compensation` for the most recent year.
-- `/stock:screen` — fires when `get_ratios` raises, or `get_financials` returns null on a field needed for the verdict path (e.g. `gross_profit` on EMERGING SKIP gate, `total_assets` on ESTABLISHED Piotroski canonical).
-- `/stock:timing` — fires when `get_earnings_history` raises or returns no data, OR `get_analyst_targets` returns null on `avg_target`.
-- `/stock:model` — fires post-gate; DCF inputs (currently stubbed — see ABA-31/34) will fire this when a required CF / discount-rate / terminal-rate input cannot be derived.
+- `/stock-signal` — fires when `get_ratios` raises or returns null on `ps_ratio` / `currentPrice` / `eps_ttm` / `sharesOutstanding`, or when `get_financials` returns null on `stock_based_compensation` for the most recent year.
+- `/stock-screen` — fires when `get_ratios` raises, or `get_financials` returns null on a field needed for the verdict path (e.g. `gross_profit` on EMERGING SKIP gate, `total_assets` on ESTABLISHED Piotroski canonical).
+- `/stock-timing` — fires when `get_earnings_history` raises or returns no data, OR `get_analyst_targets` returns null on `avg_target`.
+- `/stock-model` — fires post-gate; DCF inputs (currently stubbed — see ABA-31/34) will fire this when a required CF / discount-rate / terminal-rate input cannot be derived.

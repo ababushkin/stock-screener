@@ -40,7 +40,7 @@ The pack is intentionally extensible — if you have a tech ticker you care abou
 
 1. **One row added to the table above** — ticker, stage, AI layer, one-line thesis.
 2. **One new `playbooks/TICKER.md` file** — written to the structure spec above and `DESIGN.md` → *Playbook Layer*. Frontmatter with the machine-readable overrides, body with the narrative content.
-3. **A smoke run** demonstrating that `/stock:signal TICKER` + `/stock:model TICKER` produce coherent output that reflects the playbook's overrides (cap source named, narrative applied, audit trail intact).
+3. **A smoke run** demonstrating that `/stock-signal TICKER` + `/stock-model TICKER` produce coherent output that reflects the playbook's overrides (cap source named, narrative applied, audit trail intact).
 4. **One-paragraph rationale in the PR description** explaining why the ticker warrants specialist depth — typically: it's a name you actively hold or evaluate, the generic ESTABLISHED / EMERGING logic produces visibly-wrong outputs on it, or it sits at an interesting boundary case (regional, sector-adjacent, transition-year) that exercises an edge of the methodology.
 
 What does **not** justify adding a ticker:

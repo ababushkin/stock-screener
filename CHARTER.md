@@ -42,22 +42,22 @@ Implications for every implementation decision:
 
 This pack covers **equities only**. ETFs, commodity funds, fixed income, and derivatives are out of scope for v1 and v2.
 
-**GLDM (and similar commodity ETFs)** require a fundamentally different methodology — no earnings, no DCF, no P/E or PEG. Valuation is driven by gold price vs. macro factors (real rates, dollar strength, inflation expectations) and fund-level metrics (expense ratio, AUM, tracking error). Adding support would require a new instrument type routing dimension at the `/stock:equity` router level and a separate methodology track. Explicitly deferred to a future milestone; if added, GLDM is the reference case.
+**GLDM (and similar commodity ETFs)** require a fundamentally different methodology — no earnings, no DCF, no P/E or PEG. Valuation is driven by gold price vs. macro factors (real rates, dollar strength, inflation expectations) and fund-level metrics (expense ratio, AUM, tracking error). Adding support would require a new instrument type routing dimension at the `/stock-equity` router level and a separate methodology track. Explicitly deferred to a future milestone; if added, GLDM is the reference case.
 
 If a user passes a non-equity ticker, the router should detect the instrument type (ETF, closed-end fund, etc.) and state that the pack does not support it rather than running equity methodology on it.
 
-### Leading indicator enrichment (Later scope — /stock:model only)
+### Leading indicator enrichment (Later scope — /stock-model only)
 
-For companies where current-period ratios are lagging indicators, `/stock:model` will add optional enrichment steps that fetch leading indicators before locking in DCF growth rate inputs. Three enrichment paths are planned:
+For companies where current-period ratios are lagging indicators, `/stock-model` will add optional enrichment steps that fetch leading indicators before locking in DCF growth rate inputs. Three enrichment paths are planned:
 
 - **Segment revenue trend** (ABA-65): for AMZN, GOOGL, NVDA, RDDT — fetch segment data from EDGAR, compare segment growth to blended NTM estimate
 - **Engagement KPIs** (ABA-66): for META, NFLX, RDDT, GOOGL — fetch DAU/ARPU/subscriber metrics from earnings press releases via web search
 - **Bookings/backlog** (ABA-67): for INFRASTRUCTURE capital equipment companies (ASML reference case) — fetch net bookings and backlog from earnings press releases via web search
 
-These enrichments do not affect `/stock:signal` verdicts or PEG computation. They are `/stock:model`-only and are implemented when `/stock:model` is built.
+These enrichments do not affect `/stock-signal` verdicts or PEG computation. They are `/stock-model`-only and are implemented when `/stock-model` is built.
 
 ### Always do
-- Strip SBC before any earnings calculation in every skill — and from the FCF base in `/stock:model` (ABA-110)
+- Strip SBC before any earnings calculation in every skill — and from the FCF base in `/stock-model` (ABA-110)
 - State data sources and assumptions in every output
 - Flag `CONFIDENCE = MEDIUM` or `LOW` when any input is estimated
 - Include methodology explanation alongside every verdict
@@ -77,7 +77,7 @@ These enrichments do not affect `/stock:signal` verdicts or PEG computation. The
 - Re-litigate the design decisions listed in the project brief (see *Appendix* below)
 - Add features not described in this charter, in `DESIGN.md`, or in the project brief without user instruction
 - Silently apply playbook overrides — the OUTPUT block must name every overridden field and its source
-- Treat off-coverage `/stock:model` runs as decision-grade — confidence caps at MEDIUM by default and the user must be told
+- Treat off-coverage `/stock-model` runs as decision-grade — confidence caps at MEDIUM by default and the user must be told
 
 ---
 

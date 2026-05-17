@@ -11,7 +11,7 @@ plan_review: docs/plan-reviews/engagement-kpi-enrichment/review.md (REVISE, six 
 spike_decision: docs/design-docs/engagement-kpi-enrichment/spike-decision.md (RESHAPE → PROCEED; supersedes the "lead-prediction" framing — see Acceptance note below)
 ---
 
-# Engagement-KPI enrichment for `/stock:model` (APPLICATION / INCUMBENT tickers)
+# Engagement-KPI enrichment for `/stock-model` (APPLICATION / INCUMBENT tickers)
 
 > **Acceptance note (2026-05-17).** Accepted with the spike-decision pivot in
 > force. The doc body below frames the modifier as a **lead** signal —
@@ -32,11 +32,11 @@ spike_decision: docs/design-docs/engagement-kpi-enrichment/spike-decision.md (RE
 
 ## Problem
 
-When `/stock:model` runs for ad-driven and subscription companies (APPLICATION and INCUMBENT layers in the existing AI-layer taxonomy — e.g. META, NFLX, RDDT, GOOGL), the DCF's Year-1 revenue and FCF-margin inputs are anchored on `ntm_revenue` from `yfinance.get_estimates`. That figure is a single consensus number compiled by sell-side analysts. By the time it lands in yfinance it is already 1–8 weeks stale relative to the latest earnings release.
+When `/stock-model` runs for ad-driven and subscription companies (APPLICATION and INCUMBENT layers in the existing AI-layer taxonomy — e.g. META, NFLX, RDDT, GOOGL), the DCF's Year-1 revenue and FCF-margin inputs are anchored on `ntm_revenue` from `yfinance.get_estimates`. That figure is a single consensus number compiled by sell-side analysts. By the time it lands in yfinance it is already 1–8 weeks stale relative to the latest earnings release.
 
 For these business models, the most recent quarter's engagement metrics (DAU, ARPU, paid-sub net adds, impressions, CPM) are the *leading* indicator of next-quarter and next-year revenue. The current skill is structurally blind to them — it can see what the analyst median was last week, but not the post-print engagement trajectory the analyst median will be updated *to* over the coming weeks.
 
-**Affected user:** the user running `/stock:model META` (or similar) within ~6 weeks of an earnings release.
+**Affected user:** the user running `/stock-model META` (or similar) within ~6 weeks of an earnings release.
 
 **Current behaviour:** Year-1 revenue is anchored exactly on stale consensus; bear/base/bull scenarios are perturbations around that anchor with no signal about whether the trajectory is accelerating or decelerating versus what the consensus assumes.
 
@@ -46,9 +46,9 @@ For these business models, the most recent quarter's engagement metrics (DAU, AR
 
 ### Prior work and skill structure
 
-- `/stock:model` is the v1.6 skill specified in `skills/model/SKILL.md`. Year-1 revenue/FCF math is reconciled across two paths (ESTABLISHED two-stage DCF, EMERGING pre-profit variant); both use `ntm_revenue` as the anchor.
+- `/stock-model` is the v1.6 skill specified in `skills/stock-model/SKILL.md`. Year-1 revenue/FCF math is reconciled across two paths (ESTABLISHED two-stage DCF, EMERGING pre-profit variant); both use `ntm_revenue` as the anchor.
 - The Manual Input Protocol (`skills/_shared/MANUAL_INPUT_PROTOCOL.md`) is the established pattern for inputs that cannot be derived from MCP data. Web-search results (e.g. comp multiples in the pre-profit variant) flow through this protocol — they are presented to the user for confirmation, never silently committed.
-- The AI-layer classification (INFRASTRUCTURE / FOUNDATION / APPLICATION / INCUMBENT / NONE) is produced upstream by `/stock:signal` and lives in `stages.signal.ai_layer` of the report JSON.
+- The AI-layer classification (INFRASTRUCTURE / FOUNDATION / APPLICATION / INCUMBENT / NONE) is produced upstream by `/stock-signal` and lives in `stages.signal.ai_layer` of the report JSON.
 - Confidence caps already exist (HIGH / MEDIUM / LOW) and cascade across stages. Any EDGAR-anchored modifier (with WebSearch as last-resort fallback) should integrate into this rather than introduce a new dimension.
 
 ### Constraints inherited from the existing skill
@@ -80,7 +80,7 @@ The takeaway: the KPI map needs to be authored as part of this work and verified
 
 ### Functional
 
-- FR1: Modifier fires only when `upstream_signal.ai_layer ∈ {APPLICATION, INCUMBENT}`. If `ai_layer` is missing OR the user believes upstream classification is wrong, the skill does not second-guess `/stock:signal` — the user re-runs Signal. The modifier honours the upstream truth and is not a side-channel for re-classification.
+- FR1: Modifier fires only when `upstream_signal.ai_layer ∈ {APPLICATION, INCUMBENT}`. If `ai_layer` is missing OR the user believes upstream classification is wrong, the skill does not second-guess `/stock-signal` — the user re-runs Signal. The modifier honours the upstream truth and is not a side-channel for re-classification.
 - FR2: Extracted KPIs and source URL are surfaced to the user via the existing Manual Input Protocol — never silently applied.
 - FR3: Modifier produces a single direction value `∈ {+1, 0, −1}` (accelerating / neutral / decelerating) and a magnitude band (`mild` / `strong`) derived from the trend.
 - FR4: The modifier is bounded by **two** caps. **(a) Input multiplier cap: ±4% on the Year-1 anchor** (`base_y1_anchor_multiplier ∈ [0.96, 1.04]`) — applied to the base scenario only; bear/bull unaffected to preserve scenario-axis independence. **(b) Output IV impact cap: ≤5% on base IV** — computed post-application, asserted by NFR4. If the input multiplier is at its ±4% bound but the resulting base IV moves >5% from the unmodified IV (possible under leveraged DCF sensitivities), the modifier is clamped further so the output cap holds, OR marked `status: "clamped"` with the reduction recorded. The specific caps, deadband, and magnitude thresholds are recorded in `docs/adrs/engagement-modifier-constants.md` (see Consequences).
@@ -111,7 +111,7 @@ The takeaway: the KPI map needs to be authored as part of this work and verified
 
 ### Alt A — Do nothing (status quo)
 
-`/stock:model` continues to anchor Year-1 inputs on stale consensus only.
+`/stock-model` continues to anchor Year-1 inputs on stale consensus only.
 
 - **Blast radius if wrong:** Continued loss of leading-indicator signal on the four highest-traffic tickers in the user's universe.
 - **Reversal cost:** None — this is the current state.
@@ -198,7 +198,7 @@ Buy structured KPI data rather than scraping press releases.
 
 ### Positive
 
-- Post-earnings runs of `/stock:model` on the seed tickers reflect the latest engagement trajectory rather than stale consensus.
+- Post-earnings runs of `/stock-model` on the seed tickers reflect the latest engagement trajectory rather than stale consensus.
 - The audit trail (source URL + user confirmation in the JSON) lets the user verify or replay the call.
 - Pattern is generalisable — the segment-revenue ticket (mentioned in ABA-66 alongside RDDT) can re-use the GATHER-step infrastructure.
 
@@ -307,7 +307,7 @@ This is a personal research tool — no on-call. "Alerts" here means CI fitness 
 
 ### Rollback plan
 
-- Per-run: `/stock:model META --no-engagement-modifier` disables the GATHER step entirely.
+- Per-run: `/stock-model META --no-engagement-modifier` disables the GATHER step entirely.
 - Skill-level: a single-commit revert to the skill version preceding the enrichment. Time estimate: ~5 minutes.
 - JSON contract: the `engagement_modifier` block is optional with `status: "unavailable"` fallback. Removing the field does not break the report-JSON schema for prior reports.
 
@@ -324,11 +324,11 @@ EDGAR fetch and in-runtime extraction are call-per-invocation; no shared infrast
 | LLM extracts wrong number (extraction failure) | MIP gate surfaces the number + source URL to the user for confirmation. User rejects → `status: "user_skipped"`. |
 | KPI definition changed between quarters (META DAU → DAP) | KPI-map maintenance task; until updated, extraction will likely fail-soft (no KPI value found) and route to `status: "unavailable"`. |
 | YoY data unavailable (first-quarter disclosure of a new metric) | Computes QoQ instead if `comparison_basis: "QoQ_fallback"` is set in the KPI map; otherwise `status: "unavailable"`. |
-| User runs `/stock:model` non-interactively in CI / batch mode | MIP gate is interactive — for non-interactive runs, the skill emits `status: "unavailable"` and proceeds. (Same behaviour as existing MIP fields in non-interactive contexts.) |
+| User runs `/stock-model` non-interactively in CI / batch mode | MIP gate is interactive — for non-interactive runs, the skill emits `status: "unavailable"` and proceeds. (Same behaviour as existing MIP fields in non-interactive contexts.) |
 
 ### Upstream / downstream dependency failure modes
 
-- **Upstream — `/stock:signal`:** If `ai_layer` is missing from upstream Signal output, the GATHER step is skipped with `status: "unavailable"`, `status_reason: "missing_ai_layer"`. (Distinct from `no_kpi_mapping`, which means "ai_layer is known but the ticker isn't in `engagement_kpi_map.json`.") No fabrication of AI layer here.
+- **Upstream — `/stock-signal`:** If `ai_layer` is missing from upstream Signal output, the GATHER step is skipped with `status: "unavailable"`, `status_reason: "missing_ai_layer"`. (Distinct from `no_kpi_mapping`, which means "ai_layer is known but the ticker isn't in `engagement_kpi_map.json`.") No fabrication of AI layer here.
 - **Upstream — web-search API:** Transient failures → retry once with 2 s backoff; on second failure, `status: "unavailable"`.
 - **Upstream — LLM extraction:** Same retry / unavailable pattern.
 - **Downstream — report JSON consumers:** `engagement_modifier` is optional; existing consumers that don't read the field continue to work.
@@ -344,4 +344,4 @@ EDGAR fetch and in-runtime extraction are call-per-invocation; no shared infrast
 | OQ4 | KPI-map maintenance cadence — resolved: weekly drift-CI check (see Alerts) plus on-print ad-hoc review the Monday after each seed ticker's earnings date. Authored into `docs/adrs/engagement-kpi-map-versioning.md`. | Anton | RESOLVED in this revision |
 | OQ5 | Should the modifier apply to bear/bull scenarios as well, or remain base-only? | Anton | End of Week 1; locked into constants ADR |
 | OQ6 | INCUMBENT tickers without disclosed engagement KPIs (e.g. GOOGL) — fall back to "paid clicks YoY %" or skip? Same drop rule as NFLX if no defensible mapping. | Anton | Start of Week 1 (KPI-map authoring) |
-| OQ7 | **KPI-discovery skill as v2 follow-on** — hard-coded map is right for v1's 4-ticker seed set, but if the monitored universe grows past ~8 tickers, manual map maintenance becomes the bottleneck. A separate skill (`/stock:kpi-discover TICKER`) could classify the ticker's business model and auto-propose a KPI mapping for human confirmation, writing the result into `engagement_kpi_map.json`. Filed as a separate Linear issue rather than absorbed into ABA-66 — scope is "later" by Now-Next-Later, contingent on v1 succeeding and the universe expanding. | Anton | Filed as separate Linear issue; not v1 scope |
+| OQ7 | **KPI-discovery skill as v2 follow-on** — hard-coded map is right for v1's 4-ticker seed set, but if the monitored universe grows past ~8 tickers, manual map maintenance becomes the bottleneck. A separate skill (`/stock-kpi-discover TICKER`) could classify the ticker's business model and auto-propose a KPI mapping for human confirmation, writing the result into `engagement_kpi_map.json`. Filed as a separate Linear issue rather than absorbed into ABA-66 — scope is "later" by Now-Next-Later, contingent on v1 succeeding and the universe expanding. | Anton | Filed as separate Linear issue; not v1 scope |

@@ -12,9 +12,9 @@ Tasks and milestones live in Linear: https://linear.app/ababushkin/project/equit
 
 This pack optimises for **depth on a curated set of specialist-supported tickers** (see `CHARTER.md` → *Operating Principle — Depth over Breadth* for the full statement, and `COVERAGE.md` for the seven currently-supported names plus the contribution path for adding more). Generic improvements are deprioritised vs ticker-specific depth, except correctness fixes (ABA-110 SBC strip, ABA-111 growth-rate ceiling) which are P0.
 
-**Until ABA-110 and ABA-111 land**, no `/stock:model` report should be treated as decision-grade — IVs are inflated by un-stripped SBC and trough-extrapolated FCF growth; position-sizing recommendations should be discounted.
+**Until ABA-110 and ABA-111 land**, no `/stock-model` report should be treated as decision-grade — IVs are inflated by un-stripped SBC and trough-extrapolated FCF growth; position-sizing recommendations should be discounted.
 
-Playbook layer (`playbooks/TICKER.md` loaded by `/stock:model` for covered tickers): spec lives in `DESIGN.md` → *Playbook Layer*; implementation tracked in ABA-112.
+Playbook layer (`playbooks/TICKER.md` loaded by `/stock-model` for covered tickers): spec lives in `DESIGN.md` → *Playbook Layer*; implementation tracked in ABA-112.
 
 ## Build tools by component
 
@@ -22,7 +22,7 @@ Playbook layer (`playbooks/TICKER.md` loaded by `/stock:model` for covered ticke
 |-----------|-----------|
 | yfinance MCP server | `/pde:design-doc` → `agent-skills:build` |
 | EDGAR MCP server | `/pde:design-doc` → `agent-skills:build` |
-| `/stock:signal`, `/stock:screen`, `/stock:timing`, `/stock:model`, `/stock:equity` skills | `skill-creator:skill-creator` |
+| `/stock-signal`, `/stock-screen`, `/stock-timing`, `/stock-model`, `/stock-equity` skills | `skill-creator:skill-creator` |
 | Report UI (Vite + React) | `agent-skills:build` |
 
 ## Commands

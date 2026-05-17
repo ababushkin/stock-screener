@@ -64,7 +64,7 @@
       "qualitative_note": "Override 2.5 (SBC-distorted earnings): GAAP-profitable (reported EPS $1.28) and FCF-positive ($2.42B TTM), but SBC ($2.27/sh) fully absorbs reported EPS so clean TTM EPS is negative (-$0.99). Dilution overhang, not a quality failure — pre-empts Override 3 (Qualitative=FAIL).",
       "signal": "WATCH",
       "model_ready": "CONDITIONAL",
-      "condition": "Clean TTM EPS is negative (-$0.99) because SBC ($2.27/sh) exceeds reported EPS ($1.28/sh). Standard DCF cannot anchor. Re-invoke with `/stock:model XYZ --pre-profit --confirm` to value via revenue/FCF multiple with explicit dilution schedule."
+      "condition": "Clean TTM EPS is negative (-$0.99) because SBC ($2.27/sh) exceeds reported EPS ($1.28/sh). Standard DCF cannot anchor. Re-invoke with `/stock-model XYZ --pre-profit --confirm` to value via revenue/FCF multiple with explicit dilution schedule."
     },
     "model": {
       "method": "pre-profit (revenue-multiple exit + FCF inflection)",

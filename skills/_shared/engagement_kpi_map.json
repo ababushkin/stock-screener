@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "_comment": "Authoritative KPI map for /stock:model engagement-modifier (ABA-66). Tickers not present here route to status='no_kpi_mapping'. Every change is recorded in engagement_kpi_map.CHANGELOG.md.",
+  "_comment": "Authoritative KPI map for /stock-model engagement-modifier (ABA-66). Tickers not present here route to status='no_kpi_mapping'. Every change is recorded in engagement_kpi_map.CHANGELOG.md.",
   "tickers": {
     "META": {
       "ai_layer": "INCUMBENT",

@@ -7,11 +7,11 @@ This document is the **architectural reference** for the equity research skill-p
 ## Architecture Overview
 
 ```
-/stock:equity    → Router        orchestrates full chain or dispatches to sub-skills
-/stock:screen    → Screen        fast go/no-go; two variants by profit stage
-/stock:signal    → Signal        GARP signal analysis; outputs MODEL_READY flag
-/stock:model     → Model         conviction-building model; two variants by profit stage
-/stock:timing    → Timing        when-to-act overlay; standalone invocation
+/stock-equity    → Router        orchestrates full chain or dispatches to sub-skills
+/stock-screen    → Screen        fast go/no-go; two variants by profit stage
+/stock-signal    → Signal        GARP signal analysis; outputs MODEL_READY flag
+/stock-model     → Model         conviction-building model; two variants by profit stage
+/stock-timing    → Timing        when-to-act overlay; standalone invocation
 ```
 
 Two routing dimensions are inferred before any skill executes:
@@ -24,11 +24,11 @@ Router infers both from user phrasing and available data. States its inference. 
 
 ## Namespace Convention
 
-All skills in this pack are namespaced under the `stock:` prefix (e.g. `/stock:screen`, `/stock:signal`, `/stock:timing`, `/stock:model`, `/stock:equity`).
+All skills in this pack are namespaced under the `stock-` prefix (e.g. `/stock-screen`, `/stock-signal`, `/stock-timing`, `/stock-model`, `/stock-equity`).
 
-**Reason:** Generic command names (`/model`, `/review`, `/init`, `/ship`) collide with built-in Claude Code commands and with other installed skill packs. The `stock:` prefix gives the pack a stable, conflict-free namespace. The decision was taken pre-M5 (ABA-71) — `/model` would have shadowed the built-in model-switcher.
+**Reason:** Generic command names (`/model`, `/review`, `/init`, `/ship`) collide with built-in Claude Code commands and with other installed skill packs. The `stock-` prefix gives the pack a stable, conflict-free namespace. The decision was taken pre-M5 (ABA-71) — `/model` would have shadowed both the built-in model-switcher and `agent-skills:model`. The convention was originally a `stock:` colon-style namespace; ABA-114 switched to `stock-` because the bare slug after the colon (e.g. `model`) still showed up in the loaded-skill list and confused triggering.
 
-**Rule:** Every new skill added to this pack MUST use the `stock:` prefix in its SKILL.md `name:` frontmatter field. References to skills in `CHARTER.md`, `DESIGN.md`, `CLAUDE.md`, and other skill descriptions MUST also use the prefixed form. Report JSON schema keys (`stages.screen`, `stages.signal`, etc.) are NOT prefixed — they are JSON keys, not invocations.
+**Rule:** Every new skill added to this pack MUST use the `stock-` prefix in its SKILL.md `name:` frontmatter field. References to skills in `CHARTER.md`, `DESIGN.md`, `CLAUDE.md`, and other skill descriptions MUST also use the prefixed form. Report JSON schema keys (`stages.screen`, `stages.signal`, etc.) are NOT prefixed — they are JSON keys, not invocations.
 
 ---
 
@@ -42,12 +42,12 @@ All skills in this pack are namespaced under the `stock:` prefix (e.g. `/stock:s
 ├── COVERAGE.md                # Currently-supported tickers + contribution path
 ├── README.md                  # Entry-point overview
 ├── skills/                    # Skill definition files (markdown)
-│   ├── equity.md              # Router — /stock:equity
-│   ├── screen.md              # Screen — /stock:screen
-│   ├── signal.md              # Signal — /stock:signal
-│   ├── model.md               # Model — /stock:model
-│   └── timing.md              # Timing — /stock:timing
-├── playbooks/                 # Ticker-specific overrides loaded by /stock:model (ABA-112)
+│   ├── equity.md              # Router — /stock-equity
+│   ├── screen.md              # Screen — /stock-screen
+│   ├── signal.md              # Signal — /stock-signal
+│   ├── model.md               # Model — /stock-model
+│   └── timing.md              # Timing — /stock-timing
+├── playbooks/                 # Ticker-specific overrides loaded by /stock-model (ABA-112)
 │   └── TICKER.md              # One per supported ticker (see COVERAGE.md)
 ├── ui/                        # Interactive report viewer
 │   ├── src/
@@ -181,11 +181,11 @@ When a skill cannot resolve an input from sources 1–3, it states the gap, uses
 
 ## Playbook Layer
 
-For supported tickers (see `COVERAGE.md`), `/stock:model` loads ticker-specific overrides from `playbooks/TICKER.md` (uppercase ticker symbol; period-suffixed exchange codes preserved verbatim, e.g. `playbooks/ADYEN.AS.md`). Off-coverage tickers run with generic ESTABLISHED / EMERGING defaults. Implementation tracked in ABA-112; blocked by ABA-110 + ABA-111 (correctness fixes must land first so playbook overrides modulate a trustworthy base).
+For supported tickers (see `COVERAGE.md`), `/stock-model` loads ticker-specific overrides from `playbooks/TICKER.md` (uppercase ticker symbol; period-suffixed exchange codes preserved verbatim, e.g. `playbooks/ADYEN.AS.md`). Off-coverage tickers run with generic ESTABLISHED / EMERGING defaults. Implementation tracked in ABA-112; blocked by ABA-110 + ABA-111 (correctness fixes must land first so playbook overrides modulate a trustworthy base).
 
 **File format.** Markdown with YAML frontmatter.
 
-Frontmatter — machine-readable overrides consumed by `/stock:model`:
+Frontmatter — machine-readable overrides consumed by `/stock-model`:
 - `base_wacc` — overrides the MIP-asked default (suppresses the WACC question)
 - `growth_ceiling` — overrides the generic 18% fallback ceiling on base Y2-Y5 CAGR (see ABA-111)
 - `terminal_margin` — overrides the SBC-stripped TTM margin as the Y5 anchor (see ABA-110)
@@ -196,7 +196,7 @@ Frontmatter — machine-readable overrides consumed by `/stock:model`:
 
 Body — human-reference content: business architecture, segment splits, capex-cycle position, active catalysts, sell-side disagreement axes, historical reset-and-recover priors, failure-mode commentary.
 
-**Loader behaviour in `/stock:model`** (implementation in ABA-112):
+**Loader behaviour in `/stock-model`** (implementation in ABA-112):
 
 1. After GATE passes, before GATHER, check `playbooks/TICKER.md`.
 2. Absent: emit `No playbook for TICKER — using generic ESTABLISHED/EMERGING logic.` and proceed unchanged.
@@ -237,7 +237,7 @@ SIGNAL OUTPUT
   Condition:       [if CONDITIONAL — what the user must confirm]
 ```
 
-Model reads this block from context. If it is absent, Model states it cannot proceed and instructs the user to run `/stock:signal [ticker]` first.
+Model reads this block from context. If it is absent, Model states it cannot proceed and instructs the user to run `/stock-signal [ticker]` first.
 
 ### All Skills → Report JSON
 
@@ -371,12 +371,12 @@ npm run build     # dist/ for static serving
 
 ```bash
 # Skill invocation (Claude Code slash commands)
-/stock:equity NVDA                          # Full chain
-/stock:equity Anthropic -- pre-profit AI    # Full chain with hint
-/stock:screen AAPL, NVDA, META, RDDT, CRWV  # Screen only
-/stock:signal Meta Platforms                 # Signal only
-/stock:model Meta -- standard DCF           # Model (requires signal in context)
-/stock:timing NVDA                           # Timing overlay
+/stock-equity NVDA                          # Full chain
+/stock-equity Anthropic -- pre-profit AI    # Full chain with hint
+/stock-screen AAPL, NVDA, META, RDDT, CRWV  # Screen only
+/stock-signal Meta Platforms                 # Signal only
+/stock-model Meta -- standard DCF           # Model (requires signal in context)
+/stock-timing NVDA                           # Timing overlay
 
 # UI development
 cd ui && npm run dev
@@ -398,13 +398,13 @@ cd mcp/edgar && python server.py
 
 **MCP integration tests:** Unit test each tool function against live API responses with known tickers. Snapshot the response schema so regressions in the API structure are caught.
 
-**Signal contract test:** Run `/stock:signal NVDA`, capture the output block, confirm all required fields are present and correctly typed before invoking `/stock:model NVDA`.
+**Signal contract test:** Run `/stock-signal NVDA`, capture the output block, confirm all required fields are present and correctly typed before invoking `/stock-model NVDA`.
 
 **SBC stripping test:** For a ticker with a known large SBC line (e.g. Salesforce CRM), verify that clean EPS diverges from reported EPS by the expected amount.
 
 **UI smoke test:** After any report JSON is written, confirm the UI renders without console errors and all tabs display data.
 
-**Coverage backtesting (future, ABA-NEXT):** Quarterly historical replays of `/stock:signal` and `/stock:model` against the supported tickers (`COVERAGE.md`). Grade IV-range coverage of subsequent price action, verdict accuracy, and dominant-driver stability across time. Feeds methodology drift back into the skills per `CHARTER.md` → *Operating Principle* (5).
+**Coverage backtesting (future, ABA-NEXT):** Quarterly historical replays of `/stock-signal` and `/stock-model` against the supported tickers (`COVERAGE.md`). Grade IV-range coverage of subsequent price action, verdict accuracy, and dominant-driver stability across time. Feeds methodology drift back into the skills per `CHARTER.md` → *Operating Principle* (5).
 
 No automated test runner is mandated. Tests are skill-invocation runs with expected output documented in `tests/reference/`.
 

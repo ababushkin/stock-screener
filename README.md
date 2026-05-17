@@ -31,25 +31,25 @@ If you want to evaluate a non-tech name, do it outside this pack — the skills 
 ## Skill order
 
 ```
-/stock:screen TICKER1, TICKER2, …     fast PASS / WATCH / SKIP across a list
+/stock-screen TICKER1, TICKER2, …     fast PASS / WATCH / SKIP across a list
         │
         ▼
-/stock:signal TICKER                  GARP verdict + MODEL_READY gate (single ticker)
+/stock-signal TICKER                  GARP verdict + MODEL_READY gate (single ticker)
         │
         ▼
-/stock:timing TICKER                  when-to-act overlay (SUE, PEAD, revisions, catalyst)
+/stock-timing TICKER                  when-to-act overlay (SUE, PEAD, revisions, catalyst)
         │
         ▼
-/stock:model TICKER                   DCF intrinsic value range + position sizing
+/stock-model TICKER                   DCF intrinsic value range + position sizing
 ```
 
 All four merge into one `reports/TICKER_YYYYMMDD.json` (stages: `screen`, `signal`, `timing`, `model`). Model is hard-gated on a same-session Signal. Timing is an overlay — only meaningful when Signal or Model is BUY/WATCH. Screen and Signal are independent entry points; you can start at either.
 
-`/stock:equity` (router, planned) orchestrates the full chain or dispatches to sub-skills based on user phrasing.
+`/stock-equity` (router, planned) orchestrates the full chain or dispatches to sub-skills based on user phrasing.
 
 ---
 
-## How `/stock:model` works (and when it refuses)
+## How `/stock-model` works (and when it refuses)
 
 Model is a valuation calculator that estimates "what is one share actually worth today?" It projects free cash flow 5 years out, adds a terminal value for everything after that, discounts both back to present using a cost-of-capital number, subtracts net debt, and divides by share count. It runs the math three times — bear / base / bull — to produce a range, not a single point.
 
@@ -89,7 +89,7 @@ Model is a valuation calculator that estimates "what is one share actually worth
 |-----------|-----------|
 | yfinance MCP server | `/pde:design-doc` → `agent-skills:build` |
 | EDGAR MCP server | `/pde:design-doc` → `agent-skills:build` |
-| `/stock:signal`, `/stock:screen`, `/stock:timing`, `/stock:model`, `/stock:equity` skills | `skill-creator:skill-creator` |
+| `/stock-signal`, `/stock-screen`, `/stock-timing`, `/stock-model`, `/stock-equity` skills | `skill-creator:skill-creator` |
 | Report UI (Vite + React) | `agent-skills:build` |
 
 ---

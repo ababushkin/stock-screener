@@ -1,26 +1,26 @@
 ---
-name: stock:model
-description: DCF/valuation model for a tech stock. Invoked as `/stock:model TICKER [--confirm] [--pre-profit]`. Reads MODEL_READY from the upstream `/stock:signal` (conversation context preferred, same-day `reports/TICKER_YYYYMMDD.json` fallback) and branches: YES → run DCF and emit a bear/base/bull intrinsic-value range; CONDITIONAL → halt and surface `condition` (or proceed when `--confirm` is passed); NO → refuse and surface `qualitative_note`. ESTABLISHED profile uses two-stage DCF (5y FCF + Gordon terminal). EMERGING profile (or any ticker invoked with `--pre-profit`) uses revenue-multiple exit + FCF inflection + SBC dilution schedule. Use whenever the user asks for an intrinsic value, fair-value range, DCF, or "what's it worth" on a ticker.
+name: stock-model
+description: DCF/valuation model for a tech stock. Invoked as `/stock-model TICKER [--confirm] [--pre-profit]`. Reads MODEL_READY from the upstream `/stock-signal` (conversation context preferred, same-day `reports/TICKER_YYYYMMDD.json` fallback) and branches: YES → run DCF and emit a bear/base/bull intrinsic-value range; CONDITIONAL → halt and surface `condition` (or proceed when `--confirm` is passed); NO → refuse and surface `qualitative_note`. ESTABLISHED profile uses two-stage DCF (5y FCF + Gordon terminal). EMERGING profile (or any ticker invoked with `--pre-profit`) uses revenue-multiple exit + FCF inflection + SBC dilution schedule. Use whenever the user asks for an intrinsic value, fair-value range, DCF, or "what's it worth" on a ticker.
 ---
 
 # Model — DCF & Intrinsic Value
 
-**Command:** `/stock:model TICKER [--confirm] [--pre-profit]`
-**Purpose:** Run a DCF for a tech stock and emit a bear/base/bull intrinsic-value range, after enforcing the upstream-context contract from `/stock:signal`. ESTABLISHED → two-stage DCF (5y FCF + Gordon terminal). EMERGING (or any ticker forced with `--pre-profit`) → revenue-multiple exit + FCF inflection year + SBC dilution schedule.
+**Command:** `/stock-model TICKER [--confirm] [--pre-profit]`
+**Purpose:** Run a DCF for a tech stock and emit a bear/base/bull intrinsic-value range, after enforcing the upstream-context contract from `/stock-signal`. ESTABLISHED → two-stage DCF (5y FCF + Gordon terminal). EMERGING (or any ticker forced with `--pre-profit`) → revenue-multiple exit + FCF inflection year + SBC dilution schedule.
 
 ---
 
 ## 1. Identity
 
-- **Skill name:** stock:model
-- **Command:** `/stock:model TICKER [--confirm] [--pre-profit]`
+- **Skill name:** stock-model
+- **Command:** `/stock-model TICKER [--confirm] [--pre-profit]`
 - **Purpose:** Gate on the upstream Signal, then compute a DCF under three demonstrably-different scenario sets. ESTABLISHED profile → two-stage DCF (5y explicit FCF + Gordon terminal). EMERGING profile (or any ticker forced with `--pre-profit`) → revenue-multiple exit + FCF inflection + SBC dilution. Output a per-share intrinsic-value range (bear/base/bull) with each scenario's assumptions and narrative fully disclosed, and merge into `reports/TICKER_YYYYMMDD.json` under `stages.model`.
 
 ---
 
 ## 2. Why a context gate
 
-Model is downstream of Signal: it consumes the profit-stage classification, clean EPS, AI layer, and MODEL_READY flag that Signal produces. Running `/stock:model` without first running `/stock:signal` would force this skill to either re-derive those inputs (duplicating Signal's MCP calls and methodology) or fabricate them (silently wrong). The gate enforces the contract — Signal first, Model second.
+Model is downstream of Signal: it consumes the profit-stage classification, clean EPS, AI layer, and MODEL_READY flag that Signal produces. Running `/stock-model` without first running `/stock-signal` would force this skill to either re-derive those inputs (duplicating Signal's MCP calls and methodology) or fabricate them (silently wrong). The gate enforces the contract — Signal first, Model second.
 
 The gate also routes on `model_ready`. Signal's classification is the authoritative call on whether a DCF is sensible right now:
 
@@ -28,7 +28,7 @@ The gate also routes on `model_ready`. Signal's classification is the authoritat
 - `CONDITIONAL` — a specific user-confirmable risk exists. Halt and surface the `condition` string; require `--confirm` on re-invocation before continuing.
 - `NO` — Signal has already ruled the DCF out (pre-profit, qualitative FAIL, or hard CAUTION). Refuse and point back to Signal.
 
-v1.2 (ABA-31) lands the standard two-stage DCF for ESTABLISHED profile. v1.3 (ABA-34) lands the pre-profit variant — revenue-multiple exit, explicit FCF inflection year per scenario, and SBC-driven dilution schedule. The `--pre-profit` flag forces the pre-profit variant even on an ESTABLISHED upstream classification (useful for transition-year tickers like RDDT whose recent profitability does not yet support a stable terminal-value calculation). v1.7 (ABA-110) strips SBC from the FCF base on both paths — `fcf_ttm`, `fcf_margin_ttm`, and `fcf_cagr_3y` are now clean (SBC-stripped) on the ESTABLISHED path, and `margin_ttm` is clean on the pre-profit path. This brings Model into methodology consistency with Signal Step 5, which has always stripped SBC from EPS. v1.8 (ABA-111) caps the Y2–Y5 CAGR against `get_estimates.eps_growth_5y` (or an 18% fallback on ESTABLISHED / 35% on pre-profit) — trailing CAGR off a depressed base year is a useful floor signal but a poor central case; the cap prevents the entire scenario range from inheriting a trough-extrapolation. Both v1.7 and v1.8 are pre-requisites for any `/stock:model` report to be treated as decision-grade.
+v1.2 (ABA-31) lands the standard two-stage DCF for ESTABLISHED profile. v1.3 (ABA-34) lands the pre-profit variant — revenue-multiple exit, explicit FCF inflection year per scenario, and SBC-driven dilution schedule. The `--pre-profit` flag forces the pre-profit variant even on an ESTABLISHED upstream classification (useful for transition-year tickers like RDDT whose recent profitability does not yet support a stable terminal-value calculation). v1.7 (ABA-110) strips SBC from the FCF base on both paths — `fcf_ttm`, `fcf_margin_ttm`, and `fcf_cagr_3y` are now clean (SBC-stripped) on the ESTABLISHED path, and `margin_ttm` is clean on the pre-profit path. This brings Model into methodology consistency with Signal Step 5, which has always stripped SBC from EPS. v1.8 (ABA-111) caps the Y2–Y5 CAGR against `get_estimates.eps_growth_5y` (or an 18% fallback on ESTABLISHED / 35% on pre-profit) — trailing CAGR off a depressed base year is a useful floor signal but a poor central case; the cap prevents the entire scenario range from inheriting a trough-extrapolation. Both v1.7 and v1.8 are pre-requisites for any `/stock-model` report to be treated as decision-grade.
 
 ---
 
@@ -36,7 +36,7 @@ v1.2 (ABA-31) lands the standard two-stage DCF for ESTABLISHED profile. v1.3 (AB
 
 ### GATHER
 
-1. Parse the ticker from the command argument. Uppercase it (e.g. `nvda` → `NVDA`). If blank, refuse immediately with: "Usage: `/stock:model TICKER [--confirm] [--pre-profit]`".
+1. Parse the ticker from the command argument. Uppercase it (e.g. `nvda` → `NVDA`). If blank, refuse immediately with: "Usage: `/stock-model TICKER [--confirm] [--pre-profit]`".
 2. Parse the optional `--confirm` flag. Its only effect is to allow a CONDITIONAL Signal to pass through (see GATE step 3 below).
 3. Parse the optional `--pre-profit` flag. Its effect is to force the pre-profit variant in ROUTE regardless of the upstream `profit_stage`. Accepted spellings: `--pre-profit`, `-- pre-profit` (separator tolerant). When set, record `route_override = "pre-profit"` for the OUTPUT block.
 4. Parse the optional `--engagement-modifier` flag. **Default: off.** When absent, the engagement-modifier GATHER sub-step is skipped entirely and the `engagement_modifier` JSON block is omitted (FR6 / spike-decision: advisory + flag-gated default-off until n≥24 forward samples accumulate; see `docs/design-docs/engagement-kpi-enrichment/spike-decision.md`). When present, the sub-step runs per the rules in **GATHER — Engagement modifier** below (ESTABLISHED path only — EMERGING path always skips per FR6). Accepted spellings: `--engagement-modifier`, `-- engagement-modifier` (separator tolerant).
@@ -46,15 +46,15 @@ v1.2 (ABA-31) lands the standard two-stage DCF for ESTABLISHED profile. v1.3 (AB
 **Step 1 — Locate the upstream Signal.** Two sources, in this precedence order:
 
 1. **Conversation context (preferred).** Scan the messages above this invocation for a `SIGNAL OUTPUT` block whose `Ticker:` line matches the requested ticker (uppercase comparison). If multiple are present, use the most recent.
-2. **Filesystem fallback.** If no in-context block is found, look for `reports/TICKER_YYYYMMDD.json` where `YYYYMMDD` is **today's date** (the same date format Signal writes). Read it and use `stages.signal` as the upstream payload. **Reject any file not dated today** — stale on-disk Signal data is fabrication risk; require the user to re-run `/stock:signal` instead.
+2. **Filesystem fallback.** If no in-context block is found, look for `reports/TICKER_YYYYMMDD.json` where `YYYYMMDD` is **today's date** (the same date format Signal writes). Read it and use `stages.signal` as the upstream payload. **Reject any file not dated today** — stale on-disk Signal data is fabrication risk; require the user to re-run `/stock-signal` instead.
 
 If both sources are present, conversation context wins (it reflects the current session's reasoning).
 
 **If neither source yields a valid upstream Signal for the requested ticker**, refuse with exactly this message (substituting the requested ticker):
 
-> `/stock:model TICKER` requires a SIGNAL OUTPUT block in context. Please run `/stock:signal TICKER` first, then re-run `/stock:model TICKER` in the same session.
+> `/stock-model TICKER` requires a SIGNAL OUTPUT block in context. Please run `/stock-signal TICKER` first, then re-run `/stock-model TICKER` in the same session.
 
-The literal phrase **"run `/stock:signal TICKER` first"** (with TICKER substituted) MUST appear in the refusal — it is verified by the ABA-30 smoke check.
+The literal phrase **"run `/stock-signal TICKER` first"** (with TICKER substituted) MUST appear in the refusal — it is verified by the ABA-30 smoke check.
 
 Do not proceed past this step. Do not call any MCP tool. Do not write any file.
 
@@ -77,7 +77,7 @@ Then continue to **ROUTE** below. Substitute SOURCE as `context` or `reports/TIC
 
 **`CONDITIONAL` — without `--confirm`:** Halt. Emit:
 
-> Model is CONDITIONAL on Signal — confirm: `<condition>`. Re-invoke `/stock:model TICKER --confirm` to proceed.
+> Model is CONDITIONAL on Signal — confirm: `<condition>`. Re-invoke `/stock-model TICKER --confirm` to proceed.
 
 Surface the `<condition>` string from the upstream Signal **verbatim** (no paraphrasing). Do not proceed.
 
@@ -89,7 +89,7 @@ Then continue to **ROUTE** below.
 
 **`NO`:** Refuse. Emit:
 
-> Signal for TICKER is MODEL_READY=NO — Model will not run. Reason: `<qualitative_note>`. Re-run `/stock:signal TICKER` if conditions have changed.
+> Signal for TICKER is MODEL_READY=NO — Model will not run. Reason: `<qualitative_note>`. Re-run `/stock-signal TICKER` if conditions have changed.
 
 Surface the `qualitative_note` from the upstream Signal verbatim. Do not proceed; do not call any MCP tool; do not write any file.
 
@@ -115,7 +115,7 @@ Run these MCP calls in this order. Every retrieved figure is held with its raw v
 2. **`get_financials(ticker)`** — used for:
    - `years[].free_cash_flow` (4y usable per ABA-47 — accept 4y base; 5th column is dropped server-side)
    - `years[].revenue` (for FCF margin derivation)
-   - `years[].stock_based_compensation` (required — stripped from FCF before margin / CAGR per ABA-110; methodology consistency with `/stock:signal` Step 5)
+   - `years[].stock_based_compensation` (required — stripped from FCF before margin / CAGR per ABA-110; methodology consistency with `/stock-signal` Step 5)
    - `years[].shares_outstanding_diluted` (latest year — primary shares figure for per-share IV)
    - `years[0].total_debt` and `years[0].cash` (net debt for EV→equity bridge)
 3. **`get_estimates(ticker)`** — fields used: `ntm_revenue`, `ntm_eps`, `eps_growth_5y`. NTM revenue anchors Year-1 FCF projection (Step 2); NTM EPS is used only for sanity-check; `eps_growth_5y` is the long-term sell-side consensus growth rate, consumed as the Y2–Y5 CAGR ceiling per ABA-111 (Step 3) — may be null, in which case the 18% fallback ceiling applies.
@@ -142,7 +142,7 @@ Read `upstream_signal.ai_layer` (from the SIGNAL OUTPUT block resolved in GATE, 
 
 - `ai_layer ∈ {APPLICATION, INCUMBENT}` → continue to Step 2.
 - `ai_layer ∈ {INFRASTRUCTURE, FOUNDATION, NONE}` → emit `status: "unavailable", status_reason: "missing_ai_layer"` (ai_layer doesn't qualify, not strictly missing — but the enum's `missing_ai_layer` covers both "absent" and "present-but-non-qualifying" per spike-decision linkage; the audit trail records the actual value in `ai_layer_observed`). Skip to COMPUTE.
-- `ai_layer` absent (upstream Signal predates AI-layer field) → emit `status: "unavailable", status_reason: "missing_ai_layer"`, with `ai_layer_observed: null`. Skip to COMPUTE. **Do not second-guess the upstream classification — re-run `/stock:signal` if the user believes it's wrong.**
+- `ai_layer` absent (upstream Signal predates AI-layer field) → emit `status: "unavailable", status_reason: "missing_ai_layer"`, with `ai_layer_observed: null`. Skip to COMPUTE. **Do not second-guess the upstream classification — re-run `/stock-signal` if the user believes it's wrong.**
 
 **Step 2 — KPI-map lookup (FR7).**
 
@@ -234,7 +234,7 @@ Execute in order. Show the working — every scenario must be reproducible from 
 
 **Step 1 — Derive trailing FCF base and margin (SBC-stripped per ABA-110).**
 
-yfinance's OCF adds SBC back as a non-cash charge, so reported `free_cash_flow` silently treats stock-based compensation as free. `/stock:signal` already strips SBC from EPS (Step 5); the DCF base must do the same or the two skills disagree on the same company. Strip first, then derive margin and CAGR.
+yfinance's OCF adds SBC back as a non-cash charge, so reported `free_cash_flow` silently treats stock-based compensation as free. `/stock-signal` already strips SBC from EPS (Step 5); the DCF base must do the same or the two skills disagree on the same company. Strip first, then derive margin and CAGR.
 
 - `sbc_ttm` = `years[0].stock_based_compensation` (refuse via the GATHER null-handler above if null — never substitute, never assume zero).
 - `fcf_ttm_reported` = `years[0].free_cash_flow` (latest reported FY; if quarterly TTM is unavailable, accept the latest annual figure). Held for the audit trail and the OUTPUT block; **not** used as the DCF anchor.
@@ -854,7 +854,7 @@ RDDT — pre-profit DCF bear/base/bull = $X / $Y / $Z (price $P, WITHIN BEAR–B
 | "Bear ends up above Base for this ticker — I'll just swap them." | Forbidden. If `bear_iv < base_iv < bull_iv` fails, the scenarios are mis-specified — stop, show the user the three input sets and outputs, and ask whether to widen the WACC or growth deltas. Silent re-ordering destroys the audit trail. |
 | "Year-1 FCF comes from NTM EPS × shares, that's faster than revenue × margin." | EPS × shares yields *net income*, not free cash flow. The Y1 anchor must be `ntm_revenue × fcf_margin_ttm`. NTM EPS is held only as a sanity check; never substitute it for FCF. |
 | "FCF already excludes SBC because OCF adds it back — let me skip the strip." | Forbidden. OCF adds SBC back **because it's non-cash**; the company still paid for it in dilution, and Signal already strips it from EPS at Step 5. Skipping the strip on the DCF side leaves Model and Signal disagreeing on the same company and inflates every ESTABLISHED IV by tens of percent (META 2026-05-17: 45% inflation on Y1 anchor). The DCF base is `fcf_ttm − sbc_ttm`. No exceptions. |
-| "SBC is null for this year so I'll fall back to reported FCF for this entry of the CAGR." | Forbidden. Mixing reported and clean values in the same `fcf_cagr_3y` computation produces a meaningless growth rate. If any year in the CAGR window has null SBC, fire the Manual Input Protocol for the full required SBC series before computing CAGR. Same discipline as `/stock:signal` Step 5: SBC stripping is mandatory step zero. |
+| "SBC is null for this year so I'll fall back to reported FCF for this entry of the CAGR." | Forbidden. Mixing reported and clean values in the same `fcf_cagr_3y` computation produces a meaningless growth rate. If any year in the CAGR window has null SBC, fire the Manual Input Protocol for the full required SBC series before computing CAGR. Same discipline as `/stock-signal` Step 5: SBC stripping is mandatory step zero. |
 | "Trailing CAGR is what the data shows — capping it is fabrication." | Trailing CAGR off a depressed base year is mechanical extrapolation, not signal — META FY22 (Reality Labs cost reset) and NVDA FY23 (pre-AI-boom) both make the trailing window look explosive in ways no sell-side analyst would write down. The ABA-111 cap surfaces the disagreement explicitly via `growth_rate.cap_source` and the OUTPUT block's "capped from X% by Y" line. Trusting raw trailing CAGR without a ceiling and shipping the resulting four-times-FCF-in-five-years projection is the actual fabrication. |
 | "Consensus_5y_growth came back null, so I'll just use the trailing CAGR uncapped." | Forbidden. Null consensus does **not** unlock the cap — it switches the ceiling source from consensus to the 18% fallback (35% on pre-profit). The fallback ceiling exists precisely for this case (most yf tickers have null `eps_growth_5y`); skipping the cap because consensus is null defeats ABA-111. |
 | "The cap is reducing IV materially — let me raise the fallback to 25% so the number looks more familiar." | Forbidden. The fallback is a published constant (`0.18` for ESTABLISHED FCF CAGR, `0.35` for pre-profit revenue CAGR) and a change to it requires a spec edit and a written rationale, not an inline tweak to land on a particular IV. Per-ticker overrides land via the playbook layer (ABA-112), not by re-tuning the global fallback. |
@@ -882,8 +882,8 @@ RDDT — pre-profit DCF bear/base/bull = $X / $Y / $Z (price $P, WITHIN BEAR–B
 
 ### v1 — ABA-30 (still in force)
 
-1. **No upstream Signal in context or on disk →** invoking `/stock:model NVDA` returns a refusal message containing the literal phrase **`run /stock:signal NVDA first`** (with the requested ticker substituted).
-2. **Valid SIGNAL OUTPUT block in context for the requested ticker (MODEL_READY=YES) →** invoking `/stock:model NVDA` proceeds past the gate and emits the "Gate passed" acknowledgement, naming the verdict and MODEL_READY value from the upstream block.
+1. **No upstream Signal in context or on disk →** invoking `/stock-model NVDA` returns a refusal message containing the literal phrase **`run /stock-signal NVDA first`** (with the requested ticker substituted).
+2. **Valid SIGNAL OUTPUT block in context for the requested ticker (MODEL_READY=YES) →** invoking `/stock-model NVDA` proceeds past the gate and emits the "Gate passed" acknowledgement, naming the verdict and MODEL_READY value from the upstream block.
 3. **Mismatched ticker** (SIGNAL OUTPUT for META, request for NVDA, no same-day NVDA report on disk) → treated as "no upstream Signal" — same refusal message, substituting the requested ticker (NVDA).
 
 ### v1.1 — ABA-93 (MODEL_READY branching)
@@ -891,14 +891,14 @@ RDDT — pre-profit DCF bear/base/bull = $X / $Y / $Z (price $P, WITHIN BEAR–B
 4. **Filesystem fallback — same-day `reports/TICKER_YYYYMMDD.json` exists, no in-context block →** the gate reads `stages.signal.model_ready` from the JSON and branches accordingly.
 5. **Stale on-disk Signal** (date in filename is not today) → ignored; treated as if no upstream Signal exists; standard refusal.
 6. **`model_ready = YES` →** gate passes; "Ready for DCF" acknowledgement emitted; DCF body still stubbed.
-7. **`model_ready = CONDITIONAL`, no `--confirm` flag →** gate halts with: `Model is CONDITIONAL on Signal — confirm: <condition>. Re-invoke /stock:model TICKER --confirm to proceed.` The `<condition>` string appears verbatim from the upstream Signal.
+7. **`model_ready = CONDITIONAL`, no `--confirm` flag →** gate halts with: `Model is CONDITIONAL on Signal — confirm: <condition>. Re-invoke /stock-model TICKER --confirm to proceed.` The `<condition>` string appears verbatim from the upstream Signal.
 8. **`model_ready = CONDITIONAL`, `--confirm` passed →** gate passes (treated as YES); acknowledgement notes the confirmation and surfaces the confirmed condition.
-9. **`model_ready = NO` →** gate refuses with: `Signal for TICKER is MODEL_READY=NO — Model will not run. Reason: <qualitative_note>. Re-run /stock:signal TICKER if conditions have changed.` The `<qualitative_note>` string appears verbatim.
+9. **`model_ready = NO` →** gate refuses with: `Signal for TICKER is MODEL_READY=NO — Model will not run. Reason: <qualitative_note>. Re-run /stock-signal TICKER if conditions have changed.` The `<qualitative_note>` string appears verbatim.
 10. **Context precedence:** when both an in-context SIGNAL OUTPUT and a same-day JSON exist for the same ticker, the in-context block is the source of truth.
 
 ### v1.2 — ABA-31 (standard two-stage DCF, ESTABLISHED path)
 
-11. **ESTABLISHED + MODEL_READY=YES →** invoking `/stock:model META` after a META Signal output produces a MODEL OUTPUT block with three intrinsic-value scenarios and writes `stages.model` into `reports/META_YYYYMMDD.json` (merging with existing `stages.signal` / `stages.screen` — no overwrite).
+11. **ESTABLISHED + MODEL_READY=YES →** invoking `/stock-model META` after a META Signal output produces a MODEL OUTPUT block with three intrinsic-value scenarios and writes `stages.model` into `reports/META_YYYYMMDD.json` (merging with existing `stages.signal` / `stages.screen` — no overwrite).
 12. **Bear < Base < Bull (range integrity) →** the three scenarios satisfy `bear_iv < base_iv < bull_iv`. If the inequality fails, the skill stops and surfaces the three scenario inputs/outputs without silently re-ordering.
 13. **Demonstrably different assumption sets →** each scenario's Y1 anchor, Y2–5 CAGR, terminal growth, and WACC are each set by an independent axis (not a single percentage haircut applied to a base case). Each scenario carries its own one-line narrative.
 14. **EMERGING + MODEL_READY=YES →** (superseded by v1.3 #18 — EMERGING now routes to the pre-profit variant rather than refusing.)
@@ -908,14 +908,14 @@ RDDT — pre-profit DCF bear/base/bull = $X / $Y / $Z (price $P, WITHIN BEAR–B
 
 ### v1.3 — ABA-34 (pre-profit variant)
 
-18. **EMERGING + MODEL_READY=YES →** invoking `/stock:model TICKER` (no flag) routes to the pre-profit variant; output `method` field reads `pre-profit (revenue-multiple exit + FCF inflection)`.
+18. **EMERGING + MODEL_READY=YES →** invoking `/stock-model TICKER` (no flag) routes to the pre-profit variant; output `method` field reads `pre-profit (revenue-multiple exit + FCF inflection)`.
 19. **`--pre-profit` flag on ESTABLISHED ticker →** routes to the pre-profit variant, prints the `Forcing pre-profit variant...` acknowledgement, sets `route_override = "pre-profit"` in JSON, and uses revenue-multiple exit instead of Gordon-growth terminal.
 20. **Implied EV from revenue multiple →** each scenario's output explicitly shows `revenue_y5 × exit_multiple` as the terminal anchor; no Gordon-growth math runs in this path.
 21. **FCF inflection year named per scenario →** every scenario's output line includes `FCF inflection: Year N` or `FCF inflection: beyond Y5`. The skill never paraphrases this to "eventually profitable" or omits it.
 22. **SBC dilution schedule first-class →** the OUTPUT block and the JSON both carry `dilution_rate` and `shares_y5` per scenario, with `dilution_pct_5y` reported. Per-share IV divides by Y5 diluted shares, not today's. If SBC data is unavailable, the skill refuses rather than computing a dilution-free IV.
 23. **Comp set sourced and confirmed →** the run includes a web-search step that produces ≥3 comparable tickers with their NTM EV/Revenue, surfaced to the user for confirmation via MIP. Confidence caps at MEDIUM for the pre-profit variant by construction.
 24. **Bear < Base < Bull holds across the new scenario axes →** Y1 revenue, Y2–5 CAGR, exit multiple, terminal margin, and dilution rate each move on an independent axis; range integrity is enforced the same way as ESTABLISHED.
-25. **Acceptance smoke (RDDT) →** running `/stock:signal RDDT` then `/stock:model RDDT --pre-profit` produces a MODEL OUTPUT block with all three scenarios, named FCF inflection years, a comp-anchored exit multiple, and a SBC dilution schedule — and merges into `reports/RDDT_YYYYMMDD.json` without overwriting `stages.signal`.
+25. **Acceptance smoke (RDDT) →** running `/stock-signal RDDT` then `/stock-model RDDT --pre-profit` produces a MODEL OUTPUT block with all three scenarios, named FCF inflection years, a comp-anchored exit multiple, and a SBC dilution schedule — and merges into `reports/RDDT_YYYYMMDD.json` without overwriting `stages.signal`.
 
 ### v1.4 — ABA-32 (sensitivity grid, ESTABLISHED)
 
@@ -939,17 +939,17 @@ RDDT — pre-profit DCF bear/base/bull = $X / $Y / $Z (price $P, WITHIN BEAR–B
 37. **`stages.model.scenarios` present →** the full scenario block (each of bear/base/bull with its own assumptions, IV, upside %, narrative) is emitted under `scenarios`.
 38. **`stages.model.sensitivity_table` present →** ESTABLISHED emits the 5×5 WACC × terminal-g grid object (renamed from `sensitivity_grid` in v1.4) with `wacc_axis`, `terminal_growth_axis`, `intrinsic_value_per_share` 5×5 array, and `base_cell` index. EMERGING emits `sensitivity_table: null` (the grid is meaningless without a Gordon-growth terminal) and relies on the dominant-driver `sensitivity` note instead.
 39. **`stages.model.position_sizing` present →** the sizing block from v1.5 is emitted as a structured object (`band`, `lower_pct`, `upper_pct`, `signal_verdict`, `range_vs_price`, `margin_of_safety_pct`, `confidence_cap_applied`, `rationale`) — not just a string.
-40. **JSON validity preserved →** running `/stock:model META` writes a `reports/META_YYYYMMDD.json` that parses as valid JSON, with `stages.model` containing all four required fields and merging cleanly with any pre-existing `stages.signal` / `stages.screen` / `stages.timing` blocks (no overwrite of sibling stages).
+40. **JSON validity preserved →** running `/stock-model META` writes a `reports/META_YYYYMMDD.json` that parses as valid JSON, with `stages.model` containing all four required fields and merging cleanly with any pre-existing `stages.signal` / `stages.screen` / `stages.timing` blocks (no overwrite of sibling stages).
 
 ### v1.7 — ABA-110 (SBC stripped from FCF base, DCF methodology fix)
 
 41. **ESTABLISHED FCF base is SBC-stripped →** `stages.model.fcf_ttm` equals `years[0].free_cash_flow − years[0].stock_based_compensation`. `fcf_margin_ttm` and `fcf_cagr_3y` are computed from clean FCF on both ends (for CAGR, every historical-year FCF used has its SBC subtracted before the ratio is taken).
 42. **Audit fields present →** `stages.model.fcf_ttm_reported`, `stages.model.sbc_ttm`, and `stages.model.fcf_margin_ttm_reported` are emitted in every ESTABLISHED and pre-profit run, exposing the pre-strip yfinance numbers for reconciliation.
-43. **Signal/Model SBC consistency →** the per-share SBC adjustment used in `/stock:signal` Step 5 (`sbc_ttm / shares_outstanding`) matches the per-share SBC implied by Model's clean FCF math (`(fcf_ttm_reported − fcf_ttm) / shares_outstanding_diluted`) within $0.10. A larger gap means the two skills are reading different SBC figures or different share counts — reconcile before shipping the report.
+43. **Signal/Model SBC consistency →** the per-share SBC adjustment used in `/stock-signal` Step 5 (`sbc_ttm / shares_outstanding`) matches the per-share SBC implied by Model's clean FCF math (`(fcf_ttm_reported − fcf_ttm) / shares_outstanding_diluted`) within $0.10. A larger gap means the two skills are reading different SBC figures or different share counts — reconcile before shipping the report.
 44. **SBC null handling →** if `years[0].stock_based_compensation` is null, the skill refuses with `SBC data unavailable; DCF cannot proceed without SBC-stripped FCF base. Use Manual Input Protocol to paste latest TTM SBC.` and fires MIP for a paste-in. Pasted SBC tags as `source: "user_paste"` and caps `meta.confidence` at MEDIUM.
-45. **META smoke (SBC strip) →** running `/stock:signal META` then `/stock:model META` with the current defaults (WACC=8.5%, g=2.5%) produces a base IV in the $650–$800 range — materially lower than the pre-fix figure (≈$1,155 on the 2026-05-17 run) — and the OUTPUT block surfaces `FCF (TTM): $X.X B reported  |  SBC: $X.X B  |  clean FCF: $X.X B  |  clean margin: XX% (reported margin: XX%)`.
+45. **META smoke (SBC strip) →** running `/stock-signal META` then `/stock-model META` with the current defaults (WACC=8.5%, g=2.5%) produces a base IV in the $650–$800 range — materially lower than the pre-fix figure (≈$1,155 on the 2026-05-17 run) — and the OUTPUT block surfaces `FCF (TTM): $X.X B reported  |  SBC: $X.X B  |  clean FCF: $X.X B  |  clean margin: XX% (reported margin: XX%)`.
 46. **NVDA smoke (SBC strip) →** the same flow on NVDA produces a base IV 30–50% lower than the SBC-included version; the OUTPUT block shows clean and reported margins side-by-side.
-47. **Pre-profit smoke (RDDT, SBC strip) →** `/stock:model RDDT --pre-profit` uses clean FCF margin in the trajectory; the FCF inflection year per scenario shifts later (1–2 years) vs the SBC-included version; the OUTPUT block surfaces clean and reported margins side-by-side.
+47. **Pre-profit smoke (RDDT, SBC strip) →** `/stock-model RDDT --pre-profit` uses clean FCF margin in the trajectory; the FCF inflection year per scenario shifts later (1–2 years) vs the SBC-included version; the OUTPUT block surfaces clean and reported margins side-by-side.
 48. **Rationalisations table covers SBC →** the "FCF already excludes SBC because OCF adds it back" rebuttal is present and refers to ABA-110.
 
 ### v1.8 — ABA-111 (Y2–Y5 CAGR sanity ceiling)

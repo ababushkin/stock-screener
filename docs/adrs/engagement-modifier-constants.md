@@ -15,7 +15,7 @@ supersedes: none
 
 ## Context
 
-`/stock:model` is being extended with an engagement-KPI–driven base-IV modifier (design doc: `docs/design-docs/engagement-kpi-enrichment/design-doc.md`, ABA-66). The modifier reads the latest as-published engagement KPI (e.g. META DAP, RDDT DAUq) from EDGAR 8-K Ex 99.1, classifies the YoY trend into a direction × magnitude band, and perturbs the Year-1 revenue anchor by a small bounded multiplier. The full effect is then clamped against an output cap on base IV.
+`/stock-model` is being extended with an engagement-KPI–driven base-IV modifier (design doc: `docs/design-docs/engagement-kpi-enrichment/design-doc.md`, ABA-66). The modifier reads the latest as-published engagement KPI (e.g. META DAP, RDDT DAUq) from EDGAR 8-K Ex 99.1, classifies the YoY trend into a direction × magnitude band, and perturbs the Year-1 revenue anchor by a small bounded multiplier. The full effect is then clamped against an output cap on base IV.
 
 The numerical constants that govern this pipeline have to be fixed **before** the Task 6 backtest runs. Otherwise the backtest's hit rate becomes a function of constant tuning, and NFR7 (≥60% revision-direction agreement) collapses into circular validation. This ADR records each constant, the alternative considered, and the data point that would prompt a revision.
 
