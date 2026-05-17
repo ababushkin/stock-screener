@@ -1,0 +1,13 @@
+when ever i run the /stock-model skill it asks me to supply a WAC, but i don't know how to give a value
+
+---
+
+isn't there a way for this to be calculated without it being given
+
+cost of equity * equity weight + cost of debt * debt weight ?
+
+are all these values available?
+
+---
+
+no i'd rather use stable sources rather than web searches
