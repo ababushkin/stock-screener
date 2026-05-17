@@ -1,16 +1,34 @@
 ---
 name: engagement-kpi-enrichment
-status: draft
+status: accepted
 authors: Anton Babushkin
 created: 2026-05-14
-last_updated: 2026-05-14
+last_updated: 2026-05-17
 supersedes: none
 linear: ABA-66
 appetite: 3 weeks (fixed cap, not range) — see Sequencing
 plan_review: docs/plan-reviews/engagement-kpi-enrichment/review.md (REVISE, six conditions; this revision addresses)
+spike_decision: docs/design-docs/engagement-kpi-enrichment/spike-decision.md (RESHAPE → PROCEED; supersedes the "lead-prediction" framing — see Acceptance note below)
 ---
 
 # Engagement-KPI enrichment for `/stock:model` (APPLICATION / INCUMBENT tickers)
+
+> **Acceptance note (2026-05-17).** Accepted with the spike-decision pivot in
+> force. The doc body below frames the modifier as a **lead** signal —
+> engagement-direction *predicts* the consensus revision before it lands, and
+> NFR7's backtest is the gate. The Task 7 spike (see `spike-decision.md`)
+> showed the wayback data source needed for that gate is not viable, and
+> reshaped the philosophy to **confirm/lag**: engagement-direction agrees with
+> (or contradicts) the revision that has already started, measured against
+> Yahoo Finance's live `/analysis/` EPS Trend "Current vs 30 Days Ago" table.
+> The NFR7 backtest is replaced by a flag-gated advisory plus forward-log
+> accumulation toward n≥24 ticker-quarters; the kill-criterion value (60%
+> direction agreement) is unchanged. Where the body below says "lead",
+> "predict", or "consensus revision direction" in the context of NFR7 /
+> backtest gating, read it as superseded by `spike-decision.md`. All other
+> design choices — EDGAR-anchored KPI extraction, pre-registered constants,
+> two-cap audit trail, base-scenario-only application, KPI-map versioning —
+> survive the pivot unchanged and were built in Tasks 1, 3–13.
 
 ## Problem
 
