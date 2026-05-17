@@ -1,38 +1,6 @@
-# SPEC.md — Equity Research Skill-Pack
+# DESIGN.md — Equity Research Skill-Pack
 
-This document is the authoritative implementation reference. The project brief (embedded below as an appendix) contains methodology and design decisions that are final. This spec adds the technical layer: project structure, data contracts, MCP specs, UI architecture, testing strategy, and boundaries.
-
----
-
-## Objective
-
-A personal equity research assistant for a tech-focused investor. The pack implements a structured three-stage research process — screen → signal → model — with a timing overlay callable at any stage. Target universe: AI companies (infrastructure, application, model layers) through to established profitable tech (Meta, Google, Nvidia). Occasional pre-IPO coverage.
-
-**Scope is tech-only by design.** Non-tech names (auto OEMs, banks, cyclicals, yield-track equities) are explicitly out of scope — the skills will run but verdicts won't be trustworthy. See `README.md` for the full scope statement and known failure modes for non-tech inputs.
-
-**Primary users:** Individual investor running their own portfolio. Secondarily: validating or challenging sell-side analyst calls.
-
-**Educational intent:** Every output explains the methodology and the numbers — it does not just produce a verdict.
-
----
-
-## Operating Principle — Depth over Breadth
-
-This pack optimises for **depth on a curated tech watchlist** (see `WATCHLIST.md`), not breadth across thousands of tickers. The intended use is high-conviction decision-making — and later, prediction — on a small number of names the user actually holds or considers. It is not a market-wide screener.
-
-The user's stated frame: *"I don't care if we don't know how to value GM, but I do very much care that we know with incredible detail how to value META — otherwise it's just a stupid number I won't use or trust."*
-
-Implications for every implementation decision:
-
-1. **Ticker-specific knowledge beats generalised heuristics.** When a watchlist ticker has a known capex-cycle position, segment mix, governance fact, or sell-side disagreement axis that materially affects valuation, encode it in `playbooks/TICKER.md` (see *Playbook Layer* below). Smoothing ticker-specific knowledge into industry-average defaults is the failure mode this pack exists to avoid.
-
-2. **Auditability is non-negotiable.** Every assumption surfaced in output, every scenario axis disclosed, every cap / override / manual input named. Opaque algorithmic blending is rejected even when it produces better point estimates — a number the user cannot argue with is a number the user will not trust.
-
-3. **Generic improvements are deprioritised against watchlist depth.** When choosing between (a) a methodology improvement that helps every ticker marginally and (b) a watchlist-specific deepening, choose (b). Exception: correctness fixes (e.g. SBC stripping in the DCF base — ABA-110) remain P0 because they are table stakes for any number being usable.
-
-4. **Off-watchlist tickers run on generic fallback logic.** That is a deliberate cost. Confidence caps at MEDIUM by default for off-watchlist invocations; users should expect a less informative answer for non-core names.
-
-5. **Backtesting is how the engine gets sharper.** Quarterly historical replays against the watchlist (see *Testing Strategy*) feed methodology drift back into the skills. Drift CI catches format breaks; backtesting catches methodology drift.
+This document is the **architectural reference** for the equity research skill-pack. It covers project structure, data contracts, MCP specs, the playbook layer, UI architecture, testing strategy, and skill-authoring conventions. For product positioning, scope boundaries, and locked design decisions, see `CHARTER.md`.
 
 ---
 
@@ -60,7 +28,7 @@ All skills in this pack are namespaced under the `stock:` prefix (e.g. `/stock:s
 
 **Reason:** Generic command names (`/model`, `/review`, `/init`, `/ship`) collide with built-in Claude Code commands and with other installed skill packs. The `stock:` prefix gives the pack a stable, conflict-free namespace. The decision was taken pre-M5 (ABA-71) — `/model` would have shadowed the built-in model-switcher.
 
-**Rule:** Every new skill added to this pack MUST use the `stock:` prefix in its SKILL.md `name:` frontmatter field. References to skills in SPEC.md, CLAUDE.md, and other skill descriptions MUST also use the prefixed form. Report JSON schema keys (`stages.screen`, `stages.signal`, etc.) are NOT prefixed — they are JSON keys, not invocations.
+**Rule:** Every new skill added to this pack MUST use the `stock:` prefix in its SKILL.md `name:` frontmatter field. References to skills in `CHARTER.md`, `DESIGN.md`, `CLAUDE.md`, and other skill descriptions MUST also use the prefixed form. Report JSON schema keys (`stages.screen`, `stages.signal`, etc.) are NOT prefixed — they are JSON keys, not invocations.
 
 ---
 
@@ -68,14 +36,19 @@ All skills in this pack are namespaced under the `stock:` prefix (e.g. `/stock:s
 
 ```
 /
-├── CLAUDE.md
-├── SPEC.md
+├── CHARTER.md                 # Product charter — objective, operating principle, boundaries
+├── DESIGN.md                  # This file — architectural reference
+├── CLAUDE.md                  # Operational guidance for Claude Code in this repo
+├── COVERAGE.md                # Currently-supported tickers + contribution path
+├── README.md                  # Entry-point overview
 ├── skills/                    # Skill definition files (markdown)
 │   ├── equity.md              # Router — /stock:equity
 │   ├── screen.md              # Screen — /stock:screen
 │   ├── signal.md              # Signal — /stock:signal
 │   ├── model.md               # Model — /stock:model
 │   └── timing.md              # Timing — /stock:timing
+├── playbooks/                 # Ticker-specific overrides loaded by /stock:model (ABA-112)
+│   └── TICKER.md              # One per supported ticker (see COVERAGE.md)
 ├── ui/                        # Interactive report viewer
 │   ├── src/
 │   │   ├── App.jsx
@@ -208,7 +181,7 @@ When a skill cannot resolve an input from sources 1–3, it states the gap, uses
 
 ## Playbook Layer
 
-For watchlist tickers (see `WATCHLIST.md`), `/stock:model` loads ticker-specific overrides from `playbooks/TICKER.md` (uppercase ticker symbol; period-suffixed exchange codes preserved verbatim, e.g. `playbooks/ADYEN.AS.md`). Off-watchlist tickers run with generic ESTABLISHED / EMERGING defaults. Implementation tracked in ABA-112; blocked by ABA-110 + ABA-111 (correctness fixes must land first so playbook overrides modulate a trustworthy base).
+For supported tickers (see `COVERAGE.md`), `/stock:model` loads ticker-specific overrides from `playbooks/TICKER.md` (uppercase ticker symbol; period-suffixed exchange codes preserved verbatim, e.g. `playbooks/ADYEN.AS.md`). Off-coverage tickers run with generic ESTABLISHED / EMERGING defaults. Implementation tracked in ABA-112; blocked by ABA-110 + ABA-111 (correctness fixes must land first so playbook overrides modulate a trustworthy base).
 
 **File format.** Markdown with YAML frontmatter.
 
@@ -431,52 +404,9 @@ cd mcp/edgar && python server.py
 
 **UI smoke test:** After any report JSON is written, confirm the UI renders without console errors and all tabs display data.
 
+**Coverage backtesting (future, ABA-NEXT):** Quarterly historical replays of `/stock:signal` and `/stock:model` against the supported tickers (`COVERAGE.md`). Grade IV-range coverage of subsequent price action, verdict accuracy, and dominant-driver stability across time. Feeds methodology drift back into the skills per `CHARTER.md` → *Operating Principle* (5).
+
 No automated test runner is mandated. Tests are skill-invocation runs with expected output documented in `tests/reference/`.
-
----
-
-## Boundaries
-
-### Non-equity instruments
-
-This pack covers **equities only**. ETFs, commodity funds, fixed income, and derivatives are out of scope for v1 and v2.
-
-**GLDM (and similar commodity ETFs)** require a fundamentally different methodology — no earnings, no DCF, no P/E or PEG. Valuation is driven by gold price vs. macro factors (real rates, dollar strength, inflation expectations) and fund-level metrics (expense ratio, AUM, tracking error). Adding support would require a new instrument type routing dimension at the `/stock:equity` router level and a separate methodology track. Explicitly deferred to a future milestone; if added, GLDM is the reference case.
-
-If a user passes a non-equity ticker, the router should detect the instrument type (ETF, closed-end fund, etc.) and state that the pack does not support it rather than running equity methodology on it.
-
-### Leading indicator enrichment (Later scope — /stock:model only)
-
-For companies where current-period ratios are lagging indicators, `/stock:model` will add optional enrichment steps that fetch leading indicators before locking in DCF growth rate inputs. Three enrichment paths are planned:
-
-- **Segment revenue trend** (ABA-65): for AMZN, GOOGL, NVDA, RDDT — fetch segment data from EDGAR, compare segment growth to blended NTM estimate
-- **Engagement KPIs** (ABA-66): for META, NFLX, RDDT, GOOGL — fetch DAU/ARPU/subscriber metrics from earnings press releases via web search
-- **Bookings/backlog** (ABA-67): for INFRASTRUCTURE capital equipment companies (ASML reference case) — fetch net bookings and backlog from earnings press releases via web search
-
-These enrichments do not affect `/stock:signal` verdicts or PEG computation. They are `/stock:model`-only and are implemented when `/stock:model` is built.
-
-### Always do
-- Strip SBC before any earnings calculation in every skill — and from the FCF base in `/stock:model` (ABA-110)
-- State data sources and assumptions in every output
-- Flag `CONFIDENCE = MEDIUM` or `LOW` when any input is estimated
-- Include methodology explanation alongside every verdict
-- Apply AI layer classification (infrastructure / application / model / incumbent / N/A) in Signal qualitative filters
-- Load playbook overrides for watchlist tickers and surface which overrides applied in every output (see *Playbook Layer*)
-
-### Ask first
-- Before running Model without a Signal output in context
-- Before using user-provided numbers as primary inputs (confirm the source)
-- Before applying the yield track (confirm this is genuinely an income thesis, not a misclassification)
-- Before adding or removing tickers from the watchlist (`WATCHLIST.md`) — composition is deliberate, not casual
-
-### Never do
-- Run a standard P/E or PEG ratio on a pre-profit company without flagging it as invalid
-- Proceed with Model on a CAUTION or MODEL_READY = NO signal without explicit user override
-- Skip SBC stripping on grounds that SBC is "immaterial" — always check, always note
-- Re-litigate the design decisions listed in the project brief (see Appendix)
-- Add features not described in this spec or the brief without user instruction
-- Silently apply playbook overrides — the OUTPUT block must name every overridden field and its source
-- Treat off-watchlist `/stock:model` runs as decision-grade — confidence caps at MEDIUM by default and the user must be told
 
 ---
 
@@ -489,19 +419,4 @@ These enrichments do not affect `/stock:signal` verdicts or PEG computation. The
 5. **Model skill** — both variants. Depends on Signal output contract.
 6. **Router skill** — implement last; requires all sub-skills to be stable.
 7. **UI** — can be built in parallel with skill authoring once the JSON report schema is stable.
-
----
-
-## Appendix — Design Decisions (Do Not Re-Litigate)
-
-From the project brief. These are fixed:
-
-- Yield track is a dormant edge case. Do not expand it.
-- SBC stripping is mandatory step zero in every skill, not listed alongside other one-offs.
-- Magic Formula replaces Rule of 40 for established profitable tech at the screen stage.
-- Router infers depth and profit stage — it does not ask the user which level to run.
-- Model skill requires a signal output as context. It is not standalone.
-- Timing overlay is always a separate invocation — not in the linear chain.
-- AI layer classification is a qualitative filter in Signal, not a routing dimension.
-- Position sizing is an output of the Model skill, not a separate skill.
-- Pre-profit DCF uses revenue multiple exit, not P/E exit.
+8. **Playbook layer** (ABA-112) — depth-over-breadth foundation; depends on ABA-110 (SBC strip) and ABA-111 (growth-rate ceiling) for a trustworthy base.

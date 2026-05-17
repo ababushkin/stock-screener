@@ -4,17 +4,17 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this repo is
 
-A personal equity research skill-pack for a tech-focused investor. See `SPEC.md` for the full technical spec.
+A personal equity research skill-pack for a tech-focused investor. See `CHARTER.md` for what this pack is for and which boundaries are locked, and `DESIGN.md` for the architectural reference.
 
 Tasks and milestones live in Linear: https://linear.app/ababushkin/project/ai-equity-research-skill-pack-b8446cbaab6b/overview
 
 ## Operating principle — pointer
 
-This pack optimises for **depth on a curated tech watchlist** (see `SPEC.md` → *Operating Principle — Depth over Breadth* for the full statement, and `WATCHLIST.md` for the seven names). Generic improvements are deprioritised vs ticker-specific depth, except correctness fixes (ABA-110 SBC strip, ABA-111 growth-rate ceiling) which are P0.
+This pack optimises for **depth on a curated set of specialist-supported tickers** (see `CHARTER.md` → *Operating Principle — Depth over Breadth* for the full statement, and `COVERAGE.md` for the seven currently-supported names plus the contribution path for adding more). Generic improvements are deprioritised vs ticker-specific depth, except correctness fixes (ABA-110 SBC strip, ABA-111 growth-rate ceiling) which are P0.
 
 **Until ABA-110 and ABA-111 land**, no `/stock:model` report should be treated as decision-grade — IVs are inflated by un-stripped SBC and trough-extrapolated FCF growth; position-sizing recommendations should be discounted.
 
-Playbook layer (`playbooks/TICKER.md` loaded by `/stock:model` for watchlist tickers): spec lives in `SPEC.md` → *Playbook Layer*; implementation tracked in ABA-112.
+Playbook layer (`playbooks/TICKER.md` loaded by `/stock:model` for covered tickers): spec lives in `DESIGN.md` → *Playbook Layer*; implementation tracked in ABA-112.
 
 ## Build tools by component
 
