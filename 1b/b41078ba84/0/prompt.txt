@@ -1,0 +1,180 @@
+lets review the planned cycle of work in linear
+
+i want a clearly articulated goal written for it -- what are we aiming to achieve this cycle? how will we know we succeeded?
+
+---
+
+create a team of agents to execute the task below
+i want one implementer and one QA agent
+
+only once the QA has passed should the linear ticket be marked as complete
+
+Work on Linear issue ABA-119:
+
+<issue identifier="ABA-119">
+<title>New skill: /stock-portfolio</title>
+<description>
+**Problem:** For the operator, we believe the current per-ticker pattern is causing portfolio-level questions ("which of my seven is most overvalued right now?") to require manual aggregation — which means they don't happen.
+
+**Success criterion:** `/stock-portfolio` runs the screen + signal (and reads latest cached model) on all seven covered tickers, produces a ranked table: ticker / current price / our IV / margin of safety / verdict / last updated. Operator can answer "where should I add" in one invocation.
+
+**Appetite:** \~1 week. v1 reads from `reports/`; does not re-run model every time.
+
+**Theme:** differentiator (portfolio)
+
+**Roadmap entry:** docs/roadmap.md → Now → /stock-portfolio skill
+</description>
+<team name="Personal"/>
+<project name="Equity skill pack"/>
+<issue-relations><blocking><issue-ref identifier="ABA-125" title="Benchmark overlay (SPY/QQQ) on /stock-portfolio"/></blocking></issue-relations>
+</issue>Work on Linear issue ABA-119:
+
+<issue identifier="ABA-119">
+<title>New skill: /stock-portfolio</title>
+<description>
+**Problem:** For the operator, we believe the current per-ticker pattern is causing portfolio-level questions ("which of my seven is most overvalued right now?") to require manual aggregation — which means they don't happen.
+
+**Success criterion:** `/stock-portfolio` runs the screen + signal (and reads latest cached model) on all seven covered tickers, produces a ranked table: ticker / current price / our IV / margin of safety / verdict / last updated. Operator can answer "where should I add" in one invocation.
+
+**Appetite:** \~1 week. v1 reads from `reports/`; does not re-run model every time.
+
+**Theme:** differentiator (portfolio)
+
+**Roadmap entry:** docs/roadmap.md → Now → /stock-portfolio skill
+</description>
+<team name="Personal"/>
+<project name="Equity skill pack"/>
+<issue-relations><blocking><issue-ref identifier="ABA-125" title="Benchmark overlay (SPY/QQQ) on /stock-portfolio"/></blocking></issue-relations>
+</issue>
+
+---
+
+<task-notification>
+<task-id>a5bc55e09b0fe0152</task-id>
+<tool-use-id>REDACTED</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-anton-src-stock-review/223bdd12-bf95-4798-a940-707514d60aa2/tasks/a5bc55e09b0fe0152.output</output-file>
+<status>completed</status>
+<summary>Agent "Implement /stock-portfolio skill" completed</summary>
+<result>I have everything. Now computing the seven rows from real data (today = 2026-05-17):
+
+| Ticker | Latest model file | Current price (source) | Base IV | MoS% | range_vs_price | Days stale |
+|---|---|---|---|---|---|---|
+| META | META_20260517.json | 614.23 (model) | 1154.78 | (1154.78/614.23−1)·100 = +88.0% | WITHIN BEAR-BASE | 0 |
+| NVDA | NVDA_20260514.json | 226.045 (model) | 2246.10 | (2246.10/226.045−1)·100 = +893.7% | MARGIN OF SAFETY | 3 |
+| GOOG (alias GOOGL) | none — only screen+signal in GOOGL_20260512 | none recorded explicitly | — | — | NO_MODEL | n/a |
+| AMZN | none in newest 0517; older AMZN_20260513 has no model either | — | — | — | NO_MODEL | n/a |
+| ASML | ASML_20260512.json has signal only, no model | — | — | — | NO_MODEL | n/a |
+| NFLX | NFLX_20260514.json has screen+timing only, no model | — | — | — | NO_MODEL | n/a |
+| ADYEN.AS | ADYEN.AS_20260515 / 0514 — signal+screen only, no model | — | — | — | NO_MODEL | n/a |
+
+So only META and NVDA have models. Five rows are NO_MODEL — clean way to show the gap-flagging behaviour.
+
+Now let me sanity check: re-read the skill to confirm consistency, then write the report.
+
+Sanity check: the skill says (a) covered tickers from COVERAGE.md ✓ seven, (b) read-only ✓ no MCP calls used, (c) verdict labels from {MARGIN OF SAFETY, WITHIN BEAR-BASE, WITHIN BASE-BULL, PRICE EXCEEDS RANGE, NO_MODEL, STALE_MODEL} ✓, (d) JSON schema documented ✓, (e) benchmark seam reserved ✓, (f) GOOG/GOOGL alias ✓, (g) v1 disclaimer in footer ✓, (h) MoS formula matches stock-model's canonical formula ✓.
+
+result: `/stock-portfolio` v1 skill written at `skills/stock-portfolio/SKILL.md`; ABA-119 ready for QA.
+
+---
+
+## Deliverables checklist
+
+**Files created / modified:**
+- Created: `/Users/anton/src/stock-review/skills/stock-portfolio/SKILL.md`
+- Modified: `/Users/anton/src/stock-review/docs/roadmap.md` (Now-section table row only — "shipped 2026-05-17, pending QA"; descriptive section left untouched per instruction)
+
+**Invocation pattern:**
+```
+/stock-portfolio
+```
+No arguments. Universe fixed by `COVERAGE.md`. Reserved (not implemented): `/stock-portfolio --benchmark SPY,QQQ` — seam for ABA-125.
+
+**Rendered sample table from real `reports/` data (today = 2026-05-17):**
+
+| # | Ticker | Current price | Base IV | MoS % | Verdict | Last updated |
+|---|---|---|---|---|---|---|
+| 1 | NVDA | $226.05 | $2,246.10 | +893.7% | MARGIN OF SAFETY | 2026-05-14 |
+| 2 | META | $614.23 | $1,154.78 | +88.0% | WITHIN BEAR-BASE | 2026-05-17 |
+| 3 | ADYEN.AS | — | — | — | NO_MODEL | — |
+| 4 | AMZN | — | — | — | NO_MODEL | — |
+| 5 | ASML | — | — | — | NO_MODEL | — |
+| 6 | GOOG | — | — | — | NO_MODEL | — |
+| 7 | NFLX | — | — | — | NO_MODEL | — |
+
+**Footer (as rendered):**
+
+```
+Notes
+- Verdict labels and the MoS formula are inherited from /stock-model — no new
+  thresholds were introduced in this skill. See skills/stock-model/SKILL.md
+  POSITION SIZING for the source.
+- A model is flagged STALE if its report file is more than 14 days old
+  (v1 default — open to revision based on operator usage).
+- Current price per ticker is taken from the freshest report stage in
+  fallback order: signal → screen → model. The per-ticker price_source
+  is recorded in reports/PORTFOLIO_20260517.json.
+- Benchmark overlay (SPY/QQQ) is reserved for ABA-125 and is not in v1.
+- This skill is read-only — it does not re-run /stock-screen, /stock-signal,
+  or /stock-model. Gaps in the table mean the operator should run the
+  upstream skill for that ticker.
+
+Price sources
+- NVDA: model (NVDA_20260514.json, as of 2026-05-14)
+- META: model (META_20260517.json, as of 2026-05-17)
+
+Gaps
+- ADYEN.AS: no model report on file — run /stock-model ADYEN.AS
+- AMZN: no model report on file — run /stock-model AMZN
+- ASML: no model report on file — run /stock-model ASML
+- GOOG: no model report on file (newest GOOGL_20260512.json carries
+  only screen+signal — alias resolved) — run /stock-model GOOG
+- NFLX: no model report on file — run /stock-model NFLX
+```
+
+**Key design decisions (deviations / refinements from initial proposal):**
+
+1. **Reused upstream verdict vocabulary.** Grep found `/stock-model` already defines a 4-band `range_vs_price` convention (MARGIN OF SAFETY / WITHIN BEAR-BASE / WITHIN BASE-BULL / PRICE EXCEEDS RANGE) and the canonical MoS formula `(base_iv / current_price − 1) × 100`. The skill inherits both unchanged rather than inventing ADD/HOLD/TRIM/AVOID. v1 verdict-source disclaimer added to the footer.
+2. **Price source = signal → screen → model fallback**, with `price_source` and `price_source_file` recorded in the JSON snapshot (per refinement #1). Note: in the current `reports/`, only `stages.model` actually serialises `current_price`, so in practice both populated rows ended up sourced from `model`. The fallback logic is in place for when signal/screen reports start carrying explicit prices.
+3. **Staleness = 14 days**, flagged in the JSON `thresholds.v1_notes` block as a v1 default open to revision.
+4. **GOOG/GOOGL alias** resolved at read time; canonical display name is `GOOG`; alias recorded as `alias_used` in JSON.
+5. **No silent drops** — all seven covered tickers appear in every output, even when no model exists.
+
+**Seams left for ABA-125 (benchmark overlay):**
+- Reserved invocation flag: `--benchmark SPY,QQQ` (documented as v1-unimplemented in §7).
+- JSON schema field: `benchmark_overlay: null` with explanatory `benchmark_overlay_note` pointing at ABA-125.
+- Verdict / sort / footer sections are written so a benchmark column can be appended without restructuring.
+
+**What the QA agent should pay particular attention to:**
+- Verdict label fidelity: every row's verdict must be drawn from the six-value set defined in §2 — no invented bands.
+- The seven rows always appear (no silent drops) when `reports/` has gaps — easy to verify by running against the current `reports/` directory which only has models for META and NVDA.
+- `price_source` is recorded in the JSON for every row with a non-null price.
+- `benchmark_overlay` is `null` in the v1 output and the seam note for ABA-125 is present.
+- GOOG/GOOGL alias resolution: the canonical ticker is `GOOG` even when the underlying file is `GOOGL_*.json` (current state of `reports/`).
+- The skill performs zero MCP calls and zero network calls — read-only against `reports/`.
+- Linear issue ABA-119 deliberately left in current status; not marked Done by implementer (per instructions).
+
+**Open follow-ups (not in scope for ABA-119):**
+- Signal / screen reports do not currently serialise `current_price` explicitly; the fallback chain only ever resolves to `model`. Worth a small follow-up issue to add `current_price` to screen/signal output schemas so the fallback is exercised.
+- AMZN, ASML, NFLX, ADYEN.AS, GOOG all need `/stock-model` runs before the portfolio view becomes decision-grade — visible directly from the rendered sample.</result>
+<usage><total_tokens>102824</total_tokens><tool_uses>16</tool_uses><duration_ms>206949</duration_ms></usage>
+</task-notification>
+
+---
+
+merge into main, then push
+
+---
+
+explain what the issue first, i don't understand it
+
+---
+
+before you finish, link up the skill properly its not installed - i can't run this skill today. better yet look at issue ABA-63 for a template of the verifications that need to be done against this skill
+
+---
+
+fix defect 1
+
+---
+
+/commit-commands:commit
