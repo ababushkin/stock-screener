@@ -109,7 +109,7 @@ Then continue to **ROUTE** below.
 
 ### ROUTE — Branch on `profit_stage` (with `--pre-profit` override)
 
-After the gate passes (`model_ready = YES` or `CONDITIONAL` with `--confirm`), pick a variant:
+After the gate passes (`model_ready = YES`, `CONDITIONAL` with `--confirm`, or coverage bypass for a COVERAGE.md ticker), pick a variant:
 
 | `profit_stage` | `--pre-profit` flag | Variant |
 |---|---|---|
