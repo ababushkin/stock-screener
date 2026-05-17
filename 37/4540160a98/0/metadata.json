@@ -1,0 +1,77 @@
+{
+  "cli_version": "0.6.1",
+  "checkpoint_id": "374540160a98",
+  "session_id": "02e3998d-bf9b-4685-b386-7fa448b0cca5",
+  "strategy": "manual-commit",
+  "created_at": "2026-05-17T14:34:10.46775Z",
+  "branch": "main",
+  "checkpoints_count": 1,
+  "files_touched": [],
+  "agent": "Claude Code",
+  "model": "claude-sonnet-4-6",
+  "turn_id": "530901a563d4",
+  "token_usage": {
+    "input_tokens": 11,
+    "cache_creation_tokens": 83912,
+    "cache_read_tokens": 386157,
+    "output_tokens": 16034,
+    "api_call_count": 7
+  },
+  "session_metrics": {
+    "turn_count": 1
+  },
+  "prompt_attributions": [
+    {
+      "checkpoint_number": 1,
+      "user_lines_added": 26221,
+      "user_lines_removed": 0,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0,
+      "user_added_per_file": {
+        ".claude/agents/entire-search.md": 25,
+        ".claude/settings.local.json": 107,
+        ".codex/config.toml": 5,
+        ".playwright-mcp/console-2026-05-13T06-36-59-852Z.log": 1168,
+        ".playwright-mcp/console-2026-05-13T06-37-44-181Z.log": 119,
+        ".playwright-mcp/console-2026-05-13T06-37-57-088Z.log": 65,
+        ".playwright-mcp/console-2026-05-13T06-38-05-110Z.log": 99,
+        ".playwright-mcp/console-2026-05-13T06-38-20-278Z.log": 1427,
+        ".playwright-mcp/console-2026-05-13T06-43-28-369Z.log": 9670,
+        ".playwright-mcp/console-2026-05-14T12-26-40-033Z.log": 233,
+        ".playwright-mcp/console-2026-05-14T12-29-19-695Z.log": 97,
+        ".playwright-mcp/console-2026-05-14T12-29-37-238Z.log": 195,
+        ".playwright-mcp/console-2026-05-14T12-30-12-523Z.log": 216,
+        ".playwright-mcp/console-2026-05-17T13-43-48-864Z.log": 18,
+        ".playwright-mcp/page-2026-05-13T06-37-08-015Z.yml": 1241,
+        ".playwright-mcp/page-2026-05-13T06-37-47-624Z.yml": 1538,
+        ".playwright-mcp/page-2026-05-13T06-38-01-292Z.yml": 1056,
+        ".playwright-mcp/page-2026-05-13T06-38-07-382Z.yml": 1158,
+        ".playwright-mcp/page-2026-05-13T06-38-21-921Z.yml": 865,
+        ".playwright-mcp/page-2026-05-13T06-43-30-013Z.yml": 929,
+        ".playwright-mcp/page-2026-05-14T12-26-45-369Z.yml": 1190,
+        ".playwright-mcp/page-2026-05-14T12-29-22-763Z.yml": 1152,
+        ".playwright-mcp/page-2026-05-14T12-29-40-206Z.yml": 1164,
+        ".playwright-mcp/page-2026-05-14T12-30-15-619Z.yml": 1178,
+        ".playwright-mcp/page-2026-05-17T13-43-49-816Z.yml": 9,
+        ".skillshare/.gitignore": 4,
+        ".skillshare/config.yaml": 5,
+        "docs/adrs/engagement-modifier-constants.html": 239,
+        "docs/design-docs/engagement-kpi-enrichment/design-doc.html": 705,
+        "reports/ASML_20260517.json": 85,
+        "reports/GOOG_20260517.json": 36,
+        "reports/NFLX_20260517.json": 34,
+        "reports/PORTFOLIO_20260517.json": 189
+      }
+    },
+    {
+      "checkpoint_number": 2,
+      "user_lines_added": 107,
+      "user_lines_removed": 0,
+      "agent_lines_added": 26144,
+      "agent_lines_removed": 0,
+      "user_added_per_file": {
+        ".claude/settings.local.json": 107
+      }
+    }
+  ]
+}
