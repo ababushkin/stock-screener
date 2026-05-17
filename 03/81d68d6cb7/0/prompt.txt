@@ -1,0 +1,9 @@
+/stock-signal AMZN
+
+---
+
+/stock-model AMZN
+
+---
+
+/stock-timing AMZN
