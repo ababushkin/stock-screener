@@ -1,0 +1,13 @@
+plan the creation of the linear issues
+
+---
+
+go ahead and update it
+
+---
+
+audit whats in agents.md it seems like there are things there that don't need to be there
+
+---
+
+yes
