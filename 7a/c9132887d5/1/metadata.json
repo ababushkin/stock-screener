@@ -1,0 +1,117 @@
+{
+  "cli_version": "0.6.1",
+  "checkpoint_id": "7ac9132887d5",
+  "session_id": "a04d86fc-c21d-456b-9c69-8083583af27a",
+  "strategy": "manual-commit",
+  "created_at": "2026-05-17T11:49:17.49693Z",
+  "branch": "main",
+  "checkpoints_count": 3,
+  "files_touched": [
+    "docs/roadmap.md",
+    "skills/stock-portfolio/SKILL.md"
+  ],
+  "agent": "Claude Code",
+  "model": "claude-opus-4-7[1m]",
+  "turn_id": "6c43acdf715e",
+  "token_usage": {
+    "input_tokens": 84,
+    "cache_creation_tokens": 189219,
+    "cache_read_tokens": 2363146,
+    "output_tokens": 19714,
+    "api_call_count": 34
+  },
+  "session_metrics": {
+    "turn_count": 3
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-05-17T11:49:17.479265Z",
+    "agent_lines": 37,
+    "agent_removed": 0,
+    "human_added": 300,
+    "human_modified": 1,
+    "human_removed": 0,
+    "total_committed": 338,
+    "total_lines_changed": 338,
+    "agent_percentage": 10.946745562130179,
+    "metric_version": 2
+  },
+  "prompt_attributions": [
+    {
+      "checkpoint_number": 1,
+      "user_lines_added": 26130,
+      "user_lines_removed": 29,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0,
+      "user_added_per_file": {
+        ".claude/agents/entire-search.md": 25,
+        ".claude/settings.json": 82,
+        ".claude/settings.local.json": 102,
+        ".codex/config.toml": 5,
+        ".playwright-mcp/console-2026-05-13T06-36-59-852Z.log": 1168,
+        ".playwright-mcp/console-2026-05-13T06-37-44-181Z.log": 119,
+        ".playwright-mcp/console-2026-05-13T06-37-57-088Z.log": 65,
+        ".playwright-mcp/console-2026-05-13T06-38-05-110Z.log": 99,
+        ".playwright-mcp/console-2026-05-13T06-38-20-278Z.log": 1427,
+        ".playwright-mcp/console-2026-05-13T06-43-28-369Z.log": 9670,
+        ".playwright-mcp/console-2026-05-14T12-26-40-033Z.log": 233,
+        ".playwright-mcp/console-2026-05-14T12-29-19-695Z.log": 97,
+        ".playwright-mcp/console-2026-05-14T12-29-37-238Z.log": 195,
+        ".playwright-mcp/console-2026-05-14T12-30-12-523Z.log": 216,
+        ".playwright-mcp/page-2026-05-13T06-37-08-015Z.yml": 1241,
+        ".playwright-mcp/page-2026-05-13T06-37-47-624Z.yml": 1538,
+        ".playwright-mcp/page-2026-05-13T06-38-01-292Z.yml": 1056,
+        ".playwright-mcp/page-2026-05-13T06-38-07-382Z.yml": 1158,
+        ".playwright-mcp/page-2026-05-13T06-38-21-921Z.yml": 865,
+        ".playwright-mcp/page-2026-05-13T06-43-30-013Z.yml": 929,
+        ".playwright-mcp/page-2026-05-14T12-26-45-369Z.yml": 1190,
+        ".playwright-mcp/page-2026-05-14T12-29-22-763Z.yml": 1152,
+        ".playwright-mcp/page-2026-05-14T12-29-40-206Z.yml": 1164,
+        ".playwright-mcp/page-2026-05-14T12-30-15-619Z.yml": 1178,
+        ".skillshare/.gitignore": 4,
+        ".skillshare/config.yaml": 5,
+        "AGENTS.md": 15,
+        "docs/adrs/engagement-modifier-constants.html": 239,
+        "docs/design-docs/engagement-kpi-enrichment/design-doc.html": 705,
+        "docs/roadmap.md": 188
+      },
+      "user_removed_per_file": {
+        "AGENTS.md": 29
+      }
+    },
+    {
+      "checkpoint_number": 2,
+      "user_lines_added": 102,
+      "user_lines_removed": 0,
+      "agent_lines_added": 26067,
+      "agent_lines_removed": 29,
+      "user_added_per_file": {
+        ".claude/settings.local.json": 102
+      }
+    },
+    {
+      "checkpoint_number": 3,
+      "user_lines_added": 403,
+      "user_lines_removed": 1,
+      "agent_lines_added": 26067,
+      "agent_lines_removed": 29,
+      "user_added_per_file": {
+        ".claude/settings.local.json": 102,
+        "docs/roadmap.md": 1,
+        "skills/stock-portfolio/SKILL.md": 300
+      },
+      "user_removed_per_file": {
+        "docs/roadmap.md": 1
+      }
+    },
+    {
+      "checkpoint_number": 4,
+      "user_lines_added": 102,
+      "user_lines_removed": 0,
+      "agent_lines_added": 26367,
+      "agent_lines_removed": 29,
+      "user_added_per_file": {
+        ".claude/settings.local.json": 102
+      }
+    }
+  ]
+}
