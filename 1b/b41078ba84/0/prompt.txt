@@ -178,3 +178,7 @@ fix defect 1
 ---
 
 /commit-commands:commit
+
+---
+
+/commit-commands:commit-push-pr
