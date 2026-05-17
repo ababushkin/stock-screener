@@ -1,6 +1,6 @@
 ---
 name: stock-model
-description: DCF/valuation model for a tech stock. Invoked as `/stock-model TICKER [--confirm] [--pre-profit]`. Reads MODEL_READY from the upstream `/stock-signal` (conversation context preferred, same-day `reports/TICKER_YYYYMMDD.json` fallback) and branches: YES → run DCF and emit a bear/base/bull intrinsic-value range; CONDITIONAL → halt and surface `condition` (or proceed when `--confirm` is passed); NO → refuse and surface `qualitative_note`. ESTABLISHED profile uses two-stage DCF (5y FCF + Gordon terminal). EMERGING profile (or any ticker invoked with `--pre-profit`) uses revenue-multiple exit + FCF inflection + SBC dilution schedule. Use whenever the user asks for an intrinsic value, fair-value range, DCF, or "what's it worth" on a ticker.
+description: DCF/valuation model for a tech stock. Invoked as `/stock-model TICKER [--confirm] [--pre-profit] [--wacc=X.X]`. Reads MODEL_READY from the upstream `/stock-signal` (conversation context preferred, same-day `reports/TICKER_YYYYMMDD.json` fallback) and branches: YES → run DCF and emit a bear/base/bull intrinsic-value range; CONDITIONAL → halt and surface `condition` (or proceed when `--confirm` is passed); NO → refuse and surface `qualitative_note`. ESTABLISHED profile uses two-stage DCF (5y FCF + Gordon terminal). EMERGING profile (or any ticker invoked with `--pre-profit`) uses revenue-multiple exit + FCF inflection + SBC dilution schedule. For watchlist tickers with a `playbooks/TICKER.md`, loads ticker-specific WACC, growth ceiling, narratives, failure modes, and confidence cap before the DCF runs. Use whenever the user asks for an intrinsic value, fair-value range, DCF, or "what's it worth" on a ticker.
 ---
 
 # Model — DCF & Intrinsic Value
@@ -42,6 +42,7 @@ v1.2 (ABA-31) lands the standard two-stage DCF for ESTABLISHED profile. v1.3 (AB
 2. Parse the optional `--confirm` flag. Its only effect is to allow a CONDITIONAL Signal to pass through (see GATE step 3 below).
 3. Parse the optional `--pre-profit` flag. Its effect is to force the pre-profit variant in ROUTE regardless of the upstream `profit_stage`. Accepted spellings: `--pre-profit`, `-- pre-profit` (separator tolerant). When set, record `route_override = "pre-profit"` for the OUTPUT block.
 4. Parse the optional `--engagement-modifier` flag. **Default: off.** When absent, the engagement-modifier GATHER sub-step is skipped entirely and the `engagement_modifier` JSON block is omitted (FR6 / spike-decision: advisory + flag-gated default-off until n≥24 forward samples accumulate; see `docs/design-docs/engagement-kpi-enrichment/spike-decision.md`). When present, the sub-step runs per the rules in **GATHER — Engagement modifier** below (ESTABLISHED path only — EMERGING path always skips per FR6). Accepted spellings: `--engagement-modifier`, `-- engagement-modifier` (separator tolerant).
+5. Parse the optional `--wacc=X.X` flag (e.g. `--wacc=9.0`). When present, record `wacc_runtime = float(X.X)`. This value overrides both the playbook `base_wacc` (ABA-112) and the MIP ask — the WACC question is suppressed entirely when this flag is provided. Record as `source: "runtime_flag"` in the JSON.
 
 ### GATE — Resolve upstream Signal, then branch on MODEL_READY
 
@@ -111,6 +112,70 @@ After the gate passes (`model_ready = YES`, or `CONDITIONAL` with `--confirm`), 
 
 The `--pre-profit` override exists for transition-year companies (e.g. RDDT, recently profitable) where the trailing-FCF base is too thin for stable Gordon-growth terminal math, but where revenue trajectory + comp multiples + dilution schedule still produce a defensible range.
 
+### PLAYBOOK LOAD — Load ticker-specific overrides if present
+
+Runs after ROUTE and before any MCP calls. Loads per-ticker depth from `playbooks/TICKER.md` when present; falls back silently to generic logic when absent. Implementation: ABA-112.
+
+**Step 1 — Resolve the path.**
+
+`playbooks/TICKER.md` where TICKER is the uppercased, verbatim ticker symbol — preserves period-suffixed exchange codes (e.g. `playbooks/ADYEN.AS.md`).
+
+**Step 2 — Check existence.**
+
+If the file does not exist:
+- Emit: `No playbook for TICKER — using generic ESTABLISHED/EMERGING logic.`
+- Set `playbook_state = {loaded: false}`.
+- Proceed to GATHER; no overrides apply.
+
+**Step 3 — Load and parse.**
+
+Read the file. Extract the YAML frontmatter (the block between the opening and closing `---` delimiters at the top of the file). Parse it.
+
+- **Malformed YAML** (parse error): halt with `Playbook error: playbooks/TICKER.md — YAML frontmatter could not be parsed: <error>. Fix the playbook before re-running.` Do not proceed; do not call any MCP tool.
+- **Unknown fields** (keys not in the recognised set below): for each unknown key, emit a one-line warning — `Playbook warning: unknown field '<field>' in playbooks/TICKER.md — ignored.` — then continue. Unknown fields are forward-compatible; they do not fail the load.
+- **Missing `last_updated` field**: use `unknown` as the date in the load line; do not fail.
+
+**Step 4 — Recognised frontmatter fields (all optional):**
+
+| Field | Type | Effect |
+|---|---|---|
+| `last_updated` | ISO date string | Display in load line; no DCF effect |
+| `base_wacc` | float (e.g. `9.0`) | Pre-fills WACC; suppresses the MIP ask when the user does not also pass `--wacc=X.X` (see GATHER WACC rule below) |
+| `growth_ceiling` | float (e.g. `0.18`) | Replaces the generic 18% / 35% fallback in COMPUTE Step 3; consensus still takes precedence over playbook when available |
+| `terminal_margin` | float (e.g. `0.28`) | On ESTABLISHED path: replaces `fcf_margin_ttm` as the FCF margin anchor in the Year-1 FCF projection (Step 2) when TTM margin is distorted by a capex cycle. On pre-profit path: pre-fills the MIP terminal clean FCF margin target question (user still confirms). |
+| `bear_narrative` | string | Replaces the generic bear scenario one-liner in OUTPUT; applied verbatim |
+| `base_narrative` | string | Replaces the generic base scenario one-liner in OUTPUT; applied verbatim |
+| `bull_narrative` | string | Replaces the generic bull scenario one-liner in OUTPUT; applied verbatim |
+| `scenario_axes` | object | Advanced: per-scenario overrides of growth_ceiling / terminal_margin / wacc_delta for discrete catalyst structures (e.g. a binary break-up outcome vs a continuous smooth scenario). Structure: `{bear: {growth_ceiling, terminal_margin, wacc_delta}, base: {...}, bull: {...}}`. Named axes override the standard ±multiplier logic for that scenario; unspecified axes fall back to the multiplier table. |
+| `failure_modes` | list of strings | Surfaced in OUTPUT after Position sizing as `Monitor: [item1; item2; ...]`; also recorded in `stages.model.playbook.failure_modes` |
+| `confidence_anchor` | string (`HIGH \| MEDIUM \| LOW`) | Playbook-set max confidence; binding when stricter than the runtime-derived value |
+
+**Step 5 — Emit the load line.**
+
+When the file is present and valid:
+
+```
+Playbook loaded: playbooks/TICKER.md (last updated YYYY-MM-DD). Overrides applied: [comma-separated list of recognised frontmatter fields that are present].
+```
+
+If no recognised field is present (empty frontmatter or all unknown), emit:
+```
+Playbook loaded: playbooks/TICKER.md (last updated YYYY-MM-DD). Overrides applied: none — playbook body only.
+```
+
+Set `playbook_state = {loaded: true, path: "playbooks/TICKER.md", last_updated: "YYYY-MM-DD", overrides_applied: [...]}`.
+
+**Step 6 — Override hierarchy.**
+
+Priority order (highest wins):
+1. Runtime flag (`--wacc=X.X`) — beats playbook and MIP
+2. Playbook frontmatter — beats generic defaults
+3. Generic defaults (18%/35% fallback ceiling, TTM FCF margin, generic narratives)
+
+The user can always override playbook values at runtime. The only field the user cannot downgrade is `confidence_anchor` — a playbook cap of MEDIUM means the run caps at MEDIUM even if all other conditions would yield HIGH.
+
+Proceed to GATHER.
+
 ### GATHER — DCF inputs (ESTABLISHED path)
 
 Run these MCP calls in this order. Every retrieved figure is held with its raw value; never round during gather. State which calls succeeded and which fell back before COMPUTE.
@@ -130,7 +195,10 @@ Run these MCP calls in this order. Every retrieved figure is held with its raw v
 - Fewer than 3 historical years of `free_cash_flow` are usable (trailing CAGR cannot be derived)
 - `years[0].total_debt`, `years[0].cash`, or `shares_outstanding_diluted` is null
 - `years[0].stock_based_compensation` is null — refuse with the message `SBC data unavailable; DCF cannot proceed without SBC-stripped FCF base. Use Manual Input Protocol to paste latest TTM SBC.` and ask the user via grouped paste-in for the latest TTM SBC in dollars (e.g. `20400000000` for $20.4B). Pasted SBC is tagged `source: "user_paste"` and caps `meta.confidence` at MEDIUM regardless of other inputs. If 4y SBC history is needed for `fcf_cagr_3y` and any prior year is also null, ask for the full series in the same paste-in.
-- **Always** for **base WACC** — yfinance does not expose risk-free rate, beta, or capital structure inputs that would let the skill derive WACC honestly. Ask the user once via grouped paste-in: `base WACC %` (single number, e.g. `9.0`). Never default this value.
+- **base WACC** — yfinance does not expose risk-free rate, beta, or capital structure inputs that would let the skill derive WACC honestly. Resolution order:
+  1. **`--wacc=X.X` runtime flag** (parsed in initial GATHER step 5): use directly; no ask. Record `source: "runtime_flag"`.
+  2. **Playbook `base_wacc`** (loaded in PLAYBOOK LOAD): present to user for confirmation — `Base WACC: X.X% (from playbook — confirm or override:)`. User may accept (records `source: "playbook"`) or override (records `source: "user_paste"`, caps confidence at MEDIUM). Never silently apply without acknowledgement.
+  3. **No playbook / no flag**: ask via grouped paste-in `base WACC %` as before. Record `source: "user_paste"`. Never default this value.
 
 Any field accepted via paste-in is tagged `source: "user_paste"` and added to `meta.manual_inputs`; overall `meta.confidence` caps at MEDIUM.
 
@@ -249,7 +317,13 @@ yfinance's OCF adds SBC back as a non-cash charge, so reported `free_cash_flow` 
 
 **Step 2 — Year-1 FCF anchor under each scenario.**
 
-Year-1 FCF is anchored on NTM consensus, then perturbed per scenario. Compute `fcf_y1_consensus = ntm_revenue × fcf_margin_ttm` as the consensus anchor.
+Year-1 FCF is anchored on NTM consensus, then perturbed per scenario.
+
+Determine the FCF margin anchor:
+- When playbook provides `terminal_margin`: `fcf_margin_anchor = playbook.terminal_margin` (normalised steady-state margin; replaces TTM when capex cycles or one-time costs distort the trailing window). Surface in OUTPUT as `FCF margin anchor: X.X% (playbook override; TTM clean: Y.Y%)`.
+- Otherwise: `fcf_margin_anchor = fcf_margin_ttm` (SBC-stripped TTM margin from Step 1).
+
+Compute `fcf_y1_consensus = ntm_revenue × fcf_margin_anchor` as the consensus anchor.
 
 | Scenario | Y1 FCF |
 |---|---|
@@ -274,12 +348,18 @@ Trailing 3y CAGR is a useful **floor** signal (the company actually grew this fa
 ```
 consensus_growth = get_estimates(ticker).eps_growth_5y     # long-term sell-side consensus; may be null
 fallback_ceiling = 0.18                                     # 18% — historical mature-tech ceiling
-ceiling          = consensus_growth if consensus_growth is not None else fallback_ceiling
+playbook_ceiling = playbook.growth_ceiling if playbook.loaded else None   # ABA-112: playbook override
+
+# Priority: consensus (most current external data) > playbook ceiling > generic fallback
+ceiling          = (consensus_growth if consensus_growth is not None
+                   else (playbook_ceiling if playbook_ceiling is not None
+                   else fallback_ceiling))
 base_cagr        = min(fcf_cagr_3y, ceiling)
 cap_applied      = (base_cagr < fcf_cagr_3y)
-cap_source       = "consensus_5y_growth" if (consensus_growth is not None and cap_applied)
-                   else "fallback_ceiling" if cap_applied
-                   else None
+cap_source       = ("consensus_5y_growth"   if (consensus_growth is not None and cap_applied)
+                   else "playbook"          if (playbook_ceiling is not None and cap_applied)
+                   else "fallback_ceiling"  if cap_applied
+                   else None)
 ```
 
 The cap only narrows growth — it never raises it. If `fcf_cagr_3y` is already at or below the ceiling, `base_cagr = fcf_cagr_3y` and `cap_applied = false` (e.g. GOOG, whose trailing FCF CAGR runs near consensus — the cap does not fire and the output discloses that explicitly: `Y2-5 CAGR: X% (trailing 3y, within consensus ceiling)`).
@@ -424,13 +504,15 @@ MODEL OUTPUT
   Method:          Two-stage DCF (5y explicit + Gordon terminal)
   Profit stage:    ESTABLISHED
   Upstream:        SIGNAL OUTPUT (source=context|reports/TICKER_YYYYMMDD.json, verdict=..., MODEL_READY=...)
+  Playbook:        [Loaded: playbooks/TICKER.md (last updated YYYY-MM-DD) | Not loaded — generic logic]
 
   Current price:   $X.XX
   Shares (dil.):   XXX.X M (source: get_financials.years[0].shares_outstanding_diluted | get_ratios.sharesOutstanding fallback)
   Net debt:        $X.X B (total_debt $X.X B − cash $X.X B, FY ending YYYY-MM-DD)
   FCF (TTM):       $X.X B reported  |  SBC: $X.X B  |  clean FCF: $X.X B  |  clean margin: XX% (reported margin: XX%)  |  clean 3y CAGR: XX%
+  FCF margin anchor: XX% (playbook override; TTM clean: XX%)   ← emitted only when playbook supplies terminal_margin; omit line otherwise
   NTM revenue:     $X.X B (consensus, n=N analysts)
-  Base WACC:       X.X% (source: user_paste)
+  Base WACC:       X.X% (source: runtime_flag | playbook | user_paste)
 
   Bear: $X.XX / share — [N]% [up|down]side
     Y1 FCF: $X.XB (NTM × 0.85)  |  Y2-5 CAGR: X%  |  g: 1.5%  |  WACC: X%
@@ -462,6 +544,8 @@ MODEL OUTPUT
   Position sizing: [L–U% of portfolio]
     Signal: [BUY|WATCH|CAUTION] × Range vs price: [...] (MoS [+/-]X.X%)
     Rationale: [one-line — signal × range_vs_price → band; cap if applicable]
+
+  Monitor: [failure_mode_1; failure_mode_2; ...]   ← emitted only when playbook supplies failure_modes; omit line otherwise
 ```
 
 **JSON merge into `reports/TICKER_YYYYMMDD.json` under `stages.model`:**
@@ -487,10 +571,11 @@ Run `mkdir -p reports` and read-modify-write the existing file (it already conta
     "fallback_ceiling": 0.18,
     "applied_base_cagr": <number>,
     "cap_applied": <boolean>,
-    "cap_source": "consensus_5y_growth | fallback_ceiling | null"
+    "cap_source": "consensus_5y_growth | playbook | fallback_ceiling | null"
   },
   "ntm_revenue": <number>,
   "base_wacc": <number>,
+  "base_wacc_source": "runtime_flag | playbook | user_paste",
   "scenarios": {
     "bear": {
       "y1_fcf": <number>, "y2_5_cagr": <number>, "terminal_growth": 0.015, "wacc": <number>,
@@ -554,9 +639,20 @@ Run `mkdir -p reports` and read-modify-write the existing file (it already conta
     "agreement": <boolean | null>,
     "source_url": "<8-K Ex 99.1 URL>",
     "user_confirmed": <boolean>
+  },
+  "playbook": {
+    "loaded": <boolean>,
+    "path": "playbooks/TICKER.md | null",
+    "last_updated": "YYYY-MM-DD | null",
+    "overrides_applied": ["base_wacc", "growth_ceiling", "base_narrative", "..."],
+    "failure_modes": ["...", "..."]
   }
 }
 ```
+
+When no playbook is present: `"playbook": {"loaded": false, "path": null, "last_updated": null, "overrides_applied": [], "failure_modes": []}`.
+
+`overrides_applied` lists exactly the frontmatter fields that were consumed (i.e., had a non-null value and modified a DCF input or output). It does not list fields that were present but had no effect (e.g. `failure_modes` that were only displayed, or `last_updated`). Always emitted — even when `loaded: false` — so replay diffing can detect a missing playbook.
 
 The `engagement_modifier` block is emitted only when `--engagement-modifier` was passed. When the flag is absent, omit the block entirely (FR6 / spike-decision). When the flag is present but the modifier was not applied (any non-`applied` status), populate `status` and `status_reason` and emit the remaining fields as `null` — preserving the schema shape for replay diffing. When `status == "applied"`, all populated fields are required (NFR3). `kpi_map_schema_version` mirrors the top-level field of `skills/_shared/engagement_kpi_map.json` at run time per Task 8 ADR D5. `clamped_from` is non-null only when the output-cap clamp fired (Step 6b); otherwise `null`. `revision` and `agreement` are populated by GATHER Step 5b (Yahoo `/analysis/` EPS Trend fetch); when the fetch fails or parsing returns no values, `revision.revision_pct` and `revision.direction` are `null` and `agreement` is `null` (legacy fall-through — modifier still applies per C3/C4). `agreement == false` triggers the `direction_disagreement` status, in which case `base_anchor_multiplier = 1.00` (modifier suppressed per spike-decision guardrail).
 
@@ -605,7 +701,7 @@ Run these MCP calls in this order. Every retrieved figure is held with its raw v
 
 - **Base WACC** — same rule as ESTABLISHED; yfinance has no risk-free-rate / beta surface. Never default.
 - **Exit EV/Revenue multiple — base case.** Present the comp list and ask the user to confirm or override the base multiple. Bear is `base × 0.6`, bull is `base × 1.4` (state these scenario axes; do not ask separately).
-- **Terminal clean FCF margin target.** Industry-anchored, **SBC-stripped** (per ABA-110). Ask the user for the steady-state *clean* FCF margin the company is expected to achieve by Year 5 under the base case — i.e. FCF after stock-based compensation has been deducted, not the industry-reported number. State the distinction explicitly in the prompt so users do not anchor on SBC-included margins. Bear is `target − 5 pp`, bull is `target + 5 pp`. Never default.
+- **Terminal clean FCF margin target.** Industry-anchored, **SBC-stripped** (per ABA-110). When playbook provides `terminal_margin`, present it as a pre-filled value — `Terminal clean FCF margin: X.X% (from playbook — confirm or override:)`. Otherwise ask the user for the steady-state *clean* FCF margin the company is expected to achieve by Year 5 under the base case — i.e. FCF after stock-based compensation has been deducted, not the industry-reported number. State the distinction explicitly in the prompt so users do not anchor on SBC-included margins. Bear is `target − 5 pp`, bull is `target + 5 pp`. Never default.
 - **SBC dilution rate (annual %).** Pre-fill with the trailing 3y dilution rate derived from `shares_outstanding_diluted` history: `dilution_3y = (years[0].shares / years[3].shares) ^ (1/3) − 1`. Surface this number and the historical share-count series, and ask the user to confirm or override. Bear is `confirmed × 1.5`, bull is `confirmed × 0.5` (dilution accelerates in bear, decelerates in bull) — state these axes; do not ask separately.
 
 Manual inputs are tagged `source: "user_paste"`; `meta.confidence` caps at MEDIUM. If the user accepts every pre-filled value with no override, still record `source: "user_confirmed"` — the value is load-bearing on the output.
@@ -624,12 +720,18 @@ Execute in order. The math anchors on revenue (not FCF) because pre-profit compa
   ```
   consensus_rev_growth = derived from get_estimates if available  # currently null on yf — placeholder for when an EDGAR/sell-side revenue-growth estimate lands
   fallback_ceiling     = 0.35                                      # 35% — pre-profit revenue ceiling
-  ceiling              = consensus_rev_growth if consensus_rev_growth is not None else fallback_ceiling
+  playbook_ceiling     = playbook.growth_ceiling if playbook.loaded else None   # ABA-112: playbook override
+
+  # Priority: consensus > playbook ceiling > generic fallback
+  ceiling              = (consensus_rev_growth if consensus_rev_growth is not None
+                         else (playbook_ceiling if playbook_ceiling is not None
+                         else fallback_ceiling))
   base_rev_cagr        = min(rev_cagr_3y, ceiling)
   rev_cap_applied      = (base_rev_cagr < rev_cagr_3y)
-  rev_cap_source       = "consensus_rev_growth" if (consensus_rev_growth is not None and rev_cap_applied)
+  rev_cap_source       = ("consensus_rev_growth" if (consensus_rev_growth is not None and rev_cap_applied)
+                         else "playbook"         if (playbook_ceiling is not None and rev_cap_applied)
                          else "fallback_ceiling" if rev_cap_applied
-                         else None
+                         else None)
   ```
 
 - Year-1 revenue is anchored on NTM consensus, perturbed per scenario. Y2–Y5 CAGRs operate on the **capped** `base_rev_cagr`:
@@ -716,15 +818,16 @@ MODEL OUTPUT
   Method:          Revenue-multiple exit + FCF inflection (pre-profit variant)
   Profit stage:    [EMERGING | ESTABLISHED (forced --pre-profit)]
   Upstream:        SIGNAL OUTPUT (source=context|reports/TICKER_YYYYMMDD.json, verdict=..., MODEL_READY=...)
+  Playbook:        [Loaded: playbooks/TICKER.md (last updated YYYY-MM-DD) | Not loaded — generic logic]
 
   Current price:   $X.XX
   Shares today:    XXX.X M (diluted)
   Net debt:        $X.X B (total_debt $X.X B − cash $X.X B, FY ending YYYY-MM-DD)
   Revenue (TTM):   $X.X B  |  3y CAGR: XX%  |  TTM clean FCF margin: -X% (cash-burning; reported margin: -X%; SBC: $X.X B)
   NTM revenue:     $X.X B (consensus)
-  Base WACC:       X.X% (source: user_paste)
+  Base WACC:       X.X% (source: runtime_flag | playbook | user_paste)
   Comp set:        [TICKER1: NTM EV/Rev X.Xx, TICKER2: X.Xx, ...]  →  base exit multiple: X.Xx (user-confirmed)
-  Terminal clean FCF margin target (base): XX% (SBC-stripped, user-confirmed)
+  Terminal clean FCF margin target (base): XX% (SBC-stripped, [playbook default — user-confirmed | user-confirmed])
   SBC dilution (base): X.X% annual (3y trailing: X.X%, user-confirmed)
 
   Bear: $X.XX / share — [N]% [up|down]side
@@ -751,6 +854,8 @@ MODEL OUTPUT
   Position sizing: [L–U% of portfolio]
     Signal: [BUY|WATCH|CAUTION] × Range vs price: [...] (MoS [+/-]X.X%)
     Rationale: [one-line — signal × range_vs_price → band; MEDIUM-confidence cap always applies for pre-profit]
+
+  Monitor: [failure_mode_1; failure_mode_2; ...]   ← emitted only when playbook supplies failure_modes; omit line otherwise
 ```
 
 If any scenario's inflection year is `beyond Y5`, the line reads `FCF inflection: beyond Y5 — model assumes exit-multiple buyer absorbs continued cash burn`.
@@ -773,7 +878,7 @@ If any scenario's inflection year is `beyond Y5`, the line reads `FCF inflection
     "fallback_ceiling": 0.35,
     "applied_base_cagr": <number>,
     "cap_applied": <boolean>,
-    "cap_source": "consensus_rev_growth | fallback_ceiling | null"
+    "cap_source": "consensus_rev_growth | playbook | fallback_ceiling | null"
   },
   "fcf_ttm_reported": <number>,
   "sbc_ttm": <number>,
@@ -815,6 +920,13 @@ If any scenario's inflection year is `beyond Y5`, the line reads `FCF inflection
     "margin_of_safety_pct": <number>,
     "confidence_cap_applied": true,
     "rationale": "..."
+  },
+  "playbook": {
+    "loaded": <boolean>,
+    "path": "playbooks/TICKER.md | null",
+    "last_updated": "YYYY-MM-DD | null",
+    "overrides_applied": ["base_wacc", "growth_ceiling", "terminal_margin", "..."],
+    "failure_modes": ["...", "..."]
   }
 }
 ```
@@ -878,6 +990,11 @@ RDDT — pre-profit DCF bear/base/bull = $X / $Y / $Z (price $P, WITHIN BEAR–B
 | "BUY × MARGIN OF SAFETY is rare — I'll bump the band to 6–8% to express conviction." | Forbidden. The bands are fixed by the table and capped by confidence. Single-name tech caps at 6% upper even at maximum conviction; expressing more conviction than the table allows is exactly the discipline failure the table exists to prevent. |
 | "CAUTION but the price is far below bear IV — surely a 1–2% starter is justified?" | Forbidden. CAUTION from Signal means a qualitative or governance concern (FAIL or hard-flag), not a price concern. Price-cheapness does not unlock CAUTION; the concern needs to be resolved at the Signal layer first. The table caps CAUTION × MARGIN OF SAFETY at 0–1% for this reason. |
 | "Pre-profit run; I should still produce a sensitivity_table by sweeping exit multiple × dilution." | Forbidden in v1. The `sensitivity_table` JSON field is the WACC × terminal-g grid only (ESTABLISHED path). Pre-profit emits `sensitivity_table: null` and relies on the single-driver `sensitivity` note. A second-axis grid for pre-profit is a future-tier concern, not v1. |
+| "The playbook `base_wacc` is there — I'll just use it without asking the user." | The playbook value requires user acknowledgement before it becomes the run's WACC. Present it as a pre-filled value (`Base WACC: X.X% (from playbook — confirm or override:)`) and record the source. Silent application bypasses the confirmation that the playbook value is still appropriate; conditions change, and the user is the final check. |
+| "The playbook supplied an unknown field — I'll try to interpret it anyway." | Unknown frontmatter fields are ignored and a warning is emitted. Guessing the intent of an unknown field introduces silent overrides with no audit trail. Emit the warning and continue with what is known. |
+| "There's a malformed YAML frontmatter — I'll skip the playbook and continue with generic logic." | Malformed YAML is a hard stop, not a silent fallback. The user may have a partially-written playbook with an intentional (but structurally broken) override that would silently be ignored. Surface the parse error and halt; do not proceed on a broken playbook. |
+| "The playbook has `confidence_anchor: MEDIUM` but all my inputs are MCP-sourced and clean — I'll use HIGH." | The `confidence_anchor` is a hard cap, not a soft hint. NVDA's cap at MEDIUM (customer-concentration risk unresolved) reflects an analyst judgement that no data provenance improvement can override; the risk is qualitative. The cap is binding even when all other confidence rules would yield HIGH. |
+| "The playbook narratives are too specific; I'll paraphrase them to fit the output better." | Applied verbatim. The playbook author wrote thesis-grounded narratives that may contain precise claims about catalysts, customers, or regulators. Paraphrasing risks softening or distorting those claims. Emit the strings exactly as written. |
 | "I'll skip `intrinsic_value_range` — the consumer can read `scenarios.{bear,base,bull}.intrinsic_value_per_share` itself." | Forbidden. `intrinsic_value_range` is a contract field for downstream consumers (UI, router, position-sizing logic) so they don't need to know the scenario-block shape. Drop it and the next change to the scenario shape silently breaks every consumer. |
 
 ---
@@ -968,8 +1085,21 @@ RDDT — pre-profit DCF bear/base/bull = $X / $Y / $Z (price $P, WITHIN BEAR–B
 56. **META + NVDA cap-fired smoke (with consensus null) →** the 18% fallback fires for both; `cap_source == "fallback_ceiling"`; base IV materially lower than the pre-cap value; OUTPUT discloses the cap source.
 57. **Rationalisations table covers growth cap →** the "trailing CAGR is what the data shows — capping it is fabrication" rebuttal is present and refers to ABA-111. The null-consensus and fallback-tweak rationalisations are also covered.
 
+### v1.9 — ABA-112 (playbook loader; depth-over-breadth foundation)
+
+58. **Loader fires for watchlist tickers →** `/stock-model META` with `playbooks/META.md` committed emits `Playbook loaded: playbooks/META.md (last updated YYYY-MM-DD). Overrides applied: [list]` before any MCP calls. The list includes every frontmatter field that had a non-null value.
+59. **No-playbook path unchanged →** invoking `/stock-model TSLA` (no `playbooks/TSLA.md`) emits `No playbook for TSLA — using generic ESTABLISHED/EMERGING logic.` All pre-ABA-112 acceptance criteria continue to pass on tickers without a playbook.
+60. **Override hierarchy — WACC →** when playbook supplies `base_wacc`, the MIP WACC question is replaced by a confirmation prompt. User can confirm (source: "playbook") or override (source: "user_paste", confidence caps at MEDIUM). `--wacc=X.X` at the command line bypasses both playbook and MIP.
+61. **Override hierarchy — growth ceiling →** when playbook supplies `growth_ceiling`, the cap-source in `growth_rate.cap_source` reads `"playbook"` (not `"fallback_ceiling"`). When sell-side consensus is also available, consensus takes precedence and `cap_source` reads `"consensus_5y_growth"`.
+62. **Override hierarchy — narrative →** when playbook supplies `bear_narrative`, `base_narrative`, or `bull_narrative`, the corresponding scenario's `Narrative:` line in the OUTPUT block reads the playbook string verbatim. Generic fallback strings are used only for scenarios that the playbook does not supply.
+63. **Audit trail intact →** `stages.model.playbook.overrides_applied` lists every frontmatter field that modified a DCF input or output. `stages.model.playbook.loaded` is `true` when a playbook was present; `false` otherwise. The block is always emitted — even for non-playbook tickers — with `loaded: false` and empty `overrides_applied`.
+64. **Monitor section →** when playbook supplies `failure_modes`, the OUTPUT block includes a `Monitor:` line after Position sizing listing each failure mode. The same list appears in `stages.model.playbook.failure_modes`.
+65. **Confidence anchor →** when playbook sets `confidence_anchor: MEDIUM`, the run's `meta.confidence` is capped at MEDIUM even when all other inputs are MCP-sourced and would yield HIGH. Cap is one-way (never raises); binding over runtime-computed confidence.
+66. **Playbook validation →** a playbook with malformed YAML frontmatter halts the run with a clear error message before any MCP call. Unknown frontmatter fields emit a per-field warning and do not fail the load.
+67. **META seed smoke →** `playbooks/META.md` exists in the repository; running `/stock-signal META` then `/stock-model META` produces a MODEL OUTPUT block where the WACC source, growth ceiling cap source (when it fires), and scenario narratives all reflect the playbook values; `stages.model.playbook.loaded == true`; `overrides_applied` lists the active overrides.
+
 ### v1.10 — ABA-132 (profile-keyed GARP thresholds; COVERAGE.md bypass removed)
 
-58. **COVERAGE.md bypass removed →** the v1.9 bypass (gate_bypass: "coverage") is removed. All COVERAGE.md tickers produce `MODEL_READY=YES` through correctly calibrated thresholds in `/stock-signal`. The gate enforces uniformly for all tickers.
-59. **MODEL_READY=NO refusal unchanged →** invoking `/stock-model` on any ticker with `model_ready=NO` emits the standard refusal regardless of whether the ticker is in COVERAGE.md.
-60. **`gate_bypass` field retired →** `stages.model.gate_bypass` is no longer emitted. Existing report files may contain the field; it is ignored on read.
+68. **COVERAGE.md bypass removed →** the v1.9 bypass (gate_bypass: "coverage") is removed. All COVERAGE.md tickers produce `MODEL_READY=YES` through correctly calibrated thresholds in `/stock-signal`. The gate enforces uniformly for all tickers.
+69. **MODEL_READY=NO refusal unchanged →** invoking `/stock-model` on any ticker with `model_ready=NO` emits the standard refusal regardless of whether the ticker is in COVERAGE.md.
+70. **`gate_bypass` field retired →** `stages.model.gate_bypass` is no longer emitted. Existing report files may contain the field; it is ignored on read.

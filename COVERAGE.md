@@ -11,16 +11,16 @@ The seven names below are the ones currently in scope. The list is deliberately 
 | Ticker | Stage | AI layer | Investment thesis (one line) | Playbook status |
 |---|---|---|---|---|
 | **GOOG** | ESTABLISHED | INCUMBENT | Search moat + Cloud growth + YouTube monetisation, with the AI search-disruption question as the central debate | Not yet |
-| **META** | ESTABLISHED | INCUMBENT | Family of Apps cash machine + Reality Labs binary option + AI ad-targeting accuracy lift, regulatory overhang as recurring drag | Not yet |
+| **META** | ESTABLISHED | INCUMBENT | Family of Apps cash machine + Reality Labs binary option + AI ad-targeting accuracy lift, regulatory overhang as recurring drag | [`playbooks/META.md`](playbooks/META.md) |
 | **AMZN** | ESTABLISHED | INCUMBENT | AWS margin trajectory + Ads as third pillar + retail operating leverage, with AI-capex cycle position as the swing factor | Not yet |
 | **NVDA** | ESTABLISHED | INFRASTRUCTURE | Data-centre GPU TAM penetration + AI training-to-inference mix shift + customer concentration risk | Not yet |
 | **ASML** | ESTABLISHED | INFRASTRUCTURE | EUV monopoly + High-NA ramp + China export-control overhang, with the semiconductor cap-ex cycle as the dominant input | Not yet |
 | **NFLX** | ESTABLISHED | APPLICATION | Subscriber growth maturity + ad-tier monetisation + content-cost discipline + password-sharing-crackdown durability | Not yet |
 | **ADYEN.AS** | ESTABLISHED | N/A | European unified-payments platform; take-rate stability + EBITDA margin recovery from the 2023 growth reset + cross-border e-commerce share gain, with the European regulatory moat against US incumbents as the durable edge | Not yet |
 
-"Playbook status: Not yet" means the ticker is on the supported list but its `playbooks/TICKER.md` has not been written yet. Playbook authoring depends on ABA-110 (SBC strip) and ABA-111 (growth-rate ceiling) landing first so overrides modulate a trustworthy base; loader infrastructure is ABA-112.
+"Playbook status: Not yet" means the ticker is on the supported list but its `playbooks/TICKER.md` has not been written yet. Remaining playbook authoring tracked in ABA-120 (META done), ABA-117 (GOOG), ABA-122 (AMZN), ABA-121 (NVDA), ABA-116 (ASML), ABA-123 (NFLX), ABA-124 (ADYEN). Loader infrastructure (ABA-112) is complete.
 
-## Playbook structure (target)
+## Playbook structure
 
 Each `playbooks/TICKER.md` encodes:
 
@@ -32,7 +32,7 @@ Each `playbooks/TICKER.md` encodes:
 6. **Ticker-specific overrides** — base WACC, growth ceiling, terminal margin, scenario narratives (replacing the generic defaults)
 7. **Historical reset-and-recover priors** — past drawdowns and recovery patterns, calibrating mean-reversion expectations
 
-Full file-format and loader spec lives in `DESIGN.md` → *Playbook Layer*.
+Full file-format and loader spec lives in `DESIGN.md` → *Playbook Layer*. See `playbooks/META.md` for a complete working example.
 
 ## Contributing new coverage
 
