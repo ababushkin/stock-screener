@@ -1,0 +1,26 @@
+{
+  "cli_version": "0.6.1",
+  "checkpoint_id": "fee3ccfc0f7d",
+  "strategy": "manual-commit",
+  "branch": "main",
+  "checkpoints_count": 2,
+  "files_touched": [
+    "playbooks/GOOG.html",
+    "playbooks/GOOG.md"
+  ],
+  "sessions": [
+    {
+      "metadata": "/fe/e3ccfc0f7d/0/metadata.json",
+      "transcript": "/fe/e3ccfc0f7d/0/full.jsonl",
+      "content_hash": "/fe/e3ccfc0f7d/0/content_hash.txt",
+      "prompt": "/fe/e3ccfc0f7d/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 57,
+    "cache_creation_tokens": 350695,
+    "cache_read_tokens": 2678052,
+    "output_tokens": 87087,
+    "api_call_count": 32
+  }
+}
