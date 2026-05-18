@@ -1,0 +1,760 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ASML Playbook</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --c-primary:#0057B8;
+  --c-bear:#DC2626;
+  --c-bull:#16A34A;
+  --c-neutral:#6B7280;
+  --c-warn:#D97706;
+  --c-bg:#F8FAFC;
+  --c-surface:#FFFFFF;
+  --c-sidebar:#1E293B;
+  --c-border:#E2E8F0;
+  --c-text:#1E293B;
+  --c-muted:#64748B;
+  --sidebar-w:264px;
+}
+html{scroll-behavior:smooth;font-size:15px}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;line-height:1.65;color:var(--c-text);background:var(--c-bg);display:flex;min-height:100vh}
+
+/* ─── Sidebar ─────────────────────────────────────────────── */
+#sb{width:var(--sidebar-w);min-height:100vh;background:var(--c-sidebar);position:fixed;top:0;left:0;overflow-y:auto;display:flex;flex-direction:column;z-index:100}
+.sb-brand{padding:20px 20px 14px;border-bottom:1px solid #334155}
+.sb-ticker{color:#fff;font-size:18px;font-weight:800;letter-spacing:-.01em}
+.sb-sub{color:#94A3B8;font-size:11px;margin-top:2px}
+#toc{list-style:none;padding:10px 0;flex:1}
+#toc li a{display:block;padding:5px 20px;color:#94A3B8;text-decoration:none;font-size:12.5px;line-height:1.4;border-left:3px solid transparent;transition:all .15s}
+#toc li.h3 a{padding-left:32px;font-size:11.5px;color:#64748B}
+#toc li a:hover{color:#E2E8F0;background:rgba(255,255,255,.05)}
+#toc li.active>a{color:#fff;border-left-color:var(--c-primary);background:rgba(99,179,237,.12)}
+.sb-meta{padding:14px 20px;border-top:1px solid #334155;font-size:10.5px;color:#475569;line-height:1.9}
+.sb-meta code{background:#0F172A;color:#94A3B8;padding:1px 5px;border-radius:3px;font-size:10px}
+
+/* ─── Main ────────────────────────────────────────────────── */
+#main{margin-left:var(--sidebar-w);flex:1;min-width:0;max-width:920px;padding:44px 56px 96px}
+
+/* ─── Doc header ──────────────────────────────────────────── */
+.doc-header{margin-bottom:32px;padding-bottom:24px;border-bottom:2px solid var(--c-border)}
+.doc-header h1{font-size:26px;font-weight:800;color:var(--c-primary);margin-bottom:10px}
+.doc-meta{display:flex;gap:10px;flex-wrap:wrap;align-items:center;font-size:13px;color:var(--c-muted)}
+.tag{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:4px;font-size:11.5px;font-weight:700;letter-spacing:.04em}
+.tag-blue{background:#EFF6FF;color:var(--c-primary);border:1px solid #BFDBFE}
+.tag-amber{background:#FFFBEB;color:#92400E;border:1px solid #FDE68A}
+.thesis{font-size:14px;margin-top:12px;padding:12px 16px;background:#F1F5F9;border-left:4px solid var(--c-primary);border-radius:0 6px 6px 0;color:var(--c-text);font-style:italic}
+
+/* ─── Typography ──────────────────────────────────────────── */
+section{margin-bottom:52px}
+h2{font-size:18px;font-weight:700;color:var(--c-text);margin:40px 0 16px;padding-bottom:8px;border-bottom:2px solid var(--c-border)}
+h3{font-size:12px;font-weight:700;color:var(--c-muted);text-transform:uppercase;letter-spacing:.08em;margin:24px 0 12px}
+p{margin-bottom:12px}
+ul,ol{padding-left:20px;margin-bottom:12px}
+li{margin-bottom:6px}
+strong{font-weight:600}
+code{font-family:'JetBrains Mono','SF Mono',Menlo,monospace;font-size:12px;background:#F1F5F9;border:1px solid var(--c-border);border-radius:3px;padding:1px 5px}
+.note{background:#F0FDF4;border:1px solid #BBF7D0;border-radius:6px;padding:10px 14px;font-size:12.5px;color:#14532D;margin:12px 0}
+.warn-note{background:#FFFBEB;border:1px solid #FDE68A;border-radius:6px;padding:10px 14px;font-size:12.5px;color:#78350F;margin:12px 0}
+.verify-badge{display:inline-block;background:#FEF3C7;color:#92400E;border:1px solid #FDE68A;border-radius:3px;font-size:10px;font-weight:700;padding:1px 6px;margin-left:4px;vertical-align:middle}
+
+/* ─── Tables ──────────────────────────────────────────────── */
+.tbl{overflow-x:auto;margin:14px 0}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+thead th{background:var(--c-sidebar);color:#E2E8F0;padding:9px 13px;text-align:left;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;white-space:nowrap}
+tbody td{padding:9px 13px;border-bottom:1px solid var(--c-border);vertical-align:top}
+tbody tr:nth-child(even) td{background:#F8FAFC}
+tbody tr:hover td{background:#EFF6FF}
+
+/* ─── p-params: key override card grid ───────────────────── */
+.p-params{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:0 0 36px}
+.param-card{background:var(--c-surface);border:1px solid var(--c-border);border-radius:8px;padding:14px 16px}
+.param-label{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--c-muted);margin-bottom:4px}
+.param-value{font-size:24px;font-weight:800;line-height:1;margin-bottom:4px}
+.param-value.blue{color:var(--c-primary)}
+.param-value.red{color:var(--c-bear)}
+.param-value.green{color:var(--c-bull)}
+.param-value.amber{color:var(--c-warn)}
+.param-note{font-size:11px;color:var(--c-muted);line-height:1.4}
+.param-card.scenario-bear{border-top:3px solid var(--c-bear)}
+.param-card.scenario-bull{border-top:3px solid var(--c-bull)}
+.param-card.scenario-base{border-top:3px solid var(--c-primary)}
+
+/* ─── p-seg-bars: segment revenue visualization ───────────── */
+.p-seg-bars{margin:14px 0 20px}
+.seg-row{display:grid;grid-template-columns:220px 1fr 120px;align-items:center;gap:12px;margin-bottom:9px}
+.seg-label{font-size:13px;font-weight:500}
+.seg-label small{display:block;font-size:11px;color:var(--c-muted);font-weight:400}
+.seg-track{height:26px;background:#E2E8F0;border-radius:5px;overflow:hidden}
+.seg-fill{height:100%;border-radius:5px;display:flex;align-items:center;padding-left:10px;font-size:12px;font-weight:700;color:#fff;min-width:36px}
+.seg-note{font-size:11px;color:var(--c-muted);line-height:1.4}
+
+/* ─── p-cycle: capex cycle phase indicator ────────────────── */
+.p-cycle{background:var(--c-surface);border:1px solid var(--c-border);border-radius:8px;padding:18px 20px;margin:14px 0}
+.cycle-label{font-size:11px;font-weight:600;color:var(--c-muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:12px}
+.cycle-track{display:flex;border-radius:6px;overflow:hidden;height:42px}
+.cycle-phase{flex:1;display:flex;align-items:center;justify-content:center;text-align:center;font-size:11.5px;font-weight:600;color:var(--c-muted);background:#F1F5F9;border-right:2px solid var(--c-border);padding:4px 8px;line-height:1.3}
+.cycle-phase:last-child{border-right:none}
+.cycle-phase.active{background:var(--c-primary);color:#fff;font-size:12px;font-weight:800}
+.cycle-phase.done{background:#E2E8F0;color:#94A3B8}
+.cycle-phase.next{background:#EFF6FF;color:var(--c-primary)}
+.cycle-now{text-align:center;font-size:11px;color:var(--c-primary);font-weight:600;margin-top:8px}
+
+/* ─── p-catalyst: catalyst table with probability bars ───── */
+.prob-wrap{display:flex;align-items:center;gap:6px;white-space:nowrap}
+.prob-bar-bg{width:52px;height:7px;background:#E2E8F0;border-radius:4px;overflow:hidden;flex-shrink:0}
+.prob-bar-fill{height:100%;border-radius:4px}
+.prob-pct{font-size:12px;font-weight:700}
+.dir-pos{color:var(--c-bull);font-weight:600}
+.dir-neg{color:var(--c-bear);font-weight:600}
+.impact-pos{color:var(--c-bull);font-weight:600}
+.impact-neg{color:var(--c-bear);font-weight:600}
+
+/* ─── p-debate: sell-side disagreement cards ──────────────── */
+.p-debate{display:flex;flex-direction:column;gap:10px;margin:14px 0}
+.debate-card{background:var(--c-surface);border:1px solid var(--c-border);border-left:4px solid var(--c-primary);border-radius:0 8px 8px 0;padding:14px 16px;display:flex;gap:12px}
+.debate-num{background:var(--c-primary);color:#fff;border-radius:4px;width:22px;height:22px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;margin-top:1px}
+.debate-title{font-size:13.5px;font-weight:700;margin-bottom:5px}
+.debate-body{font-size:13px;color:var(--c-muted);line-height:1.55}
+
+/* ─── p-failure: failure mode warning cards ───────────────── */
+.p-failure{display:flex;flex-direction:column;gap:10px;margin:14px 0}
+.fail-card{background:#FFFBEB;border:1px solid #FDE68A;border-left:4px solid var(--c-warn);border-radius:0 8px 8px 0;padding:13px 16px;display:flex;gap:12px}
+.fail-num{background:var(--c-warn);color:#fff;border-radius:50%;width:22px;height:22px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;margin-top:1px}
+.fail-title{font-size:13.5px;font-weight:700;color:#92400E;margin-bottom:5px}
+.fail-body{font-size:12.5px;color:#78350F;line-height:1.55}
+
+/* ─── p-scenario-grid: bear/base/bull parameter grid ─────── */
+.p-scenario-grid{margin:14px 0;border-radius:8px;overflow:hidden;border:1px solid var(--c-border)}
+.sg-header-row{display:grid;grid-template-columns:180px 1fr 1fr 1fr}
+.sg-param-row{display:grid;grid-template-columns:180px 1fr 1fr 1fr;border-top:1px solid var(--c-border)}
+.sg-hdr{padding:10px 14px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;text-align:center}
+.sg-hdr.bear{background:#FEF2F2;color:var(--c-bear)}
+.sg-hdr.base{background:#EFF6FF;color:var(--c-primary)}
+.sg-hdr.bull{background:#F0FDF4;color:var(--c-bull)}
+.sg-hdr.empty{background:#F8FAFC}
+.sg-param-name{padding:12px 14px;font-size:12px;font-weight:600;color:var(--c-muted);background:#F8FAFC;display:flex;align-items:center}
+.sg-cell{padding:12px 14px;text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
+.sg-cell.bear{background:#FEF2F2}
+.sg-cell.base{background:#EFF6FF}
+.sg-cell.bull{background:#F0FDF4}
+.sg-val{font-size:20px;font-weight:800}
+.sg-val.bear{color:var(--c-bear)}
+.sg-val.base{color:var(--c-primary)}
+.sg-val.bull{color:var(--c-bull)}
+.sg-sub{font-size:10.5px;color:var(--c-muted)}
+.sg-cell.axis-override{position:relative}
+.sg-cell.axis-override::after{content:'axis';position:absolute;top:4px;right:6px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;opacity:.6}
+.sg-cell.axis-override.bear::after{color:var(--c-bear)}
+.sg-cell.axis-override.bull::after{color:var(--c-bull)}
+
+/* ─── p-narratives: bear/base/bull scenario narrative cards ── */
+.p-narratives{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin:14px 0}
+.narrative-card{border-radius:8px;padding:14px 16px;font-size:12.5px;line-height:1.6}
+.narrative-card h4{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px}
+.narrative-card.bear{background:#FEF2F2;border:1px solid #FECACA}
+.narrative-card.bear h4{color:var(--c-bear)}
+.narrative-card.base{background:#EFF6FF;border:1px solid #BFDBFE}
+.narrative-card.base h4{color:var(--c-primary)}
+.narrative-card.bull{background:#F0FDF4;border:1px solid #BBF7D0}
+.narrative-card.bull h4{color:var(--c-bull)}
+
+/* ─── p-timeline: historical episode timeline ─────────────── */
+.p-timeline{position:relative;margin:20px 0}
+.ep{display:flex;gap:16px;margin-bottom:24px;position:relative}
+.ep::before{content:'';position:absolute;left:22px;top:46px;bottom:-24px;width:2px;background:var(--c-border)}
+.ep:last-child::before{display:none}
+.ep-dot{width:44px;flex-shrink:0;display:flex;flex-direction:column;align-items:center;gap:5px}
+.ep-icon{width:44px;height:44px;border-radius:50%;background:var(--c-bear);display:flex;align-items:center;justify-content:center;color:#fff;font-size:11px;font-weight:800;z-index:1;position:relative;flex-shrink:0}
+.ep-year{font-size:10px;font-weight:600;color:var(--c-muted);text-align:center;line-height:1.2}
+.ep-body{flex:1;background:var(--c-surface);border:1px solid var(--c-border);border-radius:8px;padding:14px 16px}
+.ep-title{font-size:14px;font-weight:700;margin-bottom:10px}
+.ep-stats{display:flex;gap:20px;margin-bottom:10px;flex-wrap:wrap}
+.ep-stat{}
+.ep-stat-label{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--c-muted)}
+.ep-stat-val{font-size:18px;font-weight:800}
+.ep-stat-val.down{color:var(--c-bear)}
+.ep-stat-val.up{color:var(--c-bull)}
+.ep-drawdown-track{height:8px;background:#E2E8F0;border-radius:4px;margin:4px 0 10px;overflow:hidden}
+.ep-drawdown-fill{height:100%;border-radius:4px;background:var(--c-bear);opacity:.7}
+.ep-catalyst{font-size:12.5px;color:var(--c-muted);margin-bottom:6px}
+.ep-lesson{font-size:12px;color:var(--c-muted);border-top:1px solid var(--c-border);padding-top:8px;margin-top:6px;font-style:italic}
+.ep-recovery{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:600;color:var(--c-bull);margin-top:4px}
+</style>
+</head>
+<body>
+
+<!-- ─── Sidebar ─────────────────────────────────────────────── -->
+<aside id="sb">
+  <div class="sb-brand">
+    <div class="sb-ticker">ASML</div>
+    <div class="sb-sub">ESTABLISHED · INFRASTRUCTURE · MEDIUM confidence</div>
+  </div>
+  <ul id="toc">
+    <li class="h2"><a href="#overview">Key Parameters</a></li>
+    <li class="h2"><a href="#s1">1. Business Architecture</a></li>
+    <li class="h3"><a href="#s1-seg">Segment Mix</a></li>
+    <li class="h3"><a href="#s1-drivers">Revenue Drivers</a></li>
+    <li class="h3"><a href="#s1-markets">End-Market Exposure</a></li>
+    <li class="h2"><a href="#s2">2. Capex-Cycle Position</a></li>
+    <li class="h2"><a href="#s3">3. Active Catalysts</a></li>
+    <li class="h2"><a href="#s4">4. Sell-Side Disagreement Axes</a></li>
+    <li class="h2"><a href="#s5">5. Failure Modes</a></li>
+    <li class="h2"><a href="#s6">6. Ticker-Specific Overrides</a></li>
+    <li class="h3"><a href="#s6-axes">Scenario Axes</a></li>
+    <li class="h3"><a href="#s6-narratives">Scenario Narratives</a></li>
+    <li class="h2"><a href="#s7">7. Historical Reset-and-Recover Priors</a></li>
+  </ul>
+  <div class="sb-meta">
+    Source: <code>playbooks/ASML.md</code><br>
+    Rendered: 2026-05-18<br>
+    Issue: ABA-116<br>
+    base_wacc: 8.5 · growth_ceiling: 0.15<br>
+    terminal_margin: 0.30 · confidence: MEDIUM
+  </div>
+</aside>
+
+<!-- ─── Main ─────────────────────────────────────────────────── -->
+<main id="main">
+
+  <header class="doc-header">
+    <h1>ASML Playbook</h1>
+    <div class="doc-meta">
+      <span class="tag tag-blue">ESTABLISHED</span>
+      <span class="tag tag-blue">INFRASTRUCTURE</span>
+      <span class="tag tag-amber">MEDIUM confidence</span>
+    </div>
+    <p class="thesis">EUV monopoly + High-NA ramp + China export-control overhang, with the semiconductor capex cycle as the dominant input.</p>
+  </header>
+
+  <!-- ─── Key Parameters Overview ─────────────────────────── -->
+  <div id="overview" style="scroll-margin-top:24px">
+    <div class="p-params">
+      <div class="param-card scenario-base">
+        <div class="param-label">Base WACC</div>
+        <div class="param-value blue">8.5%</div>
+        <div class="param-note">EUR 10y Bund 3.0% + Beta 1.15 × 5.5% ERP − 0.8pp monopoly discount</div>
+      </div>
+      <div class="param-card scenario-base">
+        <div class="param-label">Growth Ceiling (base)</div>
+        <div class="param-value blue">15%</div>
+        <div class="param-note">Fallback ceiling; consensus takes precedence. Upper-LRP (13%) + 2pp headroom.</div>
+      </div>
+      <div class="param-card scenario-base">
+        <div class="param-label">Terminal FCF Margin (base)</div>
+        <div class="param-value blue">30%</div>
+        <div class="param-note">Normalised steady-state: between TTM-clean 24% and TTM earnings ~35%</div>
+      </div>
+      <div class="param-card scenario-bear">
+        <div class="param-label">Bear Terminal Margin</div>
+        <div class="param-value red">24%</div>
+        <div class="param-note">scenario_axes override → anchored to TTM-clean floor, not symmetric −delta</div>
+      </div>
+      <div class="param-card scenario-bull">
+        <div class="param-label">Bull Growth Ceiling</div>
+        <div class="param-value green">20%</div>
+        <div class="param-note">scenario_axes override → AI/packaging/3D-DRAM TAM expansion upside</div>
+      </div>
+      <div class="param-card" style="border-top:3px solid var(--c-warn)">
+        <div class="param-label">Confidence Anchor</div>
+        <div class="param-value amber">MEDIUM</div>
+        <div class="param-note">High-NA economics + TAM ceiling are live, contested, unresolved</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── Section 1: Business Architecture ────────────────── -->
+  <section id="s1" style="scroll-margin-top:24px">
+    <h2>1. Business Architecture</h2>
+
+    <h3 id="s1-seg" style="scroll-margin-top:24px">Segment Mix (approx. FY2025)</h3>
+    <div class="p-seg-bars">
+      <div class="seg-row">
+        <div class="seg-label">EUV systems<small>standard + High-NA</small></div>
+        <div class="seg-track"><div class="seg-fill" style="width:50%;background:#0057B8">~50%</div></div>
+        <div class="seg-note">Cycle-dependent; High-NA adds step-up from 2026</div>
+      </div>
+      <div class="seg-row">
+        <div class="seg-label">Advanced DUV<small>immersion</small></div>
+        <div class="seg-track"><div class="seg-fill" style="width:25%;background:#2563EB">~25%</div></div>
+        <div class="seg-note">Mature; sensitive to logic node digestion pace</div>
+      </div>
+      <div class="seg-row">
+        <div class="seg-label">Mature DUV<small>dry, KrF, i-line</small></div>
+        <div class="seg-track"><div class="seg-fill" style="width:10%;background:#60A5FA">~10%</div></div>
+        <div class="seg-note">Stable; auto / industrial / mature-node exposure</div>
+      </div>
+      <div class="seg-row">
+        <div class="seg-label">Installed Base Mgmt (IBM)<small>services + upgrades</small></div>
+        <div class="seg-track"><div class="seg-fill" style="width:15%;background:#0D9488">~15%</div></div>
+        <div class="seg-note">Most defensive; ~4,000-tool installed base</div>
+      </div>
+    </div>
+    <p style="font-size:13px;color:var(--c-muted)">IBM (Installed Base Management) is the earnings-floor segment: service contracts and upgrades on the ~4,000-tool installed base continue regardless of new-system order cycles. It is the component most vulnerable to a China-service-rule tightening scenario.</p>
+
+    <h3 id="s1-drivers" style="scroll-margin-top:24px">Key Revenue Drivers</h3>
+    <ol style="font-size:13.5px">
+      <li style="margin-bottom:10px"><strong>EUV unit shipments</strong> — the volume metric for leading-edge logic. Consensus expects a step-up to ~90–100 units/year by 2027 from ~50–60 in 2024; below-60 for two consecutive years is a bearish inflection signal.</li>
+      <li style="margin-bottom:10px"><strong>High-NA EUV ramp</strong> — ASP (Average Selling Price) per High-NA tool is ~€350M vs ~€200M for standard EUV. Even 5 additional High-NA units/year moves blended ASP materially. First customer is TSMC; Intel and Samsung are expected second/third.</li>
+      <li style="margin-bottom:10px"><strong>China revenue share</strong> — ranged 20–49% of system revenue (2022–2023 peak) before restrictions; tracking ~15–20% under current rules. Further rule tightening is the bear-case revenue risk; stabilisation at current levels is the base case.</li>
+      <li style="margin-bottom:10px"><strong>IBM attach rate</strong> — services revenue as % of cumulative installed base value. Rising attach rate signals customer utilisation; falling attach rate (e.g., from China service restrictions) is the canary in the earnings-floor thesis.</li>
+    </ol>
+
+    <h3 id="s1-markets" style="scroll-margin-top:24px">End-Market Exposure</h3>
+    <div class="tbl">
+      <table>
+        <thead><tr><th>End market</th><th>Customers</th><th>Segment driven</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Leading-edge logic</strong> (HPC/AI + smartphones)</td><td>TSMC, Samsung Foundry, Intel Foundry</td><td>EUV, High-NA EUV</td></tr>
+          <tr><td><strong>Memory</strong> (DRAM + NAND)</td><td>SK Hynix, Micron, Samsung Memory</td><td>EUV-for-DRAM, adv. patterning</td></tr>
+          <tr><td><strong>Mature logic / specialty</strong> (auto, industrial, IoT)</td><td>Broad — TSMC, UMC, SMIC (restricted), others</td><td>Mature DUV</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="warn-note"><strong>Customer concentration note:</strong> TSMC + Samsung + Intel represent the dominant share of EUV system revenue. <span class="verify-badge">TODO: verify</span> Exact top-3/top-5 % against latest ASML 20-F / annual report risk-factor disclosure — do not cite a specific number without verification.</p>
+  </section>
+
+  <!-- ─── Section 2: Capex-Cycle Position ─────────────────── -->
+  <section id="s2" style="scroll-margin-top:24px">
+    <h2>2. Capex-Cycle Position</h2>
+    <div class="p-cycle">
+      <div class="cycle-label">Semiconductor equipment capex cycle — current phase as of mid-2026</div>
+      <div class="cycle-track">
+        <div class="cycle-phase done">COVID<br>Over-order</div>
+        <div class="cycle-phase done">Peak<br>Delivery<br>2022–23</div>
+        <div class="cycle-phase done">Digestion<br>2024–25</div>
+        <div class="cycle-phase active">Trough /<br>Inflection<br>2026 ←</div>
+        <div class="cycle-phase next">Re-accel<br>2027–28</div>
+        <div class="cycle-phase next">AI/HiNA<br>Ramp</div>
+      </div>
+      <div class="cycle-now">▲ Current position — cycle trough expected to clear H2 2026; AI-driven + High-NA re-acceleration begins 2027</div>
+    </div>
+
+    <p>ASML is in a <strong>cycle-trough / inflection</strong> phase as of mid-2026. The 2024–2025 digestion period (customers pausing orders after COVID-era over-ordering of DUV tools) is expected to trough in 2026, with re-acceleration in 2027–2029 on two overlapping drivers:</p>
+    <ol style="font-size:13.5px">
+      <li style="margin-bottom:8px"><strong>AI-driven advanced-node demand:</strong> TSMC N2/N2P, Samsung 2GAP, Intel 18A ramps require sustained EUV intensity. Hyperscaler custom-silicon fabs (Google, Meta, Amazon) are incremental new demand on top of smartphone-driven baseline.</li>
+      <li style="margin-bottom:8px"><strong>High-NA volume ramp:</strong> First High-NA tools are being qualified at TSMC Arizona and Intel Ohio. If High-NA economics validate (cost-per-wafer clears vs multi-patterning DUV), the step-up in ASP per unit creates a revenue tailwind independent of unit-volume growth.</li>
+    </ol>
+
+    <div class="note"><strong>Normalised-margin thesis:</strong> The <code>terminal_margin</code> override of 30% assumes High-NA reaches mature unit economics, customer utilisation normalises post-trough, and customer-prepayment working-capital swings dampen over a full cycle. TTM clean FCF (Free Cash Flow) margin (~24%) is trough-distorted; anchoring the DCF on TTM understates steady-state. The 30% base sits between TTM clean FCF (~24%) and TTM earnings margin (~35%, implied by P/E 49.5 / P/S 17.18) — a defensible midpoint.</div>
+
+    <p>If High-NA economics fail to clear at scale OR if the semi cycle air-pocket is deeper than expected, utilisation stays weak and terminal margin compresses to TTM-clean levels. This is exactly what <code>scenario_axes.bear.terminal_margin: 0.24</code> captures — it anchors the bear terminal margin at the observed trough rather than at a symmetric ±delta from base.</p>
+  </section>
+
+  <!-- ─── Section 3: Active Catalysts ─────────────────────── -->
+  <section id="s3" style="scroll-margin-top:24px">
+    <h2>3. Active Catalysts</h2>
+    <div class="tbl">
+      <table>
+        <thead><tr><th>Catalyst</th><th>Probability</th><th>IV impact</th><th>Direction</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>High-NA volume production milestone at TSMC (first 5+ unit run-rate quarter)</td>
+            <td>
+              <div class="prob-wrap">
+                <div class="prob-bar-bg"><div class="prob-bar-fill" style="width:40%;background:var(--c-bull)"></div></div>
+                <span class="prob-pct" style="color:var(--c-bull)">~40%</span>
+              </div>
+              <div style="font-size:10px;color:var(--c-muted);margin-top:2px">by end-2027</div>
+            </td>
+            <td class="impact-pos">+10–15%</td>
+            <td class="dir-pos">↑ Positive — validates post-2027 ASP + unit thesis</td>
+          </tr>
+          <tr>
+            <td>China export-control broadened to DUV service/spare-parts</td>
+            <td>
+              <div class="prob-wrap">
+                <div class="prob-bar-bg"><div class="prob-bar-fill" style="width:25%;background:var(--c-bear)"></div></div>
+                <span class="prob-pct" style="color:var(--c-bear)">~25%</span>
+              </div>
+            </td>
+            <td class="impact-neg">−15–20%</td>
+            <td class="dir-neg">↓↓ Strongly negative — removes earnings floor</td>
+          </tr>
+          <tr>
+            <td>TSMC Arizona N2 ramp goes to plan (capex not deferred)</td>
+            <td>
+              <div class="prob-wrap">
+                <div class="prob-bar-bg"><div class="prob-bar-fill" style="width:55%;background:var(--c-bull)"></div></div>
+                <span class="prob-pct" style="color:var(--c-bull)">~55%</span>
+              </div>
+            </td>
+            <td class="impact-pos">+5–8%</td>
+            <td class="dir-pos">↑ Positive — confirms leading-edge demand base</td>
+          </tr>
+          <tr>
+            <td>Intel 18A achieves volume yield (customer ramp on-track)</td>
+            <td>
+              <div class="prob-wrap">
+                <div class="prob-bar-bg"><div class="prob-bar-fill" style="width:30%;background:#D97706)"></div></div>
+                <span class="prob-pct" style="color:var(--c-warn)">~30%</span>
+              </div>
+            </td>
+            <td class="impact-pos">+5–10%</td>
+            <td class="dir-pos">↑ Positive — adds third High-NA anchor customer</td>
+          </tr>
+          <tr>
+            <td>Broad semi-capex freeze (memory + logic simultaneously)</td>
+            <td>
+              <div class="prob-wrap">
+                <div class="prob-bar-bg"><div class="prob-bar-fill" style="width:20%;background:var(--c-bear)"></div></div>
+                <span class="prob-pct" style="color:var(--c-bear)">~20%</span>
+              </div>
+            </td>
+            <td class="impact-neg">−20–30%</td>
+            <td class="dir-neg">↓↓ Strongly negative — all segments decelerate</td>
+          </tr>
+          <tr>
+            <td>Hyperscaler custom-silicon fab commitments (Google / Amazon / Meta)</td>
+            <td>
+              <div class="prob-wrap">
+                <div class="prob-bar-bg"><div class="prob-bar-fill" style="width:35%;background:var(--c-bull)"></div></div>
+                <span class="prob-pct" style="color:var(--c-bull)">~35%</span>
+              </div>
+              <div style="font-size:10px;color:var(--c-muted);margin-top:2px">by 2028</div>
+            </td>
+            <td class="impact-pos">+5–10%</td>
+            <td class="dir-pos">↑ Positive — incremental leading-edge demand</td>
+          </tr>
+          <tr>
+            <td>Rapidus (Japan) first production milestone</td>
+            <td>
+              <div class="prob-wrap">
+                <div class="prob-bar-bg"><div class="prob-bar-fill" style="width:25%;background:var(--c-neutral)"></div></div>
+                <span class="prob-pct" style="color:var(--c-neutral)">~25%</span>
+              </div>
+              <div style="font-size:10px;color:var(--c-muted);margin-top:2px">by 2027</div>
+            </td>
+            <td class="impact-pos">+3–5%</td>
+            <td class="dir-pos">↑ Positive — new geographic customer</td>
+          </tr>
+          <tr>
+            <td>Semi-cycle inflection confirmed (SEMI book-to-bill &gt;1.2 for 2+ quarters)</td>
+            <td>
+              <div class="prob-wrap">
+                <div class="prob-bar-bg"><div class="prob-bar-fill" style="width:50%;background:var(--c-bull)"></div></div>
+                <span class="prob-pct" style="color:var(--c-bull)">~50%</span>
+              </div>
+              <div style="font-size:10px;color:var(--c-muted);margin-top:2px">by end-2026</div>
+            </td>
+            <td class="impact-pos">+8–12%</td>
+            <td class="dir-pos">↑ Positive — re-rates forward estimates</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ─── Section 4: Sell-Side Disagreement Axes ───────────── -->
+  <section id="s4" style="scroll-margin-top:24px">
+    <h2>4. Sell-Side Disagreement Axes</h2>
+    <p style="font-size:13px;color:var(--c-muted)">The real arguments the sell-side is having on ASML right now:</p>
+    <div class="p-debate">
+      <div class="debate-card">
+        <div class="debate-num">1</div>
+        <div>
+          <div class="debate-title">Capex-cycle trough timing</div>
+          <div class="debate-body">Does the cycle trough in H2 2026 and re-accelerate in 2027, or is the digestion period deeper and longer (into 2027–2028) given memory oversupply and smartphone demand weakness? Bulls model a sharp V-shaped inflection; bears model a prolonged L-shaped digestion. This is the single largest source of 12-month price-target dispersion.</div>
+        </div>
+      </div>
+      <div class="debate-card">
+        <div class="debate-num">2</div>
+        <div>
+          <div class="debate-title">High-NA economics at scale</div>
+          <div class="debate-body">Will High-NA cost-per-wafer clear the threshold where customers prefer it to multi-patterning DUV at volume? Bulls cite TSMC's public endorsement and Intel's production commitments. Bears note that High-NA tools are €350M+ each, early yield data is opaque, and multi-patterning DUV remains a credible alternative for all but the most leading-edge nodes.</div>
+        </div>
+      </div>
+      <div class="debate-card">
+        <div class="debate-num">3</div>
+        <div>
+          <div class="debate-title">China revenue durability</div>
+          <div class="debate-body">Is 15–20% China revenue a stable floor under the current export-control framework, or will progressive rule-tightening (especially to DUV service/spare-parts) erode it further? The sell-side range on China's 2027 revenue contribution spans roughly 8–22% — a wide disagreement that drives meaningful valuation divergence.</div>
+        </div>
+      </div>
+      <div class="debate-card">
+        <div class="debate-num">4</div>
+        <div>
+          <div class="debate-title">TAM ceiling — real or expandable?</div>
+          <div class="debate-body">ASML's own LRP (Long-Range Plan) implies ~$28B advanced-logic equipment TAM at ~86% EUV penetration. Is this a hard ceiling, or is the TAM itself expanding via: (a) 3D-DRAM / multi-layer NAND raising EUV intensity per wafer, (b) advanced packaging (HBM, chiplets, glass substrates) requiring new litho steps, (c) geographic fab proliferation (US, Japan, Europe)? Bulls argue the TAM is dynamic; bears argue the LRP already captures it.</div>
+        </div>
+      </div>
+      <div class="debate-card">
+        <div class="debate-num">5</div>
+        <div>
+          <div class="debate-title">IBM (services) growth as the moat anchor</div>
+          <div class="debate-body">Is Installed Base Management a durable ~25% revenue floor that grows with the installed base regardless of cycle, or is it more exposed than consensus assumes (customer utilisation drops reduce upgrade spend; China service restrictions reduce the addressable installed base)? Bears who challenge the IBM floor are implicitly challenging the "earnings-floor" thesis underpinning the MEDIUM confidence anchor.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── Section 5: Failure Modes ─────────────────────────── -->
+  <section id="s5" style="scroll-margin-top:24px">
+    <h2>5. Failure Modes</h2>
+    <p style="font-size:13px;color:var(--c-muted)">Thesis-breaking scenarios the DCF does not capture because they are discrete rather than smooth:</p>
+    <div class="p-failure">
+      <div class="fail-card">
+        <div class="fail-num">1</div>
+        <div>
+          <div class="fail-title">Customer concentration shock <span class="verify-badge">TODO: verify % against 20-F</span></div>
+          <div class="fail-body">TSMC + Samsung + Intel represent the dominant share of EUV system revenue. A single customer deferring a node by 12+ months or announcing a major capex freeze moves ASML's near-term revenue by a multiple of consensus expectations. This is not a gradual risk — it is a lumpy, concentrated exposure.</div>
+        </div>
+      </div>
+      <div class="fail-card">
+        <div class="fail-num">2</div>
+        <div>
+          <div class="fail-title">China service/spare-parts export controls</div>
+          <div class="fail-body">Current restrictions primarily cover new EUV and advanced DUV system sales. If rules extend to servicing or supplying spare parts to the existing DUV installed base in China, ASML's most cycle-resistant revenue stream is impaired — the bear case's "earnings-floor-removal" event, where the business becomes more cyclical than the base case assumes.</div>
+        </div>
+      </div>
+      <div class="fail-card">
+        <div class="fail-num">3</div>
+        <div>
+          <div class="fail-title">High-NA economics failure</div>
+          <div class="fail-body">High-NA adoption depends on cost-per-wafer clearing the threshold where customers prefer it to multi-patterning DUV. If High-NA tool yields remain low, learning curves are steeper than expected, or process engineers can't close the cost equation, adoption slows — breaking the post-2027 unit-volume and ASP expansion thesis simultaneously.</div>
+        </div>
+      </div>
+      <div class="fail-card">
+        <div class="fail-num">4</div>
+        <div>
+          <div class="fail-title">Broad capex air-pocket (multi-segment, simultaneous)</div>
+          <div class="fail-body">The bear case is <strong>not</strong> "AI investment pauses." The more dangerous scenario is a broad-based semi downturn overlapping across memory (DRAM/NAND oversupply), mobile (smartphone unit weakness), and mature-node (industrial / auto demand normalisation) segments at once. In this scenario, even IBM service revenue is pressured and ASML's financial performance is worse than any single-segment stress model predicts.</div>
+        </div>
+      </div>
+      <div class="fail-card">
+        <div class="fail-num">5</div>
+        <div>
+          <div class="fail-title">FCF distortion from customer prepayments</div>
+          <div class="fail-body">ASML's reported FCF (Free Cash Flow) is significantly affected by customer prepayment timing. In strong-order years, prepayments boost FCF above earnings; in weak-order years, the reverse. Using TTM FCF as a DCF anchor without working-capital normalisation produces misleading base-year CAGRs. The <code>terminal_margin</code> override partially mitigates this, but Y1 FCF remains potentially distorted.</div>
+        </div>
+      </div>
+      <div class="fail-card">
+        <div class="fail-num">6</div>
+        <div>
+          <div class="fail-title">EUR/USD strengthening</div>
+          <div class="fail-body">ASML reports in EUR. Persistent EUR appreciation reduces translated revenue and EPS for US-listed ADR investors even with no change in the underlying business. ASML's competitive position is FX-neutral (customers operate in USD), but the P&amp;L in USD terms is sensitive.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── Section 6: Ticker-Specific Overrides ─────────────── -->
+  <section id="s6" style="scroll-margin-top:24px">
+    <h2>6. Ticker-Specific Overrides (Rationale)</h2>
+
+    <div class="tbl">
+      <table>
+        <thead><tr><th>Field</th><th>Value</th><th>Rationale</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><code>base_wacc</code></td>
+            <td><strong>8.5%</strong></td>
+            <td>EUR 10y Bund ~3.0% + Beta ~1.15 × 5.5% ERP ≈ 9.3%; less ~0.8pp monopoly-durability discount (EUV is a single-supplier market — NIKON exited advanced EUV; Canon competes only at dry DUV). Rounds to 8.5%, mid-range of sell-side (8.0–9.0%). Risk-free rate is EUR-denominated.</td>
+          </tr>
+          <tr>
+            <td><code>growth_ceiling</code></td>
+            <td><strong>15%</strong></td>
+            <td>Anchored as a <strong>fallback ceiling, not an absolute cap</strong> — consensus <code>eps_growth_5y</code> takes precedence. Set at upper-LRP-bound (13%) + ~2pp headroom for AI-driven wafer demand, advanced packaging litho TAM, and 3D-DRAM memory complexity. Below the generic 18% fallback because the TAM-penetration ceiling (~86% per signal) makes the central case TAM-expansion-bounded, not share-gain-bounded.</td>
+          </tr>
+          <tr>
+            <td><code>terminal_margin</code></td>
+            <td><strong>30%</strong></td>
+            <td>Subjective steady-state; bear/bull asymmetric per <code>scenario_axes</code>. Assumes High-NA reaches mature unit economics and working-capital swings dampen over a full cycle. Bear anchors to <code>scenario_axes.bear.terminal_margin: 0.24</code> (TTM-clean) rather than symmetric −delta. Bull lifts <code>growth_ceiling</code> rather than terminal margin — upside is volume-driven, not margin-driven.</td>
+          </tr>
+          <tr>
+            <td><code>confidence_anchor</code></td>
+            <td><strong>MEDIUM</strong></td>
+            <td>TAM ceiling and High-NA economics are live, contested, and unresolved. IV range is irreducibly wide regardless of input quality. Honest cap is MEDIUM until High-NA volume ramp validates the post-2027 unit-growth premise.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3 id="s6-axes" style="scroll-margin-top:24px">Scenario Axes — Bear / Base / Bull Parameter Grid</h3>
+    <div class="p-scenario-grid">
+      <div class="sg-header-row">
+        <div class="sg-hdr empty"></div>
+        <div class="sg-hdr bear">Bear</div>
+        <div class="sg-hdr base">Base</div>
+        <div class="sg-hdr bull">Bull</div>
+      </div>
+      <div class="sg-param-row">
+        <div class="sg-param-name">Terminal FCF Margin</div>
+        <div class="sg-cell bear axis-override bear">
+          <div class="sg-val bear">24%</div>
+          <div class="sg-sub">TTM-clean floor</div>
+        </div>
+        <div class="sg-cell base">
+          <div class="sg-val base">30%</div>
+          <div class="sg-sub">normalised steady-state</div>
+        </div>
+        <div class="sg-cell bull">
+          <div class="sg-val base" style="font-size:14px;color:var(--c-muted)">±std</div>
+          <div class="sg-sub">symmetric fallback</div>
+        </div>
+      </div>
+      <div class="sg-param-row">
+        <div class="sg-param-name">Growth Ceiling</div>
+        <div class="sg-cell bear">
+          <div class="sg-val base" style="font-size:14px;color:var(--c-muted)">±std</div>
+          <div class="sg-sub">symmetric fallback</div>
+        </div>
+        <div class="sg-cell base">
+          <div class="sg-val base">15%</div>
+          <div class="sg-sub">upper-LRP + 2pp</div>
+        </div>
+        <div class="sg-cell bull axis-override bull">
+          <div class="sg-val bull">20%</div>
+          <div class="sg-sub">AI/packaging/3D-DRAM</div>
+        </div>
+      </div>
+      <div class="sg-param-row">
+        <div class="sg-param-name">Base WACC</div>
+        <div class="sg-cell bear">
+          <div class="sg-val base" style="font-size:16px;color:var(--c-text)">8.5%</div>
+          <div class="sg-sub">unchanged across scenarios</div>
+        </div>
+        <div class="sg-cell base">
+          <div class="sg-val base" style="font-size:16px;color:var(--c-text)">8.5%</div>
+          <div class="sg-sub">EUR-denominated baseline</div>
+        </div>
+        <div class="sg-cell bull">
+          <div class="sg-val base" style="font-size:16px;color:var(--c-text)">8.5%</div>
+          <div class="sg-sub">unchanged across scenarios</div>
+        </div>
+      </div>
+    </div>
+    <p style="font-size:12px;color:var(--c-muted);margin-top:8px">Rows marked <strong>axis</strong> are set via <code>scenario_axes</code> frontmatter. All other fields fall back to the loader's standard ±multiplier.</p>
+
+    <h3 id="s6-narratives" style="scroll-margin-top:24px">Scenario Narratives</h3>
+    <div class="p-narratives">
+      <div class="narrative-card bear">
+        <h4>Bear</h4>
+        Broad semiconductor capex air-pocket: mobile demand softens, memory cycle bottoms slower than expected, mature-node utilisation drops below normal — combined with High-NA economics failing to clear at scale (cost-per-wafer doesn't beat multi-patterning DUV); tightening China rules erode service revenue from installed base; unit volumes flatten well below LRP, terminal FCF margin compresses to TTM-clean levels on customer under-utilisation.
+      </div>
+      <div class="narrative-card base">
+        <h4>Base</h4>
+        Semi capex cycle troughs in 2026 then re-accelerates 2027–2029 on AI infrastructure + advanced-node ramps; High-NA reaches volume production at TSMC + one other customer by 2027 at credible economics; China remains a 15–20% revenue contributor under current export-control framework; ASML lands mid-range of 2030 LRP (Long-Range Plan) envelope.
+      </div>
+      <div class="narrative-card bull">
+        <h4>Bull</h4>
+        Any combination of independent upside vectors pulls ASML toward upper-LRP: (i) AI-driven advanced-node capex across TSMC Arizona + Intel Ohio + Samsung Taylor; (ii) hyperscaler custom-silicon fabs adding leading-edge wafer demand; (iii) advanced packaging (HBM, chiplets, glass substrates) expanding adjacent litho TAM; (iv) 3D-DRAM / multi-layer memory raising EUV intensity per wafer; (v) High-NA economics validating above expectations; (vi) services growth exceeds LRP. China relaxation is additive upside, not a precondition.
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── Section 7: Historical Reset-and-Recover Priors ──── -->
+  <section id="s7" style="scroll-margin-top:24px">
+    <h2>7. Historical Reset-and-Recover Priors</h2>
+    <div class="warn-note" style="margin-bottom:20px">Episode magnitudes are approximate from general industry knowledge. <span class="verify-badge">Verify exact drawdown % and dates against price history before citing numerically.</span></div>
+    <div class="p-timeline">
+      <div class="ep">
+        <div class="ep-dot">
+          <div class="ep-icon">1</div>
+          <div class="ep-year">2018–<br>2019</div>
+        </div>
+        <div class="ep-body">
+          <div class="ep-title">Memory downturn — DRAM/NAND oversupply cycle</div>
+          <div class="ep-stats">
+            <div class="ep-stat">
+              <div class="ep-stat-label">Peak-to-Trough</div>
+              <div class="ep-stat-val down">−35%</div>
+            </div>
+            <div class="ep-stat">
+              <div class="ep-stat-label">Recovery</div>
+              <div class="ep-stat-val up">~14 mo.</div>
+            </div>
+          </div>
+          <div class="ep-drawdown-track"><div class="ep-drawdown-fill" style="width:35%"></div></div>
+          <div class="ep-catalyst"><strong>Catalyst:</strong> DRAM/NAND oversupply; Samsung and Micron capex freeze; memory customer order deferrals.</div>
+          <div class="ep-recovery">↑ Recovery trigger: 7nm EUV ramp visibility at TSMC</div>
+          <div class="ep-lesson">Memory-cycle resets are severe but time-bounded. The next-node demand catalyst — here, 7nm EUV qualification — is the recovery trigger. The reset created a trough that inflated forward FCF growth rates for 2–3 years afterward.</div>
+        </div>
+      </div>
+      <div class="ep">
+        <div class="ep-dot">
+          <div class="ep-icon">2</div>
+          <div class="ep-year">2022–<br>2023</div>
+        </div>
+        <div class="ep-body">
+          <div class="ep-title">Post-COVID demand reset + first China EUV export controls</div>
+          <div class="ep-stats">
+            <div class="ep-stat">
+              <div class="ep-stat-label">Peak-to-Trough</div>
+              <div class="ep-stat-val down">−45%</div>
+            </div>
+            <div class="ep-stat">
+              <div class="ep-stat-label">Recovery</div>
+              <div class="ep-stat-val up">~12 mo.</div>
+            </div>
+          </div>
+          <div class="ep-drawdown-track"><div class="ep-drawdown-fill" style="width:45%"></div></div>
+          <div class="ep-catalyst"><strong>Catalyst:</strong> Inventory digestion from COVID over-ordering; initial US-NL-Japan EUV export-control announcement.</div>
+          <div class="ep-recovery">↑ Recovery trigger: AI capex thesis + ASML AI infrastructure re-rating</div>
+          <div class="ep-lesson">China-rule announcement created a sharp drawdown but the AI infrastructure re-rating overwhelmed it within a year. Recovery was fastest when the next demand catalyst (AI-driven leading-edge wafer demand) was already visible on the horizon.</div>
+        </div>
+      </div>
+      <div class="ep">
+        <div class="ep-dot">
+          <div class="ep-icon">3</div>
+          <div class="ep-year">2024</div>
+        </div>
+        <div class="ep-body">
+          <div class="ep-title">DUV-rule expansion — China revenue ceiling repriced</div>
+          <div class="ep-stats">
+            <div class="ep-stat">
+              <div class="ep-stat-label">Peak-to-Trough</div>
+              <div class="ep-stat-val down">−25%</div>
+            </div>
+            <div class="ep-stat">
+              <div class="ep-stat-label">Recovery</div>
+              <div class="ep-stat-val" style="color:var(--c-warn)">Partial</div>
+            </div>
+          </div>
+          <div class="ep-drawdown-track"><div class="ep-drawdown-fill" style="width:25%"></div></div>
+          <div class="ep-catalyst"><strong>Catalyst:</strong> US-NL expanded DUV export-control rules; near-term China revenue ceiling repriced by market.</div>
+          <div class="ep-recovery" style="color:var(--c-warn)">→ Partial recovery on pre-cutoff order pull-forward recognition</div>
+          <div class="ep-lesson">Export-control tightenings are now modelled by the market as episodic, not one-time. Each rule change is priced, partially recovered, and held as a risk premium in the multiple rather than extrapolated linearly.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="note">
+      <strong>Mean-reversion implication:</strong> ASML resets recover faster when the next-node demand catalyst is clearly visible and near-term (e.g., a specific customer node ramp, a confirmed High-NA qualification). Resets during periods of demand uncertainty take longer. The current cycle-trough environment has a visible catalyst (High-NA ramp, AI capex re-acceleration) but uncertain timing — which is exactly the asymmetry captured in the <code>confidence_anchor: MEDIUM</code> override.
+    </div>
+    <p style="font-size:13px;margin-top:12px">Bear scenarios that assume a permanent structural break (China service rules removing the IBM earnings floor, High-NA permanently failing to clear economics) are <em>qualitatively different</em> from cyclical reset scenarios. Historical recovery priors do not apply to structural-break scenarios — those require re-valuing the business at a lower steady-state, not modelling a timed recovery.</p>
+  </section>
+
+</main>
+
+<script>
+(function(){
+  var headings=document.querySelectorAll('#main h2,#main h3');
+  var tocLinks=document.querySelectorAll('#toc a');
+  function getHref(el){
+    var s=el.closest('section');
+    if(s) return s.id;
+    var p=el.parentElement;
+    if(p&&p.id) return p.id;
+    return null;
+  }
+  var io=new IntersectionObserver(function(entries){
+    entries.forEach(function(e){
+      if(e.isIntersecting){
+        var id=e.target.id||getHref(e.target);
+        if(!id)return;
+        tocLinks.forEach(function(a){a.parentElement.classList.remove('active')});
+        var a=document.querySelector('#toc a[href="#'+id+'"]');
+        if(a)a.parentElement.classList.add('active');
+      }
+    });
+  },{rootMargin:'-10% 0px -80% 0px'});
+  headings.forEach(function(h){io.observe(h)});
+  document.querySelectorAll('#main section').forEach(function(s){io.observe(s)});
+})();
+</script>
+</body>
+</html>
