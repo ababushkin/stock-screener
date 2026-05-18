@@ -14,7 +14,7 @@ The seven names below are the ones currently in scope. The list is deliberately 
 | **META** | ESTABLISHED | INCUMBENT | Family of Apps cash machine + Reality Labs binary option + AI ad-targeting accuracy lift, regulatory overhang as recurring drag | [`playbooks/META.md`](playbooks/META.md) |
 | **AMZN** | ESTABLISHED | INCUMBENT | AWS margin trajectory + Ads as third pillar + retail operating leverage, with AI-capex cycle position as the swing factor | Not yet |
 | **NVDA** | ESTABLISHED | INFRASTRUCTURE | Data-centre GPU TAM penetration + AI training-to-inference mix shift + customer concentration risk | Not yet |
-| **ASML** | ESTABLISHED | INFRASTRUCTURE | EUV monopoly + High-NA ramp + China export-control overhang, with the semiconductor cap-ex cycle as the dominant input | Not yet |
+| **ASML** | ESTABLISHED | INFRASTRUCTURE | EUV monopoly + High-NA ramp + China export-control overhang, with the semiconductor cap-ex cycle as the dominant input | [`playbooks/ASML.md`](playbooks/ASML.md) |
 | **NFLX** | ESTABLISHED | APPLICATION | Subscriber growth maturity + ad-tier monetisation + content-cost discipline + password-sharing-crackdown durability | Not yet |
 | **ADYEN.AS** | ESTABLISHED | N/A | European unified-payments platform; take-rate stability + EBITDA margin recovery from the 2023 growth reset + cross-border e-commerce share gain, with the European regulatory moat against US incumbents as the durable edge | Not yet |
 
