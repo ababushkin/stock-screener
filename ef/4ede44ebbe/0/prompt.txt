@@ -1,0 +1,242 @@
+Work on Linear issue ABA-104:
+
+<issue identifier="ABA-104">
+<title>Spike: detect & handle base-year effect in /stock:model FCF growth rate</title>
+<description>
+## Problem
+
+`/stock:model` (ESTABLISHED path, two-stage DCF) currently derives Y2–Y5 FCF growth mechanically from the trailing 3-year CAGR:
+
+```
+fcf_cagr_3y = (years[0].free_cash_flow / years[3].free_cash_flow]) ^ (1/3) - 1
+```
+
+The model then uses that rate directly as the base-case Y2–Y5 CAGR, with bear/bull scenarios applied as fixed multipliers.
+
+This behaves reasonably for stable businesses, but breaks when the oldest comparison year is abnormally depressed. In those cases, the CAGR reflects a one-time reset rather than a sustainable forward-state growth rate.
+
+### Example failure (2026-05-14)
+
+`/stock:model NVDA` produced:
+
+* Base intrinsic value: `$7,492/share`
+* Market price: `$226/share`
+* Implied upside: `3,215%`
+
+Root cause:
+
+* FY23 FCF: `$3.8B` (pre-AI baseline)
+* FY26 FCF: `$96.7B`
+* Trailing 3Y FCF CAGR: `193.9%`
+
+The model extrapolated \~194% FCF growth for another four years, producing projected Y5 FCF of roughly `$16T`.
+
+The valuation engine itself behaved correctly:
+
+* Sensitivity grid passed monotonicity checks
+* Range-integrity checks passed
+* Bear/base/bull math remained internally consistent
+
+The issue was the input assumption. The trailing CAGR was mathematically valid but economically unusable.
+
+This is not NVDA-specific. The same failure mode exists for:
+
+* Post-pandemic rebounds
+* Post-IPO ramps
+* Post-restructuring recoveries
+* Step-function platform shifts
+* Any company with an unusually weak base year
+
+---
+
+## Spike Goal
+
+Determine how `/stock:model` should detect and handle base-year distortion in trailing FCF CAGR calculations.
+
+This spike is recommendation-only. No implementation work is included.
+
+---
+
+## How to run this spike
+
+Use the `backend-spike` skill (<issue id="b1430477-7565-4264-832c-6c0a5705ada5">ABA-128</issue>) once it lands. The skill codifies the investigate-recommend-spawn-followup pattern for exactly this class of backend correctness question. Running this spike through `backend-spike` is the validation test for <issue id="b1430477-7565-4264-832c-6c0a5705ada5">ABA-128</issue> — do not freehand the workflow.
+
+---
+
+## Questions To Resolve
+
+### 1\. Detection
+
+What should trigger suspicion that the trailing CAGR is distorted by a depressed base year?
+
+Evaluate:
+
+* Absolute CAGR thresholds
+  * e.g. flag if CAGR > 50% or >100%
+* Base-year ratio checks
+  * e.g. `years[3].fcf / years[0].fcf < 0.25`
+* Growth disagreement tests
+  * Compare:
+    * trailing 3Y FCF CAGR
+    * trailing 1Y FCF growth
+    * NTM revenue growth × current margin
+  * Large divergence suggests base-year contamination
+* Series volatility / shape analysis
+  * Smooth compounding vs step-function jump
+
+---
+
+### 2\. Response Strategy
+
+What should the skill do once distortion is detected?
+
+Options:
+
+#### A. Hard stop + manual override
+
+Refuse automatic projection generation.
+
+Surface:
+
+* historical inputs
+* calculated CAGR
+* diagnostic explaining why the series looks unreliable
+
+Require the user to provide a manual Y2–Y5 CAGR override (MIP-style).
+
+---
+
+#### B. Automatic substitution
+
+Replace the distorted CAGR with an alternate baseline, such as:
+
+* trailing 1Y growth
+* trailing 2Y CAGR
+* NTM revenue growth × margin assumptions
+* analyst long-term growth consensus
+* median / trimmed historical growth rate
+
+Any substitution must be disclosed in the output block.
+
+---
+
+#### C. Hybrid approach
+
+Pre-fill a suggested replacement rate, but require the user to confirm or override before valuation proceeds.
+
+---
+
+### 3\. Scope
+
+Should the same protection apply to the EMERGING / pre-profit path?
+
+That model uses the same style of trailing CAGR logic for revenue growth and is exposed to the same category of failure, even if revenue is generally less volatile than FCF.
+
+Example candidate: IPO-era revenue ramps such as `RDDT`.
+
+---
+
+### 4\. Confidence Semantics
+
+If the skill:
+
+* auto-substitutes assumptions, should `meta.confidence` be downgraded?
+* requires user confirmation, should confidence cap at `MEDIUM`, consistent with other user-supplied overrides?
+
+---
+
+## Out Of Scope
+
+Not part of this spike:
+
+* Implementing any detection or substitution logic
+* Changing the bear/base/bull scenario framework
+* Reworking the DCF architecture itself
+
+---
+
+## Acceptance Criteria
+
+Run this spike using the `backend-spike` skill (<issue id="b1430477-7565-4264-832c-6c0a5705ada5">ABA-128</issue>). The output is a **written document** (not ticket comments) containing:
+
+* Recommended detection tripwire with rationale
+* **Rejected alternatives table** — each alternative with reason it was not chosen
+* Recommended response strategy: exactly one of **refuse**, **substitute**, or **hybrid**
+* Whether the same logic should apply to the EMERGING revenue CAGR path
+* Confidence-cap behaviour under each strategy
+* Exactly one of:
+  * **Fix merged** — implementation ticket linked and closed, or
+  * **Defer** — explicit date and written reason, or
+  * **Kill** — written reason why the problem is not worth solving
+
+If the recommendation is to fix: a linked follow-up implementation ticket must exist (new or already open).
+
+---
+
+## Context
+
+Triggered by `/stock:model NVDA` on `2026-05-14`.
+
+Reference artifact: `reports/NVDA_20260514.json`
+
+Key observation:
+
+* Base IV: `$7,492/share`
+* Sensitivity analysis only moved valuation by \~±20%
+* Entire output was dominated by the forward growth assumption
+
+This is a correctness issue, not a UX issue.
+
+## Related
+
+* <issue id="b1430477-7565-4264-832c-6c0a5705ada5">ABA-128</issue> — `backend-spike` skill (run this spike through it once it lands)
+* <issue id="da63ea5b-3a1c-46cb-8487-b89fa0be4179">ABA-103</issue> (WACC auto-derive spike) — different input, same skill, both about reducing the gap between "mechanical formula" and "defensible input."
+
+Priority is higher than <issue id="da63ea5b-3a1c-46cb-8487-b89fa0be4179">ABA-103</issue> (WACC auto-derive spike) because the current behaviour can generate economically meaningless valuations while still passing structural validation.
+</description>
+<team name="Personal"/>
+<project name="Equity skill pack">Cycle 1 (17–24 May): Goal 1 — portfolio complete (all 7 tickers unblocked, /stock-portfolio returns 7 rows). Goal 2 — signal calibrated (≥5/7 tickers model_ready=YES). Full brief → Linear doc "Cycle 1 — goals & success criteria".</project>
+<issue-relations>
+<related>
+<issue-ref identifier="ABA-103" title="Spike: auto-derive base WACC for /stock:model instead of always asking"/>
+<issue-ref identifier="ABA-128" title="Author `backend-spike` skill for pde-skills pack"/>
+</related>
+</issue-relations>
+</issue>
+
+<comment-thread comment-id="b4a92f6a-a1b3-4161-b7ac-f63a6b8a4fc8">
+<comment author="Anton Babushkin" created-at="2026-05-13T15:12:34.652Z">
+## Confirmed: pre-profit variant has the same base-year-effect vulnerability
+
+Ran `/stock:model NVDA --pre-profit` on 2026-05-14 as a workaround for the FCF-CAGR explosion in the ESTABLISHED path. The pre-profit variant uses **revenue CAGR** instead of FCF CAGR as its growth-rate input — same mechanical formula:
+
+```
+rev_cagr_3y = (years[0].revenue / years[3].revenue) ^ (1/3) − 1
+```
+
+For NVDA: FY23 revenue $27B → FY26 revenue $216B → **trailing 3y revenue CAGR = 100%/yr**, mechanically extrapolated through Y2–Y5.
+
+### Resulting IVs (workaround run)
+
+| Scenario | IV/share | Upside | Notes |
+| -- | -- | -- | -- |
+| Bear | $378 | +67% | Y2–Y5 CAGR 50%, exit 6× — *the only digestible scenario* |
+| Base | $2,246 | +894% | Y2–Y5 CAGR 100%, exit 10× — inflated by base-year effect |
+| Bull | $5,228 | +2,213% | Y2–Y5 CAGR 118%, exit 14× — inflated by base-year effect |
+
+The pre-profit variant produces *smaller-magnitude* nonsense than the ESTABLISHED path (base IV $2,246 vs $7,492) because the exit-multiple terminal is less explosive than a Gordon-growth terminal compounding 194% CAGR, but the underlying input failure is identical.
+
+### Implication for this spike
+
+The detection + response logic must cover **both paths**:
+
+* **ESTABLISHED:** trip on FCF CAGR
+* **EMERGING / pre-profit:** trip on revenue CAGR
+
+Same detection candidates apply (absolute threshold, base-year ratio, disagreement test, variance). Same response candidates apply (refuse + override, auto-substitute, pre-fill).
+
+Adding this to the spike's scope explicitly — the original ticket Q3 already asked "does the same logic apply to EMERGING revenue CAGR?" but this run confirms the answer is unambiguously yes, not just theoretically.
+
+Full output in `reports/NVDA_20260514.json` under `stages.model` (route_override = `pre-profit`).
+</comment>
+</comment-thread>
