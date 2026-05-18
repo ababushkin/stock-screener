@@ -5,3 +5,10 @@ ui/dist/
 __pycache__/
 *.pyc
 .DS_Store
+
+# Agent / tooling state — local to each machine, not shared
+.claude/agents/
+.codex/
+.entire/
+.playwright-mcp/
+.skillshare/
