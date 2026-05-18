@@ -1,0 +1,13 @@
+there's a problem in that /stock-portfolio doesn't work as i can't run /stock-model on many companies in my COVERAGE.md -- this is unacceptable for me as these companies are the prime examples i'm using
+
+we need to troubleshoot this problem and propose a proper fix/solution as this is now a blocker for me 
+
+before we do this, create a linear ticket in my project and assign it to cycle 1, flag it as an urgent issue
+
+---
+
+i suspect GOOG should be fixed to "GOOGL" - ASML, NFLX, ADYEN.AS signal files have been created, they should also show as "model_ready=NO"
+
+---
+
+there's a NFLX report here: reports/NFLX_20260517.json
