@@ -1,0 +1,85 @@
+{
+  "ticker": "ASML",
+  "company": "ASML Holding N.V.",
+  "date": "2026-05-17",
+  "stages": {
+    "screen": {
+      "verdict": "WATCH",
+      "profit_stage": "ESTABLISHED",
+      "ratios": {
+        "pe_ratio": 49.499344,
+        "ps_ratio": 17.17951,
+        "ev_ebitda": 45.112,
+        "pfcf": 70.21773839814868,
+        "ev_revenue": 17.01
+      },
+      "quality_signals": {
+        "score": 8,
+        "denominator": 9,
+        "ratio": 0.8888888888888888,
+        "methodology": "piotroski_canonical_v1",
+        "signals": {
+          "f1_roa_positive": true,
+          "f2_ocf_positive": true,
+          "f3_roa_improving": true,
+          "f4_accruals": true,
+          "f5_leverage_decreasing": true,
+          "f6_current_ratio_improving": false,
+          "f7_no_new_shares": true,
+          "f8_gross_margin_improving": true,
+          "f9_asset_turnover_improving": true
+        },
+        "signal_sources": {
+          "f1_roa_positive": "canonical",
+          "f2_ocf_positive": "canonical",
+          "f3_roa_improving": "canonical",
+          "f4_accruals": "canonical",
+          "f5_leverage_decreasing": "canonical",
+          "f6_current_ratio_improving": "canonical",
+          "f7_no_new_shares": "canonical",
+          "f8_gross_margin_improving": "canonical",
+          "f9_asset_turnover_improving": "canonical"
+        },
+        "sbc_intensity_not_worsening": false
+      },
+      "magic_formula": {
+        "earnings_yield": 0.01981698483082799,
+        "roic": 0.5337390186086727,
+        "flag": "WATCH"
+      },
+      "gross_margin": null,
+      "gross_margin_gate": null,
+      "rule_of_40": null,
+      "ev_ntm_revenue": null,
+      "rationale": "Piotroski 8/9 = 88.9% (above 75% quality bar) with Magic Formula WATCH (EY 2.0% below 5% single-ticker threshold, ROIC 53.4% clears 15%); methodology piotroski_canonical_v1; quality driven by positive ROA with improving trend, OCF-backed earnings (low accruals), declining LT-debt ratio, share-count reduction, gross-margin and asset-turnover expansion; offset by deteriorating current ratio (1.26 vs 1.53 prior year); SBC/revenue intensity slightly worsening (informational)."
+    },
+    "signal": {
+      "verdict": "CAUTION",
+      "profit_stage": "ESTABLISHED",
+      "track": "GROWTH",
+      "ai_layer": "INFRASTRUCTURE",
+      "clean_eps_ttm": 24.19,
+      "sbc_stripped": true,
+      "sbc_adjustment_per_share": 0.52,
+      "peg_ratio": 2.89,
+      "ps_ratio": 17.18,
+      "rule_of_40": null,
+      "qualitative": "FAIL",
+      "qualitative_note": "TAM ceiling risk: advanced-logic lithography equipment TAM est. ~$28B (2026); ASML system revenue ~$24.6B = ~86% penetration (EUV monopoly + ~75% advanced DUV); combined with PEG-driven CAUTION signal from PEG 2.89 → FAIL. Growth contingent on chipmaker CapEx expansion and High-NA EUV ramp, not share gains.",
+      "signal": "CAUTION",
+      "model_ready": "NO",
+      "condition": null
+    }
+  },
+  "meta": {
+    "profit_stage": "ESTABLISHED",
+    "track": "GROWTH",
+    "ai_layer": "INFRASTRUCTURE",
+    "confidence": "HIGH",
+    "manual_inputs": [
+      {"field": "fx_rate_eur_usd", "value": 1.163, "source": "mcp__yf__get_fx_rate", "date": "2026-05-15"},
+      {"field": "eps_ttm_eur", "value": 24.71, "source": "derived_financials", "note": "FY2025 NI €9,609.4M / 388.9M diluted shares; yfinance get_ratios eps_ttm returns USD ($30.34); EUR used for consistency with reporting currency and ntm_eps from get_estimates"},
+      {"field": "ntm_eps_eur", "value": 40.90, "source": "get_estimates", "note": "get_estimates ntm_eps field; EUR (reporting currency)"}
+    ]
+  }
+}

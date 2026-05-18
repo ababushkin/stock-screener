@@ -1,0 +1,189 @@
+{
+  "type": "portfolio_snapshot",
+  "date": "2026-05-17",
+  "universe": ["GOOG", "META", "AMZN", "NVDA", "ASML", "NFLX", "ADYEN.AS"],
+  "tickers": [
+    {
+      "ticker": "NVDA",
+      "company": "NVIDIA Corporation",
+      "current_price": 226.045,
+      "price_source": "model",
+      "price_source_file": "NVDA_20260514.json",
+      "price_as_of": "2026-05-14",
+      "iv_base": 2246.10,
+      "iv_bear": 378.26,
+      "iv_bull": 5228.06,
+      "mos_pct": 893.7,
+      "range_vs_price": "MARGIN OF SAFETY",
+      "verdict": "MARGIN OF SAFETY",
+      "model_date": "2026-05-14",
+      "days_stale": 3,
+      "stale": false,
+      "alias_used": null,
+      "sources": {
+        "screen_file": "NVDA_20260514.json",
+        "signal_file": "NVDA_20260514.json",
+        "model_file": "NVDA_20260514.json"
+      },
+      "gaps": ["CAUTION: pre-profit model — base IV ($2,246) inflated by trailing 3y revenue CAGR (100% base-year effect). Size off bear IV ($378.26, MoS +67.3%), not base. Confidence capped at MEDIUM."]
+    },
+    {
+      "ticker": "META",
+      "company": "Meta Platforms, Inc.",
+      "current_price": 614.23,
+      "price_source": "model",
+      "price_source_file": "META_20260517.json",
+      "price_as_of": "2026-05-17",
+      "iv_base": 1154.78,
+      "iv_bear": 444.36,
+      "iv_bull": 2439.51,
+      "mos_pct": 88.0,
+      "range_vs_price": "WITHIN BEAR-BASE",
+      "verdict": "WITHIN BEAR-BASE",
+      "model_date": "2026-05-17",
+      "days_stale": 0,
+      "stale": false,
+      "alias_used": null,
+      "sources": {
+        "screen_file": null,
+        "signal_file": "META_20260517.json",
+        "model_file": "META_20260517.json"
+      },
+      "gaps": []
+    },
+    {
+      "ticker": "ADYEN.AS",
+      "company": "Adyen N.V.",
+      "current_price": null,
+      "price_source": null,
+      "price_source_file": null,
+      "price_as_of": null,
+      "iv_base": null,
+      "iv_bear": null,
+      "iv_bull": null,
+      "mos_pct": null,
+      "range_vs_price": null,
+      "verdict": "NO_MODEL",
+      "model_date": null,
+      "days_stale": null,
+      "stale": null,
+      "alias_used": null,
+      "sources": {
+        "screen_file": "ADYEN.AS_20260514.json",
+        "signal_file": "ADYEN.AS_20260515.json",
+        "model_file": null
+      },
+      "gaps": ["no model report on file — run /stock-model ADYEN.AS"]
+    },
+    {
+      "ticker": "AMZN",
+      "company": "Amazon.com, Inc.",
+      "current_price": null,
+      "price_source": null,
+      "price_source_file": null,
+      "price_as_of": null,
+      "iv_base": null,
+      "iv_bear": null,
+      "iv_bull": null,
+      "mos_pct": null,
+      "range_vs_price": null,
+      "verdict": "NO_MODEL",
+      "model_date": null,
+      "days_stale": null,
+      "stale": null,
+      "alias_used": null,
+      "sources": {
+        "screen_file": "AMZN_20260513.json",
+        "signal_file": "AMZN_20260517.json",
+        "model_file": null
+      },
+      "gaps": ["no model report on file — run /stock-model AMZN; signal says model_ready: NO"]
+    },
+    {
+      "ticker": "ASML",
+      "company": "ASML Holding N.V.",
+      "current_price": null,
+      "price_source": null,
+      "price_source_file": null,
+      "price_as_of": null,
+      "iv_base": null,
+      "iv_bear": null,
+      "iv_bull": null,
+      "mos_pct": null,
+      "range_vs_price": null,
+      "verdict": "NO_MODEL",
+      "model_date": null,
+      "days_stale": null,
+      "stale": null,
+      "alias_used": null,
+      "sources": {
+        "screen_file": "ASML_20260512.json",
+        "signal_file": "ASML_20260512.json",
+        "model_file": null
+      },
+      "gaps": ["no model report on file — run /stock-model ASML; signal says model_ready: NO"]
+    },
+    {
+      "ticker": "GOOG",
+      "company": "Alphabet Inc.",
+      "current_price": null,
+      "price_source": null,
+      "price_source_file": null,
+      "price_as_of": null,
+      "iv_base": null,
+      "iv_bear": null,
+      "iv_bull": null,
+      "mos_pct": null,
+      "range_vs_price": null,
+      "verdict": "NO_MODEL",
+      "model_date": null,
+      "days_stale": null,
+      "stale": null,
+      "alias_used": "GOOGL",
+      "sources": {
+        "screen_file": "GOOGL_20260512.json",
+        "signal_file": "GOOGL_20260512.json",
+        "model_file": null
+      },
+      "gaps": ["no model report on file — run /stock-model GOOG; signal says model_ready: NO; alias GOOGL used"]
+    },
+    {
+      "ticker": "NFLX",
+      "company": "Netflix, Inc.",
+      "current_price": null,
+      "price_source": null,
+      "price_source_file": null,
+      "price_as_of": null,
+      "iv_base": null,
+      "iv_bear": null,
+      "iv_bull": null,
+      "mos_pct": null,
+      "range_vs_price": null,
+      "verdict": "NO_MODEL",
+      "model_date": null,
+      "days_stale": null,
+      "stale": null,
+      "alias_used": null,
+      "sources": {
+        "screen_file": "NFLX_20260514.json",
+        "signal_file": null,
+        "model_file": null
+      },
+      "gaps": ["no model report on file — run /stock-signal NFLX then /stock-model NFLX"]
+    }
+  ],
+  "thresholds": {
+    "stale_days": 14,
+    "mos_formula": "(iv_base / current_price - 1) * 100",
+    "verdict_source": "stages.model.range_vs_price (inherited from /stock-model)",
+    "v1_notes": "Verdict labels and MoS formula inherited unchanged from /stock-model. No new thresholds introduced in this skill. Staleness day-count is a v1 default open to revision."
+  },
+  "benchmark_overlay": null,
+  "benchmark_overlay_note": "SPY/QQQ comparator deferred to ABA-125. Seam reserved; not implemented in v1.",
+  "meta": {
+    "skill": "stock-portfolio",
+    "skill_version": "v1",
+    "coverage_source": "COVERAGE.md",
+    "generated_at": "2026-05-17"
+  }
+}

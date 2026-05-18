@@ -1,0 +1,36 @@
+{
+  "ticker": "GOOG",
+  "company": "Alphabet Inc.",
+  "date": "2026-05-17",
+  "stages": {
+    "signal": {
+      "verdict": "CAUTION",
+      "profit_stage": "ESTABLISHED",
+      "track": "GROWTH",
+      "ai_layer": "INCUMBENT",
+      "ai_layer_note": "Core revenue is Search/YouTube advertising (~60% of FY2025 revenue); AI (Gemini, Search AI, Google Cloud AI workloads) is an optionality layer and moat, not the primary revenue driver",
+      "clean_eps_ttm": 11.06,
+      "sbc_stripped": true,
+      "sbc_adjustment_per_share": 2.04,
+      "sbc_note": "get_ratios sharesOutstanding = 5,456M is GOOG class only; diluted shares 12,230M from FY2025 financials used for EPS consistency. SBC $24,953M / 12,230M diluted shares = $2.04/share",
+      "peg_ratio": 5.76,
+      "peg_note": "Clean fwd P/E 31.69 ÷ 5.5% derived CAGR (eps_growth_5y unavailable; fallback (14.45/11.06)^(1/5) − 1 = 5.5%; 1-year NTM/TTM growth ~31% — conservative 5y bridge applied per methodology)",
+      "ps_ratio": 11.28,
+      "rule_of_40": null,
+      "qualitative": "PASS",
+      "qualitative_note": "PEG 5.76 driven by conservative 5y CAGR fallback (5.5%; eps_growth_5y unavailable) — CAUTION is purely valuation-based; no qualitative red flags. AI optionality premium 6.7% ($91.4B capex × 70% AI fraction × 5× proxy ÷ $4,765B market cap) — investment appears proportionate.",
+      "tam_optionality_note": "AI optionality premium: 6.7% — $91.4B TTM capex × 70% AI fraction × 5× proxy / $4,765B market cap. AI investment appears proportionate to core business value. (Assumption: 70% of capex attributed to AI data centre build-out per Alphabet public guidance; 5× proxy multiple.)",
+      "signal": "CAUTION",
+      "model_ready": "NO",
+      "condition": null
+    }
+  },
+  "meta": {
+    "profit_stage": "ESTABLISHED",
+    "track": "GROWTH",
+    "ai_layer": "INCUMBENT",
+    "confidence": "MEDIUM",
+    "manual_inputs": [],
+    "notes": "eps_growth_5y unavailable from yfinance; 5y CAGR derived via fallback formula. sharesOutstanding in get_ratios (5.456B) is GOOG class only; diluted shares (12.23B) from financials used throughout for EPS consistency. alias GOOGL resolves to same underlying business — canonical ticker GOOG used per COVERAGE.md."
+  }
+}

@@ -1,0 +1,34 @@
+{
+  "ticker": "NFLX",
+  "company": "Netflix, Inc.",
+  "date": "2026-05-17",
+  "stages": {
+    "signal": {
+      "verdict": "CAUTION",
+      "profit_stage": "ESTABLISHED",
+      "track": "GROWTH",
+      "ai_layer": "N/A",
+      "ai_layer_note": "AI (recommendation, personalisation, thumbnail optimisation) is internal product tooling; streaming subscriptions are the investment thesis",
+      "clean_eps_ttm": 3.01,
+      "sbc_stripped": true,
+      "sbc_adjustment_per_share": 0.09,
+      "peg_ratio": 4.74,
+      "peg_note": "Clean fwd P/E 23.25 ÷ 4.9% derived CAGR (eps_growth_5y unavailable from consensus; fallback: (3.8306/3.0125)^(1/5) − 1 = 4.9%; 1-year NTM/TTM growth ~27% — conservative 5y bridge applied per methodology)",
+      "ps_ratio": 7.81,
+      "rule_of_40": null,
+      "qualitative": "PASS",
+      "qualitative_note": "PEG 4.74 driven by conservative 5y CAGR fallback (4.9%; eps_growth_5y unavailable from consensus) — CAUTION is purely valuation-based; no qualitative red flags. P/S 7.81 within BUY threshold on secondary lens.",
+      "signal": "CAUTION",
+      "model_ready": "NO",
+      "condition": null
+    }
+  },
+  "meta": {
+    "profit_stage": "ESTABLISHED",
+    "track": "GROWTH",
+    "ai_layer": "N/A",
+    "confidence": "MEDIUM",
+    "manual_inputs": [],
+    "notes": "eps_growth_5y unavailable from yfinance consensus; 5y CAGR derived via fallback formula (ntm_eps/clean_ttm_eps)^(1/5) − 1 = 4.9%. This is conservative — 1-year NTM/TTM growth rate is ~27%. PEG signal is methodology-sensitive here; P/S 7.81 (secondary lens) would yield BUY."
+  }
+}

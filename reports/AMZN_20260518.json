@@ -1,0 +1,135 @@
+{
+  "ticker": "AMZN",
+  "company": "Amazon.com, Inc.",
+  "date": "2026-05-18",
+  "stages": {
+    "signal": {
+      "verdict": "CAUTION",
+      "profit_stage": "ESTABLISHED",
+      "track": "GROWTH",
+      "ai_layer": "INCUMBENT",
+      "clean_eps_ttm": 6.54,
+      "sbc_stripped": true,
+      "sbc_adjustment_per_share": 1.81,
+      "peg_ratio": 3.81,
+      "ps_ratio": 3.83,
+      "rule_of_40": null,
+      "qualitative": "PASS",
+      "qualitative_note": "AI optionality premium 13.9% ≤ 20%; AI investment appears proportionate to core business value (Assumption: ~60% of $131.8B TTM capex attributed to AI; 5× proxy multiple applied to AI capex run-rate of ~$79.1B)",
+      "signal": "CAUTION",
+      "model_ready": "NO",
+      "condition": null
+    },
+    "timing": {
+      "verdict": "NEUTRAL",
+      "sue": 2.3627,
+      "sue_window": "4q",
+      "sue_caveat": "4-quarter std-dev is statistically weaker than the 8-quarter window used in the academic literature; treat SUE > 1.5 as the noise floor for v1.",
+      "pead_window_status": "IN WINDOW",
+      "days_since_earnings": 48,
+      "pead_late_window": true,
+      "revision_direction": null,
+      "net_revisions_7d": null,
+      "net_revisions_30d": null,
+      "next_catalyst": "Estimated earnings ~2026-06-29",
+      "next_catalyst_date": "2026-06-29",
+      "days_to_catalyst": 42,
+      "catalyst_source": "estimated",
+      "rationale": "SUE 2.36 (Q1 2026 beat: +$1.13 vs consensus, +68.2%); PEAD IN WINDOW day 48/60 (late sub-band — drift signal decaying); revision direction N/A (yf MCP gap); ACT NOW unreachable without revision signal; estimated catalyst in 42d. Verdict could become ACT NOW once ABA-68 ships."
+    },
+    "model": {
+      "method": "two-stage DCF",
+      "profit_stage": "ESTABLISHED",
+      "gate_bypass": "coverage",
+      "signal_verdict": "CAUTION",
+      "current_price": 264.14,
+      "shares_diluted": 10827000000,
+      "net_debt": 66177000000,
+      "fcf_ttm": -11772000000,
+      "fcf_ttm_reported": 7695000000,
+      "sbc_ttm": 19467000000,
+      "fcf_margin_ttm": -0.01641,
+      "fcf_margin_ttm_reported": 0.01073,
+      "fcf_margin_normalized": 0.0774,
+      "normalization_note": "Clean TTM margin −1.64% breaks scenario ordering (negative FCF). User-selected normalized margin: OCF margin 19.46% minus normalized capex 9.0% (FY2023 pre-AI baseline) minus SBC 2.72% = 7.74%. Y1 anchor uses normalized margin; TTM fields preserved for audit.",
+      "fcf_cagr_3y": 1.457,
+      "growth_rate": {
+        "trailing_3y_cagr": 1.457,
+        "consensus_5y_growth": null,
+        "fallback_ceiling": 0.18,
+        "applied_base_cagr": 0.18,
+        "cap_applied": true,
+        "cap_source": "fallback_ceiling"
+      },
+      "ntm_revenue": 927846089480,
+      "base_wacc": 0.085,
+      "scenarios": {
+        "bear": {
+          "y1_fcf": 61115000000,
+          "y2_5_cagr": 0.09,
+          "terminal_growth": 0.015,
+          "wacc": 0.095,
+          "intrinsic_value_per_share": 83.6,
+          "upside_pct": -68.4,
+          "narrative": "revenue miss, capex cycle extends, multiple compression, higher cost of capital"
+        },
+        "base": {
+          "y1_fcf": 71909000000,
+          "y2_5_cagr": 0.18,
+          "terminal_growth": 0.025,
+          "wacc": 0.085,
+          "intrinsic_value_per_share": 176.6,
+          "upside_pct": -33.1,
+          "narrative": "consensus revenue, AI capex normalises at 9% intensity, clean FCF expands linearly to steady state"
+        },
+        "bull": {
+          "y1_fcf": 79090000000,
+          "y2_5_cagr": 0.236,
+          "terminal_growth": 0.035,
+          "wacc": 0.075,
+          "intrinsic_value_per_share": 346.9,
+          "upside_pct": 31.3,
+          "narrative": "AWS + Ads outperform, capex decelerates faster than consensus, rate-easing tailwind"
+        }
+      },
+      "intrinsic_value_range": {
+        "bear": 83.6,
+        "base": 176.6,
+        "bull": 346.9
+      },
+      "range_vs_price": "WITHIN BASE-BULL",
+      "sensitivity": {
+        "dominant_driver": "WACC",
+        "note": "WACC dominates — ±100 bps WACC moves base IV by ±19%; terminal growth ±100 bps moves ±15%; CAGR ±300 bps moves ±10%"
+      },
+      "sensitivity_table": {
+        "wacc_axis": [0.075, 0.080, 0.085, 0.090, 0.095],
+        "terminal_growth_axis": [0.015, 0.020, 0.025, 0.030, 0.035],
+        "intrinsic_value_per_share": [
+          [183.1, 197.7, 215.2, 236.7, 263.5],
+          [167.6, 179.8, 194.2, 211.4, 232.5],
+          [154.5, 164.7, 176.6, 190.7, 207.7],
+          [143.0, 151.7, 161.8, 173.5, 187.3],
+          [133.0, 140.5, 149.0, 158.9, 170.4]
+        ],
+        "base_cell": {"row": 2, "col": 2}
+      },
+      "position_sizing": {
+        "band": "0% of portfolio (no entry)",
+        "lower_pct": 0,
+        "upper_pct": 0,
+        "signal_verdict": "CAUTION",
+        "range_vs_price": "WITHIN BASE-BULL",
+        "margin_of_safety_pct": -33.1,
+        "confidence_cap_applied": false,
+        "rationale": "CAUTION × WITHIN BASE–BULL (price $264.14 vs base IV $176.6, MoS −33.1%) → 0% of portfolio (no entry). Coverage bypass preserves CAUTION verdict; position table caps CAUTION × WITHIN BASE–BULL at 0%."
+      }
+    }
+  },
+  "meta": {
+    "profit_stage": "ESTABLISHED",
+    "track": "GROWTH",
+    "ai_layer": "INCUMBENT",
+    "confidence": "LOW"
+  }
+}
