@@ -1,0 +1,621 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>GOOG Playbook</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bear:#dc3545;--bear-light:#fef2f2;--bear-border:#fca5a5;
+  --bull:#16a34a;--bull-light:#f0fdf4;--bull-border:#86efac;
+  --base:#2563eb;--base-light:#eff6ff;--base-border:#93c5fd;
+  --purple:#7c3aed;--orange:#ea580c;--sky:#0284c7;
+  --neutral:#6b7280;
+  --sidebar:260px;--hdr:56px;
+  --bg:#f8fafc;--surface:#fff;--border:#e2e8f0;
+  --text:#1e293b;--muted:#64748b;
+  --font:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+  --mono:"SFMono-Regular",Consolas,"Liberation Mono",Menlo,monospace;
+}
+html{scroll-behavior:smooth}
+body{font-family:var(--font);font-size:15px;line-height:1.65;color:var(--text);background:var(--bg)}
+
+/* ── layout ── */
+#hdr{
+  position:fixed;top:0;left:0;right:0;height:var(--hdr);
+  background:var(--surface);border-bottom:1px solid var(--border);
+  display:flex;align-items:center;padding:0 24px;gap:10px;z-index:100
+}
+#hdr .ttl{font-size:17px;font-weight:700}
+.badge{
+  display:inline-flex;align-items:center;border-radius:4px;
+  padding:2px 8px;font-size:12px;font-weight:600;border:1px solid
+}
+.badge-caution{background:#fef3c7;color:#92400e;border-color:#fde68a}
+.badge-medium{background:#f0fdf4;color:#15803d;border-color:#86efac}
+#hdr .meta{font-size:12px;color:var(--muted);margin-left:auto}
+
+#nav{
+  position:fixed;top:var(--hdr);left:0;bottom:0;width:var(--sidebar);
+  overflow-y:auto;background:var(--surface);border-right:1px solid var(--border);
+  padding:16px 0
+}
+#nav ul{list-style:none}
+#nav a{
+  display:block;padding:5px 20px;font-size:13px;color:var(--muted);
+  text-decoration:none;border-left:2px solid transparent;transition:.15s
+}
+#nav a:hover{color:var(--text);background:var(--bg)}
+#nav a.active{color:var(--base);border-left-color:var(--base);background:var(--base-light);font-weight:600}
+#nav .h3 a{padding-left:36px;font-size:12px}
+#nav .lbl{
+  font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--muted);padding:12px 20px 4px
+}
+#main{margin-left:var(--sidebar);padding-top:var(--hdr)}
+#inner{max-width:860px;padding:40px 48px 80px}
+
+/* ── typography ── */
+h1{display:none}
+h2{
+  font-size:20px;font-weight:700;margin:48px 0 20px;
+  padding-bottom:10px;border-bottom:2px solid var(--border)
+}
+section:first-child h2{margin-top:8px}
+h3{font-size:15px;font-weight:600;margin:28px 0 12px}
+p{margin:0 0 14px}
+ul,ol{margin:0 0 14px 20px}
+li{margin-bottom:5px}
+code{
+  font-family:var(--mono);font-size:13px;
+  background:#f1f5f9;border:1px solid var(--border);
+  border-radius:3px;padding:1px 5px
+}
+strong{font-weight:600}
+hr{border:none;border-top:1px solid var(--border);margin:32px 0}
+.dim{font-size:12px;color:var(--muted);margin-top:16px}
+
+/* ── tables ── */
+.tbl{overflow-x:auto;margin:0 0 20px}
+table{width:100%;border-collapse:collapse;font-size:14px}
+thead{background:#f1f5f9}
+th{padding:9px 12px;text-align:left;font-weight:600;font-size:13px;border-bottom:2px solid var(--border)}
+td{padding:8px 12px;border-bottom:1px solid var(--border);vertical-align:top}
+tr:hover td{background:var(--bg)}
+
+/* ── callouts ── */
+.box{border-radius:6px;padding:14px 18px;margin:0 0 20px;border-left:4px solid}
+.box-info{background:var(--base-light);border-color:var(--base)}
+.box-warn{background:#fff7ed;border-color:#f97316}
+.box-bear{background:var(--bear-light);border-color:var(--bear)}
+.box-bull{background:var(--bull-light);border-color:var(--bull)}
+.box-ttl{font-weight:700;font-size:13px;margin-bottom:6px}
+
+/* ── chips ── */
+.chip{
+  display:inline-flex;align-items:center;border-radius:20px;
+  padding:3px 10px;font-size:12px;font-weight:600;border:1px solid;
+  letter-spacing:.02em
+}
+.c-iface{background:#ede9fe;color:#5b21b6;border-color:#c4b5fd}
+.c-mon{background:#fff7ed;color:#c2410c;border-color:#fdba74}
+.c-cost{background:var(--bear-light);color:#b91c1c;border-color:var(--bear-border)}
+.c-eco{background:#f0f9ff;color:#0369a1;border-color:#7dd3fc}
+.c-cloud{background:#f0fdf4;color:#15803d;border-color:var(--bull-border)}
+
+/* ── segment bar chart ── */
+.seg{margin:0 0 20px}
+.seg-row{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.seg-lbl{width:180px;font-size:13px;flex-shrink:0}
+.seg-track{flex:1;background:#e2e8f0;border-radius:4px;height:22px;overflow:hidden}
+.seg-fill{height:100%;border-radius:4px;display:flex;align-items:center;padding-left:7px}
+.seg-fill span{font-size:12px;font-weight:700;color:#fff}
+.seg-ann{width:200px;flex-shrink:0;font-size:12px;color:var(--muted)}
+
+/* ── path cards ── */
+.paths{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:0 0 20px}
+.path{border-radius:8px;padding:18px;border:1px solid}
+.path-a{background:var(--bull-light);border-color:var(--bull-border)}
+.path-b{background:var(--bear-light);border-color:var(--bear-border)}
+.path-tag{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px}
+.path-tag-a{color:var(--bull)}.path-tag-b{color:var(--bear)}
+.path h4{font-size:14px;font-weight:700;margin-bottom:8px}
+.path p{font-size:13.5px;margin:0}
+
+/* ── catalyst table ── */
+.prob{display:flex;align-items:center;gap:6px;min-width:90px}
+.prob-track{height:6px;border-radius:3px;background:var(--border);flex:1}
+.prob-fill{height:100%;border-radius:3px}
+.p-low{background:var(--neutral)}.p-mid{background:#f59e0b}.p-hi{background:var(--bull)}
+.prob-txt{font-size:12px;color:var(--muted);white-space:nowrap}
+.pos{color:var(--bull);font-weight:700}.neg{color:var(--bear);font-weight:700}
+
+/* ── axis cards ── */
+.axis{border:1px solid var(--border);border-radius:8px;margin:0 0 20px;overflow:hidden}
+.axis-hdr{
+  padding:12px 18px;background:#f8fafc;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;gap:10px
+}
+.axis-hdr h4{font-size:15px;font-weight:700;margin:0}
+.axis-q{padding:12px 18px 0;font-size:13.5px;color:var(--muted);font-style:italic}
+.axis-row{display:grid;grid-template-columns:72px 1fr}
+.axis-row+.axis-row{border-top:1px solid var(--border)}
+.axis-key{
+  padding:14px 12px;font-size:11px;font-weight:700;letter-spacing:.07em;
+  text-transform:uppercase;display:flex;align-items:flex-start;
+  border-right:1px solid var(--border)
+}
+.ak-bull{color:var(--bull);background:#f8fffe}
+.ak-bear{color:var(--bear);background:#fff9f9}
+.ak-sig{color:var(--base);background:#f5f8ff}
+.axis-val{padding:14px 18px;font-size:13.5px;line-height:1.6}
+.axis-val p:last-child{margin:0}
+
+/* ── failure mode grid ── */
+.fm-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:0 0 20px}
+.fm{border:1px solid var(--border);border-radius:8px;padding:16px}
+.fm h4{font-size:13px;font-weight:700;margin:8px 0 6px}
+.fm p{font-size:13px;margin:0;color:var(--muted)}
+.fm-iface{border-top:3px solid var(--purple)}
+.fm-mon{border-top:3px solid var(--orange)}
+.fm-cost{border-top:3px solid var(--bear)}
+.fm-eco{border-top:3px solid var(--sky)}
+
+/* ── scenario grid ── */
+.scen{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:16px 0 20px}
+.sc{border-radius:8px;padding:18px;border:1px solid}
+.sc-bear{background:var(--bear-light);border-color:var(--bear-border)}
+.sc-base{background:var(--base-light);border-color:var(--base-border)}
+.sc-bull{background:var(--bull-light);border-color:var(--bull-border)}
+.sc h4{font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;margin-bottom:14px}
+.sc-bear h4{color:var(--bear)}.sc-base h4{color:var(--base)}.sc-bull h4{color:var(--bull)}
+.sc-m{margin-bottom:12px}
+.sc-ml{font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);margin-bottom:2px}
+.sc-mv{font-size:22px;font-weight:800}
+.sc-bear .sc-mv{color:var(--bear)}.sc-base .sc-mv{color:var(--base)}.sc-bull .sc-mv{color:var(--bull)}
+.sc-ms{font-size:11px;color:var(--muted)}
+
+/* ── override val ── */
+.oval{font-family:var(--mono);font-size:13px;font-weight:700;color:var(--base)}
+
+/* ── timeline ── */
+.tl{position:relative;margin:24px 0 32px;padding-left:24px}
+.tl::before{content:'';position:absolute;left:7px;top:8px;bottom:8px;width:2px;background:var(--border)}
+.tl-item{position:relative;margin-bottom:28px}
+.tl-item::before{
+  content:'';position:absolute;left:-21px;top:6px;
+  width:12px;height:12px;border-radius:50%;
+  background:var(--base);border:2px solid white;box-shadow:0 0 0 2px var(--base)
+}
+.tl-item:last-child{margin-bottom:0}
+.tl-yr{font-size:12px;font-weight:700;color:var(--muted);letter-spacing:.04em;margin-bottom:4px}
+.tl-t{font-size:15px;font-weight:700;margin-bottom:6px}
+.tl-b{font-size:13.5px;color:var(--muted)}
+.tl-stats{display:flex;gap:10px;margin-top:8px;flex-wrap:wrap}
+.tl-stat{background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:3px 9px;font-size:12px}
+.tl-stat .lv{font-weight:700}
+
+/* ── layer nav ── */
+.layers{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 24px}
+
+/* ── scroll target offset ── */
+section[id]{scroll-margin-top:calc(var(--hdr) + 12px)}
+
+@media(max-width:900px){
+  #nav{display:none}
+  #main{margin-left:0}
+  .paths,.fm-grid,.scen{grid-template-columns:1fr}
+  .seg-ann{display:none}
+  .axis-row{grid-template-columns:56px 1fr}
+}
+</style>
+</head>
+<body>
+
+<header id="hdr">
+  <span class="ttl">GOOG Playbook</span>
+  <span class="badge badge-caution">ESTABLISHED · INCUMBENT</span>
+  <span class="badge badge-medium">MEDIUM confidence</span>
+  <span class="meta">Rendered 2026-05-18 · playbooks/GOOG.md</span>
+</header>
+
+<nav id="nav"><ul>
+  <li class="lbl">Contents</li>
+  <li><a href="#biz-arch">1. Business Architecture</a></li>
+  <li class="h3"><a href="#seg-mix">Segment mix</a></li>
+  <li class="h3"><a href="#rev-drivers">Revenue drivers</a></li>
+  <li class="h3"><a href="#end-markets">End-market exposure</a></li>
+  <li><a href="#ai-cycle">2. AI Investment Cycle</a></li>
+  <li><a href="#catalysts">3. Active Catalysts</a></li>
+  <li><a href="#axes">4. Disagreement Axes</a></li>
+  <li class="h3"><a href="#ax-iface">(i) Interface disruption</a></li>
+  <li class="h3"><a href="#ax-mon">(ii) Monetisation compression</a></li>
+  <li class="h3"><a href="#ax-cost">(iii) Cost disruption</a></li>
+  <li class="h3"><a href="#ax-eco">(iv) Ecosystem/distribution</a></li>
+  <li class="h3"><a href="#ax-cloud">(v) Cloud differentiation</a></li>
+  <li><a href="#failure">5. Failure Modes</a></li>
+  <li><a href="#overrides">6. Overrides Rationale</a></li>
+  <li class="h3"><a href="#scen-axes">Scenario axes design</a></li>
+  <li><a href="#history">7. Historical Priors</a></li>
+</ul></nav>
+
+<div id="main"><div id="inner">
+
+<!-- ═══════════════════════════════════════════════════════════════════════
+     1. BUSINESS ARCHITECTURE
+════════════════════════════════════════════════════════════════════════ -->
+<section id="biz-arch">
+<h2>1. Business Architecture</h2>
+<p><strong>Coverage:</strong> ESTABLISHED · INCUMBENT &nbsp;·&nbsp; <strong>Thesis:</strong> AI-search-disruption debate + DOJ distribution-economics remedies + AI capex cost-permanence question — three structurally intertwined uncertainties that generic defaults cannot price.</p>
+
+<section id="seg-mix">
+<h3>Segment mix (approximate FY2025 basis)</h3>
+<div class="seg">
+  <div class="seg-row">
+    <span class="seg-lbl">Search &amp; Other</span>
+    <div class="seg-track"><div class="seg-fill" style="width:57%;background:#4f46e5"><span>57%</span></div></div>
+    <span class="seg-ann">Low-to-mid single digits; AI disruption is structural risk</span>
+  </div>
+  <div class="seg-row">
+    <span class="seg-lbl">Google Cloud (GCP)</span>
+    <div class="seg-track"><div class="seg-fill" style="width:13%;background:#16a34a"><span>13%</span></div></div>
+    <span class="seg-ann">~28–30% YoY; rising earnings contributor</span>
+  </div>
+  <div class="seg-row">
+    <span class="seg-lbl">YouTube Ads</span>
+    <div class="seg-track"><div class="seg-fill" style="width:11%;background:#dc2626"><span>11%</span></div></div>
+    <span class="seg-ann">Mid-teens + YouTube Premium subs</span>
+  </div>
+  <div class="seg-row">
+    <span class="seg-lbl">Google Network</span>
+    <div class="seg-track"><div class="seg-fill" style="width:9%;background:#ea580c"><span>9%</span></div></div>
+    <span class="seg-ann">Declining; AdTech regulatory scrutiny</span>
+  </div>
+  <div class="seg-row">
+    <span class="seg-lbl">Google Other</span>
+    <div class="seg-track"><div class="seg-fill" style="width:5%;background:#6b7280"><span>5%</span></div></div>
+    <span class="seg-ann">Mid-single digits; thin hardware margins</span>
+  </div>
+  <div class="seg-row">
+    <span class="seg-lbl">Other Bets</span>
+    <div class="seg-track"><div class="seg-fill" style="width:2%;background:#d1d5db;min-width:36px"><span>~1%</span></div></div>
+    <span class="seg-ann">R&amp;D-stage; Waymo optionality</span>
+  </div>
+</div>
+</section>
+
+<section id="rev-drivers">
+<h3>Key revenue drivers</h3>
+<div class="box box-info">
+  <div class="box-ttl">OQ6 Data Gap — Search CPM / Click Volumes</div>
+  Absolute quarterly Search CPM (Cost Per Thousand Impressions) and click volumes are not disclosed by Alphabet. Revenue-per-search is inferred from total Search &amp; Other revenue YoY vs. peer platforms — not directly observable. The playbook does not attempt quarterly KPI (Key Performance Indicator) tracking.
+</div>
+<ol>
+  <li><strong>Search:</strong> Paid clicks × CPC (Cost Per Click). Revenue-per-search is the key monetisation proxy — monitored via Search &amp; Other YoY vs. peer ad platforms (Meta, Snap, Pinterest).</li>
+  <li><strong>YouTube:</strong> Video ad auction (CPM-based); YouTube Premium subs add a lower-variance recurring line. Ad load trends disclosed directionally only.</li>
+  <li><strong>Cloud:</strong> Committed GCP backlog + Workspace seats. Backlog growth is the leading indicator for Cloud revenue trajectory.</li>
+  <li><strong>Other Bets:</strong> Waymo is the only asset with a plausible near-term monetisation path (robotaxi per-mile revenue, fleet licensing). Not material to DCF (Discounted Cash Flow) in the base case.</li>
+</ol>
+</section>
+
+<section id="end-markets">
+<h3>End-market exposure</h3>
+<div class="tbl"><table>
+  <thead><tr><th>Exposure</th><th>Revenue share</th><th>Cyclicality</th><th>Structural risk</th></tr></thead>
+  <tbody>
+    <tr><td>Digital advertising</td><td>~77%</td><td>Moderate — macro ad-spend cyclical</td><td>AI-interface displacement; AdTech remedies</td></tr>
+    <tr><td>Enterprise cloud</td><td>~13%</td><td>Low — committed backlog, recurring</td><td>Commoditisation vs. AWS/Azure</td></tr>
+    <tr><td>Hardware / consumer services</td><td>~5%</td><td>Moderate</td><td>Limited operating leverage</td></tr>
+    <tr><td>Other Bets</td><td>~1%</td><td>N/A (pre-revenue / R&amp;D)</td><td>Capital allocation optionality</td></tr>
+  </tbody>
+</table></div>
+</section>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════════════
+     2. AI INVESTMENT CYCLE POSITION
+════════════════════════════════════════════════════════════════════════ -->
+<section id="ai-cycle">
+<h2>2. AI Investment Cycle Position</h2>
+<p>Alphabet spent ~$91B in FY2025 capex, ~70% AI-attributed per public guidance. This depresses TTM clean FCF (Free Cash Flow) margin and creates a two-sided uncertainty — the normalisation path depends on which margin thesis proves correct.</p>
+
+<div class="paths">
+  <div class="path path-a">
+    <div class="path-tag path-tag-a">▲ Path A — Base Case</div>
+    <h4>Cost-temporary</h4>
+    <p>AI inference cost-per-query declines on TPU hardware scaling and model-efficiency curves (distillation, quantisation). Capex/revenue mean-reverts post-2027 as the build phase completes. AI Overviews maintain or improve ad monetisation density per query. Terminal margin recovers toward <strong>30%</strong> SBC (Stock-Based Compensation)-stripped FCF.</p>
+  </div>
+  <div class="path path-b">
+    <div class="path-tag path-tag-b">▼ Path B — Bear Case</div>
+    <h4>Cost-permanent</h4>
+    <p>AI serving costs are structurally elevated and do not decay at scale. Competitive pressure forces continued reinvestment. AI-style answering reduces click-through rates, compressing ad density and CPC simultaneously. Terminal margin stabilises in the <strong>low-20s</strong>. Basis for <code>scenario_axes.bear.terminal_margin: 0.22</code>.</p>
+  </div>
+</div>
+
+<div class="box box-info">
+  <div class="box-ttl">Path A Evidence Gate</div>
+  Capex/revenue ratio declining from FY2025 peak, sustained across two consecutive annual periods post-FY2026. Ratio stabilising above 18% of revenue through FY2028 = Path B signal. Gross-margin segmentation at the AI-products level (not currently disclosed) would be the most direct evidence.
+</div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════════════
+     3. ACTIVE CATALYSTS
+════════════════════════════════════════════════════════════════════════ -->
+<section id="catalysts">
+<h2>3. Active Catalysts</h2>
+<div class="tbl"><table>
+  <thead><tr><th>Catalyst</th><th>Probability</th><th>IV impact</th><th>Direction</th></tr></thead>
+  <tbody>
+    <tr>
+      <td>DOJ Search remedies finalised (default-payment restrictions, Chrome leverage, or divestiture)</td>
+      <td><div class="prob"><div class="prob-track"><div class="prob-fill p-mid" style="width:35%"></div></div><span class="prob-txt">~35% by end-2027</span></div></td>
+      <td>−10–20%</td><td><span class="neg">↘ Strongly negative</span></td>
+    </tr>
+    <tr>
+      <td>AI Mode query-mix data disclosed showing CPC stability</td>
+      <td><div class="prob"><div class="prob-track"><div class="prob-fill p-mid" style="width:40%"></div></div><span class="prob-txt">~40% by end-2026</span></div></td>
+      <td>+5–10%</td><td><span class="pos">↗ Positive</span></td>
+    </tr>
+    <tr>
+      <td>GCP margin print sustains above 15% for 2+ consecutive quarters</td>
+      <td><div class="prob"><div class="prob-track"><div class="prob-fill p-hi" style="width:55%"></div></div><span class="prob-txt">~55% by end-2027</span></div></td>
+      <td>+5–8%</td><td><span class="pos">↗ Positive</span></td>
+    </tr>
+    <tr>
+      <td>Gemini consumer adoption milestone (first-place-I-ask share shift, 3rd-party data)</td>
+      <td><div class="prob"><div class="prob-track"><div class="prob-fill p-mid" style="width:30%"></div></div><span class="prob-txt">~30% by end-2027</span></div></td>
+      <td>+3–7%</td><td><span class="pos">↗ Positive</span></td>
+    </tr>
+    <tr>
+      <td>AdTech (Advertising Technology) structural separation ruling (forced ad-exchange unwind)</td>
+      <td><div class="prob"><div class="prob-track"><div class="prob-fill p-low" style="width:25%"></div></div><span class="prob-txt">~25%</span></div></td>
+      <td>−8–15%</td><td><span class="neg">↘ Negative</span></td>
+    </tr>
+    <tr>
+      <td>AI-native interface captures commercial-intent query share (3rd-party panel, ≥2 quarters sustained)</td>
+      <td><div class="prob"><div class="prob-track"><div class="prob-fill p-mid" style="width:30%"></div></div><span class="prob-txt">~30% by end-2027</span></div></td>
+      <td>−15–25%</td><td><span class="neg">↘ Strongly negative</span></td>
+    </tr>
+    <tr>
+      <td>Waymo monetisation milestone (revenue-generating fleet in 3+ cities at scale)</td>
+      <td><div class="prob"><div class="prob-track"><div class="prob-fill p-mid" style="width:40%"></div></div><span class="prob-txt">~40% by end-2027</span></div></td>
+      <td>+2–5%</td><td><span class="pos">↗ Modest positive</span></td>
+    </tr>
+    <tr>
+      <td>Capex/revenue ratio: FY2027 &lt; FY2026 for two consecutive years (Path A confirmed)</td>
+      <td><div class="prob"><div class="prob-track"><div class="prob-fill p-hi" style="width:50%"></div></div><span class="prob-txt">~50%</span></div></td>
+      <td>+8–12%</td><td><span class="pos">↗ Positive — terminal-margin re-rate</span></td>
+    </tr>
+  </tbody>
+</table></div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════════════
+     4. SELL-SIDE DISAGREEMENT AXES
+════════════════════════════════════════════════════════════════════════ -->
+<section id="axes">
+<h2>4. Sell-Side Disagreement Axes</h2>
+<div class="layers">
+  <span class="chip c-iface">Interface</span>
+  <span class="chip c-mon">Monetisation</span>
+  <span class="chip c-cost">Cost</span>
+  <span class="chip c-eco">Ecosystem</span>
+  <span class="chip c-cloud">Cloud</span>
+</div>
+
+<section id="ax-iface">
+<div class="axis">
+  <div class="axis-hdr"><span class="chip c-iface">Interface</span><h4>(i) Interface disruption</h4></div>
+  <p class="axis-q">Do AI assistants become the primary discovery layer, displacing Google Search for high-intent commercial queries?</p>
+  <div class="axis-row"><div class="axis-key ak-bull">Bull</div><div class="axis-val">AI Overviews and AI Mode keep users inside Google surfaces for commercial-intent queries. "Where do you start a purchase query" surveys remain Google-dominant. Competitors capture curiosity and informational queries — not the ones that produce CPC revenue.</div></div>
+  <div class="axis-row"><div class="axis-key ak-bear">Bear</div><div class="axis-val">AI-native interfaces (ChatGPT, Perplexity, Claude, in-OS assistants) capture meaningful commercial-intent query share. Users who stop clicking to Google for high-intent searches stop generating ad impressions entirely.</div></div>
+  <div class="axis-row"><div class="axis-key ak-sig">Signal</div><div class="axis-val"><strong>Structural vs. noise:</strong> Monotonic commercial-intent query-share migration <em>sustained ≥3 quarters</em>; "first-place-I-ask" data from third-party consumer panels specifically for purchase-research / product-comparison intent; revenue-per-search declining even in macro-stable ad-spend periods. All three together = structural. Any one alone = noise.</div></div>
+</div>
+</section>
+
+<section id="ax-mon">
+<div class="axis">
+  <div class="axis-hdr"><span class="chip c-mon">Monetisation</span><h4>(ii) Monetisation compression</h4></div>
+  <p class="axis-q">Even at stable query share, does AI-style answering structurally compress revenue-per-search?</p>
+  <div class="axis-row"><div class="axis-key ak-bull">Bull</div><div class="axis-val">AI Overviews maintain or improve revenue-per-search through better ad-intent matching. Users who receive AI answers and then click are higher-intent buyers. Blended RPM (Revenue Per Mille) holds or expands.</div></div>
+  <div class="axis-row"><div class="axis-key ak-bear">Bear</div><div class="axis-val">AI summaries satisfy the user's need without a click. Ad slot count per query falls as above-the-fold content becomes AI-generated. CPC compresses as advertiser competition for fewer slots declines.</div></div>
+  <div class="axis-row"><div class="axis-key ak-sig">Signal</div><div class="axis-val"><strong>Structural vs. noise:</strong> Revenue-per-search trend over ≥2 quarters filtered against macro by comparing YoY growth to peer ad platforms (Meta, Snap, Pinterest) in the same periods. A decline tracking macro peers = cycle noise. A decline diverging negatively from peers during macro-stable ad spend = compression signal. (Absolute CPM / click volumes not disclosed — OQ6 gap.)</div></div>
+</div>
+</section>
+
+<section id="ax-cost">
+<div class="axis">
+  <div class="axis-hdr"><span class="chip c-cost">Cost</span><h4>(iii) Cost disruption</h4></div>
+  <p class="axis-q">Does AI inference cost remain structurally elevated, preventing margin recovery even if revenue holds?</p>
+  <div class="axis-row"><div class="axis-key ak-bull">Bull</div><div class="axis-val">Inference cost-per-query declines on TPU hardware scaling and model-efficiency curves (distillation, quantisation, smaller purpose-built models). Capex/revenue mean-reverts post-2027 as the fixed-cost build phase completes. Operating leverage reasserts.</div></div>
+  <div class="axis-row"><div class="axis-key ak-bear">Bear</div><div class="axis-val">AI serving cost is a permanent elevated line item — each AI query is computationally costlier than a keyword lookup by a structurally different order of magnitude. Competitive pressure forces continued reinvestment. Cost-efficiency gains are competed away in product quality, not margin expansion.</div></div>
+  <div class="axis-row"><div class="axis-key ak-sig">Signal</div><div class="axis-val"><strong>Structural vs. noise:</strong> Capex/revenue ratio post-FY2026 across two consecutive annual periods. Declining toward ≤15% of revenue = Path A signal. Stabilising above 18% through FY2028 = Path B signal.</div></div>
+</div>
+</section>
+
+<section id="ax-eco">
+<div class="axis">
+  <div class="axis-hdr"><span class="chip c-eco">Ecosystem</span><h4>(iv) Ecosystem and distribution displacement</h4></div>
+  <p class="axis-q">Does regulatory/competitive erosion of Google's distribution advantages structurally weaken default-placement economics?</p>
+  <div class="axis-row"><div class="axis-key ak-bull">Bull</div><div class="axis-val">Distribution moats hold: Chrome default-search leverage continues, Apple default-search-engine payment (~$18–20B/year, market estimate) survives in modified form, Android OEM agreements sustain first-call position. Regulatory remedies stay at the margins — conduct rules, not structural separation.</div></div>
+  <div class="axis-row"><div class="axis-key ak-bear">Bear</div><div class="axis-val">DOJ remedies impair default-placement economics materially: payments-for-default restricted or banned, Chrome divested or usage-gated, Android default-app leverage limited. The structural question is whether distribution advantages durably erode — the specific remedy form matters less than the functional outcome.</div></div>
+  <div class="axis-row"><div class="axis-key ak-sig">Signal</div><div class="axis-val"><strong>Structural vs. noise:</strong> Actual remedies imposed with material appeals exhausted (not just initial rulings); third-party measurement of default-search-engine market share in the 12–24 months post-remedy implementation. Court rulings under appeal with no operational change = procedural noise. Operational changes to Chrome default or Apple TAC (Traffic Acquisition Cost) payment = structural signal.</div></div>
+</div>
+</section>
+
+<section id="ax-cloud">
+<div class="axis">
+  <div class="axis-hdr"><span class="chip c-cloud">Cloud</span><h4>(v) Cloud differentiation</h4></div>
+  <p class="axis-q">Is GCP developing durable economic differentiation, or participating in an AI infrastructure cycle where margins normalise?</p>
+  <div class="axis-row"><div class="axis-key ak-bull">Bull</div><div class="axis-val">TPU + Vertex AI + Gemini-on-Cloud create stack-level differentiation that justifies sustained pricing power. Enterprise customers building Gemini-powered workflows create switching-cost stickiness analogous to AWS-native lock-in. GCP margin expands sustainably toward AWS/Azure levels (high-20s to low-30s).</div></div>
+  <div class="axis-row"><div class="axis-key ak-bear">Bear</div><div class="axis-val">GCP participates in the AI capex cycle as a capacity provider without the enterprise-grade trust, developer ecosystem depth, or data-gravity advantages of AWS or Azure. Margins normalise to mid-cycle hyperscaler economics (mid-teens). GCP is a strategic hedge, not a durable Search offset.</div></div>
+  <div class="axis-row"><div class="axis-key ak-sig">Signal</div><div class="axis-val"><strong>Structural vs. noise:</strong> GCP operating margin trajectory across ≥4 consecutive quarters at scale. Below 15% by FY2027 = weakens Cloud-offset assumption. Above 20% by FY2027 = strengthens bull case.</div></div>
+</div>
+</section>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════════════
+     5. FAILURE MODES
+════════════════════════════════════════════════════════════════════════ -->
+<section id="failure">
+<h2>5. Failure Modes</h2>
+<p>Discrete thesis-breaking scenarios the DCF does not capture as smooth-curve adjustments. Mapped to the 4-layer AI-disruption taxonomy.</p>
+<div class="fm-grid">
+  <div class="fm fm-iface">
+    <span class="chip c-iface">Interface</span>
+    <h4>Interface displacement (structural)</h4>
+    <p>Multi-quarter monotonic migration of commercial-intent queries to AI-native interfaces — invalidates the base revenue growth assumption. <strong>No historical analogue:</strong> prior challengers (Bing, Yahoo relaunch) did not change user behaviour at the interface layer at scale.</p>
+  </div>
+  <div class="fm fm-mon">
+    <span class="chip c-mon">Monetisation</span>
+    <h4>Monetisation compression (structural)</h4>
+    <p>AI Overview / AI Mode rollout compresses revenue-per-search durably; ad density falls; CPC declines in parallel. Can coexist with <strong>stable query volumes</strong> — making it harder to detect via search-share data alone.</p>
+  </div>
+  <div class="fm fm-cost">
+    <span class="chip c-cost">Cost</span>
+    <h4>Cost disruption (structural)</h4>
+    <p>AI capex/revenue ratio stays elevated beyond FY2028 with no margin recovery. Produces <strong>joint revenue-and-margin pressure</strong> when combined with monetisation compression — captured by <code>scenario_axes.bear</code> compressing both growth_ceiling and terminal_margin simultaneously.</p>
+  </div>
+  <div class="fm fm-eco">
+    <span class="chip c-eco">Ecosystem</span>
+    <h4>Distribution remedy</h4>
+    <p>DOJ remedies impair default-placement economics materially (Chrome divestiture, payments-for-default banned, AdTech forced unwind). Structural impairment of distribution economics is the failure condition — not any specific legal calendar date.</p>
+  </div>
+  <div class="fm fm-eco">
+    <span class="chip c-eco">Ecosystem</span>
+    <h4>Cloud commoditisation</h4>
+    <p>GCP margins fail to expand durably above mid-teens by FY2027 — eliminates the second-earnings-engine optionality. If GCP remains mid-margin, the base case requires Search to sustain its full earnings contribution with no structural offset.</p>
+  </div>
+  <div class="fm fm-eco">
+    <span class="chip c-eco">Ecosystem</span>
+    <h4>Geo-regulatory contagion</h4>
+    <p>EU DMA (Digital Markets Act) / India CCI / other-jurisdiction remedies replicate the US distribution-economics erosion pattern. The US DOJ case creates a precedent and negotiating template; a coordinated multi-jurisdiction wave could impair non-US revenue streams not currently in the bear-case model.</p>
+  </div>
+</div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════════════
+     6. TICKER-SPECIFIC OVERRIDES
+════════════════════════════════════════════════════════════════════════ -->
+<section id="overrides">
+<h2>6. Ticker-Specific Overrides (Rationale)</h2>
+<div class="tbl"><table>
+  <thead><tr><th>Field</th><th>Value</th><th>Rationale</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><code>base_wacc</code></td><td><span class="oval">9.0%</span></td>
+      <td>US 10y ~4.5% + Beta ~1.05 × 5.5% ERP (Equity Risk Premium) ≈ 10.3%. Less ~1.0pp moat-durability discount (dominant Search economics + Cloud share gains intact today). Plus ~0.3pp regulatory premium (active DOJ + AdTech + EU DMA + jurisdictional contagion). Parity with META (9.0%); above ASML monopoly level (8.5%) — Search durability is a live contested thesis.</td>
+    </tr>
+    <tr>
+      <td><code>growth_ceiling</code></td><td><span class="oval">13%</span></td>
+      <td>Fallback ceiling when <code>eps_growth_5y</code> is unavailable (current state per yfinance MCP). Below generic 18% INCUMBENT default: (a) $4.7T mega-cap mathematics, (b) Search (~57% of revenue) grows ~5–7%, (c) Cloud (~13% of revenue) at ~28–30% but not yet large enough to move the blended rate. Consensus <code>eps_growth_5y</code> takes precedence when populated.</td>
+    </tr>
+    <tr>
+      <td><code>terminal_margin</code></td><td><span class="oval">30%</span></td>
+      <td>SBC-stripped FCF margin assuming Path A (cost-temporary) prevails. TTM clean margin depressed by AI build cycle. Path B downside held discretely in <code>scenario_axes.bear.terminal_margin: 0.22</code> — without scenario_axes a 30% base would be overconfident; with it, the base stays clean and the structural asymmetry is priced in the bear DCF.</td>
+    </tr>
+    <tr>
+      <td><code>confidence_anchor</code></td><td><span class="oval">MEDIUM</span></td>
+      <td>Four distinct structural questions (interface / monetisation / cost / ecosystem) unresolvable from current financials. MCP data quality adequate (4y FCF, SBC, diluted shares present); LOW would be too pessimistic on data grounds. Below META's HIGH: META's central debate (regulatory) is discrete and binary; GOOG's (interface displacement) is continuous, multi-modal, and decision-relevant in the base case.</td>
+    </tr>
+  </tbody>
+</table></div>
+
+<section id="scen-axes">
+<h3><code>scenario_axes</code> design — why asymmetric, not ±multiplier</h3>
+
+<div class="scen">
+  <div class="sc sc-bear">
+    <h4>Bear</h4>
+    <div class="sc-m"><div class="sc-ml">Growth ceiling</div><div class="sc-mv">4%</div><div class="sc-ms">Interface-displacement path; EPS (Earnings Per Share) growth → low single digits</div></div>
+    <div class="sc-m"><div class="sc-ml">Terminal margin</div><div class="sc-mv">22%</div><div class="sc-ms">Path B: joint revenue ↓ + cost ↑ + ad density ↓</div></div>
+  </div>
+  <div class="sc sc-base">
+    <h4>Base</h4>
+    <div class="sc-m"><div class="sc-ml">Growth ceiling</div><div class="sc-mv">13%</div><div class="sc-ms">Consensus fallback; Path A prevails</div></div>
+    <div class="sc-m"><div class="sc-ml">Terminal margin</div><div class="sc-mv">30%</div><div class="sc-ms">Normalised SBC-stripped FCF; capex/rev mean-reverts post-2027</div></div>
+  </div>
+  <div class="sc sc-bull">
+    <h4>Bull</h4>
+    <div class="sc-m"><div class="sc-ml">Growth ceiling</div><div class="sc-mv">18%</div><div class="sc-ms">Gemini amplifies Search + GCP acceleration</div></div>
+    <div class="sc-m"><div class="sc-ml">Terminal margin</div><div class="sc-mv">32%</div><div class="sc-ms">Path A delivers cleanly; operating leverage reasserts</div></div>
+  </div>
+</div>
+
+<div class="box box-warn">
+  <div class="box-ttl">Why both dimensions compress in the bear case</div>
+  Interface displacement causes <strong>joint</strong> compression of growth ceiling (query share migrates) and terminal margin (monetisation compresses + costs remain elevated). A symmetric −5pp terminal-margin delta off 30% (= 25%) understates this joint structural-break shape. The bear case is not a cycle trough — it is an interface-layer shift where growth and margin deteriorate together. Similarly, the bull case is growth-driven (Gemini + Cloud), not margin-driven — <code>bull.terminal_margin: 0.32</code> is a modest upper anchor rather than a large symmetric delta.
+</div>
+</section>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════════════
+     7. HISTORICAL RESET-AND-RECOVER PRIORS
+════════════════════════════════════════════════════════════════════════ -->
+<section id="history">
+<h2>7. Historical Reset-and-Recover Priors</h2>
+
+<div class="tl">
+  <div class="tl-item">
+    <div class="tl-yr">2022</div>
+    <div class="tl-t">Ad recession + iOS privacy reset</div>
+    <div class="tl-b">Macro ad-spend contraction + Apple ATT (App Tracking Transparency) headwinds to ad-targeting quality. Recovery on ad-market rebound and YouTube brand-advertiser return. <strong>Lesson:</strong> Cyclical ad recessions recover on macro normalisation; the underlying monetisation mechanics remained intact throughout.</div>
+    <div class="tl-stats">
+      <span class="tl-stat"><span>Drawdown </span><span class="lv" style="color:var(--bear)">~−45%</span></span>
+      <span class="tl-stat"><span>Recovery </span><span class="lv">~12 months</span></span>
+      <span class="tl-stat"><span>User behaviour </span><span class="lv" style="color:var(--bull)">Structurally intact</span></span>
+    </div>
+  </div>
+  <div class="tl-item">
+    <div class="tl-yr">2023</div>
+    <div class="tl-t">Bing + ChatGPT integration scare</div>
+    <div class="tl-b">Microsoft integrated GPT-4 into Bing; sell-side concern about Search displacement caused a multiple de-rate. Recovered as Bing share gains remained marginal and Google announced Bard/Gemini roadmap. <strong>Lesson:</strong> A credible competitive interface challenge de-rates the multiple — but did not structurally impair query economics at the monetisation layer. <em>This episode is the closest analogue to the current AI-disruption debate; its resolution (Bing share gains marginalised) cannot be extrapolated to a scenario where AI assistants are natively integrated at the OS, browser, and search-bar level at scale.</em></div>
+    <div class="tl-stats">
+      <span class="tl-stat"><span>Drawdown </span><span class="lv" style="color:var(--bear)">~−15%</span></span>
+      <span class="tl-stat"><span>Recovery </span><span class="lv">~6 months</span></span>
+      <span class="tl-stat"><span>User behaviour </span><span class="lv" style="color:var(--bull)">Structurally intact</span></span>
+    </div>
+  </div>
+  <div class="tl-item">
+    <div class="tl-yr">2024–2025</div>
+    <div class="tl-t">DOJ verdict + AI Mode launch uncertainty</div>
+    <div class="tl-b">DOJ liability finding in Search distribution case; uncertainty around AI Mode cannibalising Search RPM (Revenue Per Mille). Partial recovery as AI Overviews maintained revenue-per-search in initial disclosed metrics. <strong>Lesson:</strong> Regulatory headline risk creates IV-expansion; recovery pace correlated with whether monetisation metrics held in the quarters following the ruling.</div>
+    <div class="tl-stats">
+      <span class="tl-stat"><span>Drawdown </span><span class="lv" style="color:var(--bear)">~−20–25%</span></span>
+      <span class="tl-stat"><span>Recovery </span><span class="lv">Partial</span></span>
+      <span class="tl-stat"><span>User behaviour </span><span class="lv" style="color:#f59e0b">Monitored</span></span>
+    </div>
+  </div>
+</div>
+
+<div class="box box-bear">
+  <div class="box-ttl">Structural Caveat — When Prior Priors Don't Apply</div>
+  These priors apply only when query-origination behaviour is <strong>structurally stable</strong>. Each prior episode recovered because mean-reverting ad economics operated on an intact query base. <strong>Interface displacement would break the recovery mechanism itself.</strong> If Search query share migrates because users adopt AI assistants as their primary discovery layer, there is no historical precedent for Google recovering from durable query-origination share loss to a competing interface. The 2023 Bing episode shows a failed interface challenge — it cannot be extrapolated to a successful one at the OS/browser/search-bar integration level.
+</div>
+
+<p class="dim">[Note: episode drawdown magnitudes and recovery durations are approximate; verify against price history before citing numerically.]</p>
+</section>
+
+</div></div>
+
+<script>
+(function(){
+  var secs = document.querySelectorAll('section[id]');
+  var links = document.querySelectorAll('#nav a');
+  var hdrH = 56 + 12;
+  function upd(){
+    var cur = '';
+    secs.forEach(function(s){
+      if(s.getBoundingClientRect().top <= hdrH) cur = s.id;
+    });
+    links.forEach(function(a){
+      a.classList.toggle('active', a.getAttribute('href') === '#'+cur);
+    });
+  }
+  window.addEventListener('scroll', upd, {passive:true});
+  upd();
+})();
+</script>
+</body>
+</html>
