@@ -1,0 +1,13 @@
+/stock-model ASML
+
+---
+
+/stock-signal ASML
+
+---
+
+/stock-signal NFLX
+
+---
+
+/stock-signal GOOG
