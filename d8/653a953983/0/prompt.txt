@@ -1,0 +1,27 @@
+Work on Linear issue ABA-116:
+
+<issue identifier="ABA-116">
+<title>Write playbook: ASML</title>
+<description>
+**Problem:** For the operator, we believe ASML's EUV-monopoly + capex-cycle + China-overhang structure cannot be captured by generic ESTABLISHED defaults. Without a playbook, the IV will look reasonable and be wrong on the swing factor.
+
+**Success criterion:** `playbooks/ASML.md` written per the structure in COVERAGE.md; `/stock-model ASML` produces output that reflects the playbook overrides (cap source named, narrative applied, audit trail intact).
+
+**Appetite:** 2–3 days after <issue id="70664e55-f843-4fed-8462-d8e6e78141cb">ABA-112</issue> lands.
+
+**Theme:** differentiator
+
+**Roadmap entry:** docs/roadmap.md → Now → Write playbook: ASML
+</description>
+<team name="Personal"/>
+<project name="Equity skill pack">Cycle 1 (17–24 May): Goal 1 — portfolio complete (all 7 tickers unblocked, /stock-portfolio returns 7 rows). Goal 2 — signal calibrated (≥5/7 tickers model_ready=YES). Full brief → Linear doc "Cycle 1 — goals & success criteria".</project>
+<issue-relations><blocked-by><issue-ref identifier="ABA-112" title="/stock:model — playbook loader for watchlist tickers (depth-over-breadth foundation)"/></blocked-by></issue-relations>
+</issue>
+
+---
+
+continue where we left off
+
+---
+
+should you start writing the playbook right away or is it better to use another skill to do so? how big of a task is it and should be split up into smaller chunks?
