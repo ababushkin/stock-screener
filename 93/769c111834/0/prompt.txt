@@ -1,0 +1,107 @@
+Work on Linear issue ABA-143:
+
+<issue identifier="ABA-143">
+<title>CAGR glidepath Y1 anchor blows out Y-axis when fcf_ttm is negative (AMZN)</title>
+<description>
+**Surfaced by:** <issue id="b2f52e69-f10f-4caa-951c-d0c021ad5837">ABA-138</issue> verification on AMZN, 2026-05-19.
+
+## Problem
+
+`CagrGlidepath.jsx` back-derives the Year 1 implicit Compound Annual Growth Rate (CAGR) as:
+
+```
+y1_cagr = (scenarios[s].y1_fcf / stages.model.fcf_ttm) − 1
+```
+
+AMZN's `fcf_ttm` is **−$11.77B** (capex spike, not a structural problem — this is exactly why the model maintains `fcf_normalized` alongside the raw TTM). When the denominator is negative and the numerator is positive, the resulting "growth rate" is mathematically nonsensical (Y1 lands at roughly **−700% / −800% / −900%** for bear / base / bull).
+
+This stretches the chart's Y-axis from **\~−864% to +238%**, compressing the Y2–Y5 detail (where the real signal lives — the capped 18–24% growth band) into an illegible strip near zero. See attached screenshot in the original conversation.
+
+All four acceptance criteria for <issue id="b2f52e69-f10f-4caa-951c-d0c021ad5837">ABA-138</issue> still pass mechanically (monotone ordering, cap callout, pre-profit guard, three colour-coded lines) — but the chart fails its actual purpose of *communicating the glidepath* on AMZN.
+
+## Proposed fix
+
+When `stages.model.fcf_ttm <= 0`, substitute `stages.model.fcf_normalized` (or equivalent smoothed value already in the report) as the Year 1 anchor denominator. The base-case Y1 CAGR for AMZN would then derive from a sensible positive base, putting Y1 in the same band as Y2–Y5 and letting the cap-callout story dominate the visual.
+
+## Acceptance criteria
+
+* For AMZN: chart Y-axis range fits within ±50% (or whatever range Y2–Y5 naturally occupy + reasonable headroom).
+* Year 2–Year 5 detail is visually readable (line bends at the cap are visible without zooming).
+* META, NVDA (if <issue id="5decc161-2ee1-4551-b235-bad803c5817d">ABA-142</issue> re-classifies it), and other ESTABLISHED tickers with positive `fcf_ttm` render unchanged.
+* Pre-profit guard still fires.
+* Cap callout still fires when `growth_rate.cap_applied === true`.
+
+## Verification
+
+`npm run dev` → Model tab → AMZN. Y2–Y5 detail readable, Y1 anchor in same order of magnitude as Y2–Y5 points.
+</description>
+<team name="Personal"/>
+<project name="Equity skill pack">Cycle 1 (17–24 May): Goal 1 — portfolio complete (all 7 tickers unblocked, /stock-portfolio returns 7 rows). Goal 2 — signal calibrated (≥5/7 tickers model_ready=YES). Full brief → Linear doc "Cycle 1 — goals & success criteria".</project>
+<parent-issue identifier="ABA-115">
+<id>5ae08460-bbc6-42f9-94b3-14105498e30e</id>
+<title>/stock:model report — glidepath + scenario fan visuals</title>
+<description>
+## Problem
+
+After <issue id="89e1f4f4-8b04-4c5b-9931-7f4f837de45f">ABA-110</issue> (SBC (Stock-Based Compensation) strip) and <issue id="e78e36cd-49f1-441f-96a9-317acc594230">ABA-111</issue> (growth-rate cap) landed, `/stock:model` now produces honest but **stark-looking** scenario outputs. Example META 2026-05-17:
+
+* Bear IV (Intrinsic Value): $184
+* Base IV: $393
+* Bull IV: $778
+* Current price: $614
+
+Reading the base case in isolation ("$393 vs $614 → 36% overvalued") is misleading without the trajectory context. The base case mechanically applies the consensus growth ceiling in Y2 (META: 52% trailing → 18% capped), which looks like a cliff but is a smoothing artifact of the spec. A reader anchored on "base = realistic central case" will misread it as "the model thinks META is 36% overvalued" when the actual message is "the market is pricing META as a bull case — here's what has to keep going right."
+
+## Why now
+
+Thesis construction depends on **explaining how the numbers got where they got** — more than the numbers themselves. Without visuals, the reader has to do the unpacking in their head; with visuals, the trajectory and the asymmetry are immediately legible.
+
+User quote (2026-05-17 session): *"reading a 'base case' that's so far from the current stock price has some context — it's unlikely that a company that has kept massive momentum in growth will suddenly stop, so this is important to put into context."*
+
+## Scope
+
+Add three visuals to the report UI for ESTABLISHED-path Model output:
+
+1. **CAGR (Compound Annual Growth Rate) glidepath** — line chart showing trailing-3y CAGR (clean, SBC-stripped), then Y1→Y5 projected CAGR for each scenario (bear/base/bull). Annotate cap point ("capped from 52.1% by 18% fallback ceiling" for the base line).
+2. **FCF (Free Cash Flow) margin trajectory** — area chart showing 3y historical reported vs clean FCF margin, with a constant-margin extension for Y1→Y5. Visually surfaces that base case assumes flat-line margins (no operating leverage) — and invites the user to consider whether they buy that assumption.
+3. **Scenario fan chart** — cone/fan plot of Y1→Y5 FCF projection for bear/base/bull, with the corresponding terminal-year discounted-to-PV (Present Value) markers, and the current price line for reference.
+
+## Acceptance criteria
+
+1. UI renders the three visuals for any covered ticker's latest `reports/TICKER_YYYYMMDD.json` where `stages.model` is present.
+2. Cap-point annotation reads from `stages.model.growth_rate` block (added in <issue id="e78e36cd-49f1-441f-96a9-317acc594230">ABA-111</issue>) — specifically `trailing_3y_cagr`, `applied_base_cagr`, `cap_source`.
+3. FCF margin chart reads clean and reported series from `stages.model.fcf_margin_ttm` (clean) and `stages.model.fcf_margin_ttm_reported` (reported, added in <issue id="89e1f4f4-8b04-4c5b-9931-7f4f837de45f">ABA-110</issue>).
+4. Scenario fan chart sources from `stages.model.scenarios.{bear,base,bull}` (existing).
+5. Each visual has a one-sentence caption explaining the assumption it surfaces (not the chart mechanics — the *thesis* implication).
+6. Pre-profit variant either gets its own analogous visuals or is explicitly scoped out (decide during design).
+
+## Out of scope
+
+* Glidepath shaping (introducing year-by-year CAGR taper instead of flat Y2-Y5) — separate ticket if worth doing
+* Adding a margin-expansion lever to *base* case — separate methodology ticket if worth doing
+* Sensitivity heatmap (WACC × g) — separate ticket
+
+## Related
+
+* Builds on <issue id="89e1f4f4-8b04-4c5b-9931-7f4f837de45f">ABA-110</issue> (SBC strip surfaces clean vs reported margins in JSON)
+* Builds on <issue id="e78e36cd-49f1-441f-96a9-317acc594230">ABA-111</issue> (growth-rate block surfaces cap mechanics in JSON)
+* Likely lives in Wave 4 (UI/report polish) of M5; defer until playbook layer (<issue id="70664e55-f843-4fed-8462-d8e6e78141cb">ABA-112</issue>) lands so visuals reference playbook narrative
+
+## Methodology footnote (for the reader)
+
+The base case is intentionally a **"stop overdelivering"** anchor:
+
+* Margins flat at today's clean FCF margin (no operating-leverage assumption)
+* Growth decelerates from trailing print to consensus-5y ceiling (or 18% fallback) in Y2
+* Discount rate at WACC (Weighted Average Cost of Capital) baseline
+
+The bull case is where margin-expansion + sustained-growth assumptions live. This is by design — it forces the thesis to articulate which levers it's betting on, rather than baking optimism into the central case.
+</description>
+</parent-issue>
+<issue-relations>
+<related>
+<issue-ref identifier="ABA-138" title="[4/7] CAGR glidepath chart"/>
+<issue-ref identifier="ABA-141" title="[7/7] Captions, styling polish, docs, Linear hygiene"/>
+</related>
+</issue-relations>
+</issue>
