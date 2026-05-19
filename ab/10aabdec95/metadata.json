@@ -1,0 +1,27 @@
+{
+  "cli_version": "0.6.1",
+  "checkpoint_id": "ab10aabdec95",
+  "strategy": "manual-commit",
+  "branch": "main",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "reports/AMZN_20260519.json",
+    "reports/NVDA_20260519.json",
+    "reports/RDDT_20260519.json"
+  ],
+  "sessions": [
+    {
+      "metadata": "/ab/10aabdec95/0/metadata.json",
+      "transcript": "/ab/10aabdec95/0/full.jsonl",
+      "content_hash": "/ab/10aabdec95/0/content_hash.txt",
+      "prompt": "/ab/10aabdec95/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 72,
+    "cache_creation_tokens": 271830,
+    "cache_read_tokens": 5992032,
+    "output_tokens": 56192,
+    "api_call_count": 39
+  }
+}
