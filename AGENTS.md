@@ -50,4 +50,4 @@ Linear is authoritative for status. Local task lists are fine for within-session
 
 ## Git
 
-Do not add `Co-Authored-By` trailers to commit messages.
+Conventional-commit-ish prefixes: `feat:`, `fix:`, `chore:`, `docs:`, `refactor:`. Subject line ≤ 70 chars; details in the body if needed. Push directly to main; PRs only when the owner asks. Do not add `Co-Authored-By` trailers.

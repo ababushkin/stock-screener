@@ -1,0 +1,721 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Orchestration guide</title>
+<style>
+  :root {
+    --bg: #fcfcfd; --surface: #ffffff;
+    --fg: #0a0a0f; --fg-soft: #2e2e38; --muted: #5f5f6a;
+    --rule: #e3e3ea; --rule-soft: #f1f1f5;
+    --accent: #4a3bef;  --accent-soft: #efedff;
+    --ok:    #047a44;   --ok-soft:    #e6f5ed;
+    --info:  #1957c4;   --info-soft:  #e7f0fd;
+    --warn:  #8b4a05;   --warn-soft:  #fbf0e0;
+    --danger:#a82a3f;   --danger-soft:#fbe6ea;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg:#0b0b10; --surface:#15151c;
+      --fg:#f4f4f7; --fg-soft:#d6d6dd; --muted:#9d9dab;
+      --rule:#2a2a35; --rule-soft:#1c1c24;
+      --accent:#a99dff;  --accent-soft:#2a2548;
+      --ok:   #6fd4a0;   --ok-soft:   #122922;
+      --info: #8eb8ff;   --info-soft: #14233b;
+      --warn: #f0a35a;   --warn-soft: #2a1f12;
+      --danger:#f08597;  --danger-soft:#29151b;
+    }
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--fg)}
+  body{font:16px/1.65 "Inter",ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-feature-settings:"cv11","ss01","ss03","kern","liga";-webkit-font-smoothing:antialiased}
+  a{color:var(--accent);text-decoration:none}
+  a:hover{text-decoration:underline}
+  code,pre{font-family:ui-monospace,SFMono-Regular,"JetBrains Mono",Menlo,monospace}
+
+  .layout{display:grid;grid-template-columns:260px 1fr;min-height:100vh;max-width:1200px;margin:0 auto}
+  aside{position:sticky;top:0;align-self:start;height:100vh;overflow-y:auto;padding:28px 22px;border-right:1px solid var(--rule);background:var(--bg)}
+  aside .brand{display:flex;align-items:center;gap:8px;font-weight:600;font-size:14px;margin-bottom:28px;color:var(--fg)}
+  aside .brand .dot{width:18px;height:18px;border-radius:5px;background:linear-gradient(135deg,var(--accent),#8c7bff);flex-shrink:0}
+  aside .kicker{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:24px 0 10px;font-weight:700}
+  aside .kicker:first-of-type{margin-top:0}
+  aside nav ol{list-style:none;padding:0;margin:0;counter-reset:nav}
+  aside nav li{counter-increment:nav;margin:2px 0}
+  aside nav li.h3{margin-left:28px}
+  aside nav a{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:6px;color:var(--fg-soft);font-size:14.5px;transition:background .12s,color .12s}
+  aside nav li:not(.h3)>a::before{content:counter(nav,decimal-leading-zero);font:600 12px/1 ui-monospace,monospace;color:var(--muted);width:20px;flex-shrink:0}
+  aside nav a:hover{background:var(--rule-soft);color:var(--fg);text-decoration:none}
+  aside nav a.active{background:var(--accent-soft);color:var(--accent)}
+  aside nav a.active::before{color:var(--accent)}
+  aside .status-block{font-size:13.5px;color:var(--fg-soft);line-height:1.55}
+
+  main{padding:40px 56px 80px;max-width:860px}
+  .doc-head{margin-bottom:40px}
+  .breadcrumbs{font-size:13.5px;color:var(--muted);margin-bottom:16px}
+  main h1{font-size:34px;line-height:1.2;margin:0 0 16px;letter-spacing:-.02em;font-weight:700;color:var(--fg)}
+  .pill-row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:0}
+  .pill-row:empty{display:none}
+  .pill{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:999px;font:600 13px/1 "Inter",ui-sans-serif,system-ui,sans-serif;letter-spacing:.01em;white-space:nowrap}
+  .pill .dot{width:7px;height:7px;border-radius:50%;background:currentColor}
+  .pill-meta{background:var(--rule-soft);color:var(--fg-soft);font-weight:500}
+  .meta-grid{display:grid;grid-template-columns:max-content 1fr;gap:8px 22px;background:var(--surface);border:1px solid var(--rule);border-radius:10px;padding:16px 20px;margin:28px 0 0;font-size:14px}
+  .meta-grid dt{color:var(--muted);font-weight:600}
+  .meta-grid dd{margin:0;color:var(--fg);font-family:ui-monospace,SFMono-Regular,monospace;font-size:13.5px;word-break:break-word}
+
+  section.s{margin:56px 0;scroll-margin-top:20px}
+  section.s>header{display:flex;align-items:baseline;gap:12px;margin-bottom:18px;flex-wrap:wrap}
+  section.s .ix{font:700 12px/1 ui-monospace,monospace;color:var(--muted);padding:4px 8px;border:1px solid var(--rule);border-radius:4px;flex-shrink:0}
+  main h2{font-size:22px;line-height:1.3;margin:0;letter-spacing:-.01em;font-weight:700;color:var(--fg)}
+  main h3{font-size:17px;line-height:1.4;margin:28px 0 10px;font-weight:650;color:var(--fg)}
+  main p{margin:0 0 16px;color:var(--fg-soft)}
+  main ul,main ol{margin:0 0 16px;padding-left:26px;color:var(--fg-soft)}
+  main li{margin:6px 0}
+  main pre{background:var(--rule-soft);padding:16px 18px;border-radius:8px;overflow-x:auto;font-size:14px;line-height:1.6;border:1px solid var(--rule)}
+  main code{font-size:.92em;padding:2px 6px;background:var(--rule-soft);border-radius:4px;color:var(--fg)}
+  main pre code{padding:0;background:transparent;font-size:1em}
+  main blockquote{margin:18px 0;padding:10px 18px;border-left:4px solid var(--accent);color:var(--fg-soft);background:var(--accent-soft);border-radius:0 6px 6px 0}
+  main table{border-collapse:collapse;margin:16px 0;width:100%;font-size:14.5px}
+  main th,main td{border-bottom:1px solid var(--rule);padding:10px 14px;text-align:left;vertical-align:top}
+  main th{background:var(--rule-soft);font-weight:700;color:var(--fg);font-size:13px;text-transform:uppercase;letter-spacing:.04em}
+  main hr{border:none;border-top:1px solid var(--rule);margin:40px 0}
+  footer{grid-column:1/-1;padding:24px 56px;color:var(--muted);font-size:13px;border-top:1px solid var(--rule)}
+  footer code{background:transparent;padding:0;color:var(--fg-soft)}
+  @media print{aside{display:none}.layout{grid-template-columns:1fr}main{padding:24px;max-width:none}}
+  @media(max-width:880px){.layout{grid-template-columns:1fr}aside{position:static;height:auto;border-right:none;border-bottom:1px solid var(--rule);padding:20px}aside nav ol{display:flex;flex-wrap:wrap;gap:4px}main{padding:28px 24px 60px}}
+
+  /* ── Challenge cards (section 1) ── */
+  .p-challenges{display:flex;flex-direction:column;gap:10px;margin:20px 0}
+  .p-challenge{background:var(--surface);border:1px solid var(--rule);border-radius:8px;padding:14px 18px;display:grid;grid-template-columns:36px 1fr;gap:0 14px;align-items:start}
+  .p-challenge-icon{width:28px;height:28px;border-radius:6px;background:var(--danger-soft);color:var(--danger);display:grid;place-items:center;font-size:13px;font-weight:700;margin-top:2px}
+  .p-challenge-title{font-weight:600;font-size:14.5px;color:var(--fg);margin-bottom:4px}
+  .p-challenge-body{font-size:13.5px;color:var(--fg-soft);line-height:1.55}
+
+  /* ── Question cards (section 2) ── */
+  .p-questions{display:flex;flex-direction:column;gap:12px;margin:20px 0}
+  .p-q{background:var(--surface);border:1px solid var(--rule);border-left:4px solid var(--accent);border-radius:10px;padding:16px 20px}
+  .p-q-num{font:700 11px/1 ui-monospace,monospace;color:var(--accent);letter-spacing:.06em;text-transform:uppercase;margin-bottom:6px}
+  .p-q-title{font-weight:600;font-size:15.5px;color:var(--fg);margin-bottom:8px}
+  .p-q-body{font-size:14px;color:var(--fg-soft);line-height:1.55}
+  .p-q-body code{font-size:.92em;padding:1px 5px;background:var(--rule-soft);border-radius:3px}
+  .p-q-warn{border-left-color:var(--danger)}
+  .p-q-warn .p-q-num{color:var(--danger)}
+
+  /* ── Diagram wrapper (P14) ── */
+  .p-diagram{background:var(--surface);border:1px solid var(--rule);border-radius:12px;padding:24px;margin:20px 0;overflow-x:auto}
+  .p-diagram svg{display:block;width:100%;height:auto}
+  .p-diagram-caption{font-size:13.5px;color:var(--muted);margin:12px 0 0;line-height:1.55}
+
+  /* ── Orchestration line chips ── */
+  .p-orch-line{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:16px 0;padding:16px 20px;background:var(--surface);border:1px solid var(--rule);border-radius:10px}
+  .p-orch-chip{font:600 12.5px/1 ui-monospace,monospace;padding:5px 10px;border-radius:6px;white-space:nowrap}
+  .p-orch-gate{background:var(--warn-soft);color:var(--warn);border:1px solid var(--warn)}
+  .p-orch-chain{background:var(--accent-soft);color:var(--accent);border:1px solid var(--accent)}
+  .p-orch-team{background:var(--ok-soft);color:var(--ok);border:1px solid var(--ok)}
+  .p-orch-review{background:var(--info-soft);color:var(--info);border:1px solid var(--info)}
+  .p-orch-arrow{color:var(--muted);font-size:16px}
+
+  /* ── Reviewer prompt copy-panels ── */
+  .p-prompt{margin:20px 0;border-radius:12px;overflow:hidden;border:1px solid var(--rule)}
+  .p-prompt-header{display:flex;justify-content:space-between;align-items:center;padding:10px 16px;background:var(--rule-soft);border-bottom:1px solid var(--rule)}
+  .p-prompt-label{font:700 12px/1 "Inter",ui-sans-serif,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+  .p-copy-btn{font:600 12px/1 "Inter",ui-sans-serif,sans-serif;padding:5px 12px;border-radius:6px;border:1px solid var(--rule);background:var(--surface);color:var(--fg-soft);cursor:pointer;transition:background .12s,color .12s,border-color .12s}
+  .p-copy-btn:hover{background:var(--accent-soft);color:var(--accent);border-color:var(--accent)}
+  .p-copy-btn.copied{background:var(--ok-soft);color:var(--ok);border-color:var(--ok)}
+  .p-prompt-body{background:#13131a;color:#e4e2db;font:13px/1.7 ui-monospace,SFMono-Regular,Menlo,monospace;padding:20px 22px;margin:0;white-space:pre-wrap;word-break:break-word;border:none;display:block}
+
+  /* ── P17 risk table ── */
+  .p-risks{border:1px solid var(--rule);border-radius:12px;overflow:hidden;background:var(--surface);margin:20px 0}
+  .p-risks-row{display:grid;grid-template-columns:1.8fr 90px 1.8fr}
+  .p-risks-row+.p-risks-row{border-top:1px solid var(--rule)}
+  .p-risks-row>div{padding:14px 18px;font-size:14px;line-height:1.55;color:var(--fg-soft)}
+  .p-risks-row>div+div{border-left:1px solid var(--rule)}
+  .p-risks-head>div{background:var(--rule-soft);color:var(--fg);font:700 12px/1 "Inter",ui-sans-serif,sans-serif;letter-spacing:.05em;text-transform:uppercase;padding:12px 18px}
+  .p-sev{display:inline-block;font:700 11px/1 ui-monospace,monospace;padding:4px 9px;border-radius:6px;letter-spacing:.04em}
+  .p-sev-high{background:var(--danger-soft);color:var(--danger)}
+  .p-sev-med{background:var(--warn-soft);color:var(--warn)}
+  .p-sev-low{background:var(--ok-soft);color:var(--ok)}
+  @media(max-width:720px){.p-risks-row{grid-template-columns:1fr}.p-risks-row>div+div{border-left:none;border-top:1px dashed var(--rule)}.p-risks-head{display:none}}
+
+  /* ── Companion file cards (section 8) ── */
+  .p-companions{display:flex;flex-direction:column;gap:12px;margin:20px 0}
+  .p-companion{background:var(--surface);border:1px solid var(--rule);border-radius:10px;padding:16px 20px}
+  .p-companion-file{font:700 12px/1 ui-monospace,monospace;color:var(--accent);padding:3px 8px;background:var(--accent-soft);border-radius:4px;white-space:nowrap;margin-bottom:8px;display:inline-block}
+  .p-companion-title{font-weight:600;font-size:15px;color:var(--fg);margin-bottom:4px}
+  .p-companion-desc{font-size:13.5px;color:var(--fg-soft);line-height:1.55}
+  .p-companion-desc code{font-size:.92em;padding:1px 5px;background:var(--rule-soft);border-radius:3px}
+
+  /* ── Verbatim copy block ── */
+  .p-verbatim{margin:16px 0}
+  .p-verbatim-label{font:700 11px/1 "Inter",ui-sans-serif,sans-serif;letter-spacing:.07em;text-transform:uppercase;color:var(--warn);margin-bottom:6px}
+  .p-verbatim-body{background:var(--warn-soft);border:1px solid var(--warn);border-radius:8px;padding:14px 18px;font-size:14px;line-height:1.6;color:var(--fg);font-style:italic}
+</style>
+</head>
+<body>
+<div class="layout">
+<aside>
+  <div class="brand"><span class="dot"></span><span>Operations · Orchestration</span></div>
+  <p class="kicker">On this page</p>
+  <nav aria-label="Table of contents">
+    <ol>
+      <li><a href="#what-this-is">What this is</a></li>
+      <li><a href="#the-seven-questions">The seven questions</a></li>
+      <li class="h3"><a href="#q1">Q1 — Sub-task count</a></li>
+      <li class="h3"><a href="#q2">Q2 — Order dependency</a></li>
+      <li class="h3"><a href="#q3">Q3 — Same-file overlap</a></li>
+      <li class="h3"><a href="#q4">Q4 — Public contract</a></li>
+      <li class="h3"><a href="#q5">Q5 — Acceptance type</a></li>
+      <li class="h3"><a href="#q6">Q6 — Spike or impl</a></li>
+      <li class="h3"><a href="#q7">Q7 — Coordinator shape</a></li>
+      <li><a href="#the-seven-execution-shapes">Execution shapes</a></li>
+      <li class="h3"><a href="#decision-flow">Decision flow</a></li>
+      <li class="h3"><a href="#phase-transitions">Phase transitions</a></li>
+      <li><a href="#the-60-second-ritual">The 60-second ritual</a></li>
+      <li><a href="#reviewer-prompts">Reviewer prompts</a></li>
+      <li class="h3"><a href="#chart-prompt">Chart prompt</a></li>
+      <li class="h3"><a href="#narrative-prompt">Narrative prompt</a></li>
+      <li class="h3"><a href="#tabular-prompt">Tabular prompt</a></li>
+      <li><a href="#worked-example">Worked example — ABA-115</a></li>
+      <li><a href="#limitations">Limitations</a></li>
+      <li><a href="#reference">Reference</a></li>
+    </ol>
+  </nav>
+  <p class="kicker">Status</p>
+  <div class="status-block">Planning-time reference. Run the seven questions at cycle planning; pick the matching shape; execute.</div>
+</aside>
+
+<main>
+  <div class="doc-head">
+    <div class="breadcrumbs">docs / operations / orchestration</div>
+    <h1>Orchestration guide</h1>
+    <div class="pill-row">
+      <span class="pill pill-meta">Planning reference</span>
+    </div>
+    <dl class="meta-grid">
+      <dt>Source</dt><dd>docs/operations/orchestration/guide.md</dd>
+      <dt>Rendered</dt><dd>2026-05-19</dd>
+    </dl>
+  </div>
+
+  <!-- 1 -->
+  <section class="s" id="what-this-is">
+    <header><span class="ix">01</span><h2>What this is</h2></header>
+    <p>A planning-time checklist that decides how a ticket gets executed by agents. The point is to make the call <em>before</em> any agent touches code, not at retrospective.</p>
+    <p>Multi-agent ticket work surfaces three structural challenges that are cheap to handle at planning time and expensive to fix after code has landed:</p>
+    <div class="p-challenges">
+      <div class="p-challenge">
+        <div class="p-challenge-icon">1</div>
+        <div>
+          <div class="p-challenge-title">Platform constraint mismatches</div>
+          <div class="p-challenge-body">Claude Code supports exactly one layer of agent fan-out. Workers do not spawn sub-workers. A plan that assumes a deeper hierarchy will fail silently — the agent improvises and only notes the deviation in its final report, if at all.</div>
+        </div>
+      </div>
+      <div class="p-challenge">
+        <div class="p-challenge-icon">2</div>
+        <div>
+          <div class="p-challenge-title">Cross-sub-task bug attribution</div>
+          <div class="p-challenge-body">A bug introduced by one sub-task is often discovered while working on the next. Without an explicit rule, agents fold the fix into the current commit — and the git history can no longer tell you which sub-task caused which bug.</div>
+        </div>
+      </div>
+      <div class="p-challenge">
+        <div class="p-challenge-icon">3</div>
+        <div>
+          <div class="p-challenge-title">Subjective quality gaps</div>
+          <div class="p-challenge-body">Acceptance checks an agent can answer mechanically are reliable. Checks that require judgement ("is this chart readable?") are not — the agent re-passes whatever it checked during implementation. Only a second-pass reviewer with a different checklist catches what the implementer missed.</div>
+        </div>
+      </div>
+    </div>
+    <p style="font-size:14px;color:var(--muted);font-style:italic;margin-top:8px">If this is your first read, work top-to-bottom. Once you have run the ritual on a couple of tickets, you'll come back only to Section 2 (the questions) and Section 5 (the reviewer prompts).</p>
+  </section>
+
+  <!-- 2 -->
+  <section class="s" id="the-seven-questions">
+    <header><span class="ix">02</span><h2>The seven questions</h2></header>
+    <p>Ask these of every parent ticket during cycle planning. Most have a 10-second answer once the ticket plan is in front of you.</p>
+    <div class="p-questions">
+      <div class="p-q" id="q1">
+        <div class="p-q-num">Q1</div>
+        <div class="p-q-title">How many sub-tasks does this ticket break into?</div>
+        <div class="p-q-body">Count the items in the ticket's <code>plan.md</code>. One is a single-session job. Two or three with arrows between them is a chain. Four or more that share a template is a queue.</div>
+      </div>
+      <div class="p-q" id="q2">
+        <div class="p-q-num">Q2</div>
+        <div class="p-q-title">Do they have to happen in order, or can they run in parallel?</div>
+        <div class="p-q-body">Look at the dependency graph in <code>plan.md</code>. If sub-task two consumes a JSON schema, file, or output that sub-task one produces, you have to serialise. If they don't share inputs, they're candidates for parallel work.</div>
+      </div>
+      <div class="p-q" id="q3">
+        <div class="p-q-num">Q3</div>
+        <div class="p-q-title">Do any of them touch the same file?</div>
+        <div class="p-q-body">Skim each sub-task's "files to touch" line. Any overlap means you serialise that pair regardless of what Q2 said — agent teams don't lock at the file level, and parallel edits on the same file produce merge conflicts.</div>
+      </div>
+      <div class="p-q" id="q4">
+        <div class="p-q-num">Q4</div>
+        <div class="p-q-title">Does anything change a public contract?</div>
+        <div class="p-q-body">"Public contract" means: a JSON schema field, a <code>SKILL.md</code> schema block, a <code>playbooks/*.md</code> frontmatter key, a public command name, or anything in <code>DESIGN.md</code>. These are expensive to reverse — they need a plan-review pass before implementation, not "we'll fix it in review."</div>
+      </div>
+      <div class="p-q" id="q5">
+        <div class="p-q-num">Q5</div>
+        <div class="p-q-title">Are the acceptance checks mechanical or subjective?</div>
+        <div class="p-q-body"><strong>Mechanical:</strong> a test passes, a number matches, a JSON field is present. <strong>Subjective:</strong> a chart looks right, prose reads well, a report is legible. Any subjective check needs a second-pass reviewer who has <em>not</em> seen the original acceptance criteria.</div>
+      </div>
+      <div class="p-q" id="q6">
+        <div class="p-q-num">Q6</div>
+        <div class="p-q-title">Is the deliverable code in the tree, or a written recommendation?</div>
+        <div class="p-q-body">If the ticket ends in a "proceed / defer / kill" memo with no code change, it's a spike. Spikes use <code>pde-backend-spike</code> and have different acceptance: the deliverable is the recommendation, not running code.</div>
+      </div>
+      <div class="p-q p-q-warn" id="q7">
+        <div class="p-q-num">Q7 — platform constraint</div>
+        <div class="p-q-title">Does the plan describe an agent dispatching other agents?</div>
+        <div class="p-q-body">Does the orchestration line contain phrases like "supervisor sub-agent," "coordinator that spawns workers," or "manager agent dispatches implementers"? <strong>Claude Code does not allow sub-agents to spawn other sub-agents. This shape is platform-invalid.</strong> Reject the plan and reshape it so the top-level session does the dispatching. Only one layer of fan-out is supported.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3 -->
+  <section class="s" id="the-seven-execution-shapes">
+    <header><span class="ix">03</span><h2>The seven execution shapes</h2></header>
+    <p>The seven questions narrow to one of these shapes. Pick the first match top-to-bottom.</p>
+    <table>
+      <thead>
+        <tr><th>Shape</th><th>When it applies</th><th>Building block</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>Plan-review gate</strong></td><td>Any multi-slice plan, or a one-way door (Q4 = yes), or a coordinator-agent shape (Q7 = yes)</td><td><code>/pde-plan-review</code> before any other work</td></tr>
+        <tr><td><strong>Single session, spike</strong></td><td>One sub-task, deliverable is a recommendation (Q6 = spike)</td><td><code>pde-backend-spike</code></td></tr>
+        <tr><td><strong>Single session, mechanical</strong></td><td>One sub-task, acceptance is mechanical (Q5 = mechanical)</td><td><code>agent-skills:build</code></td></tr>
+        <tr><td><strong>Single session, subjective</strong></td><td>One sub-task, acceptance is subjective (Q5 = subjective)</td><td>Build skill, then <code>/crit</code> with a reviewer prompt</td></tr>
+        <tr><td><strong>Sequential chain</strong></td><td>Multiple sub-tasks with arrows between them (Q2 = sequential)</td><td>Single session, one sub-task per turn, explicit gate at each boundary</td></tr>
+        <tr><td><strong>Parallel team</strong></td><td>Multiple sub-tasks, parallel-safe, different files (Q2 = parallel, Q3 = no overlap)</td><td>Agent teams (<code>CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1</code>), lead plus 3–5 teammates</td></tr>
+        <tr><td><strong>Composition</strong></td><td>Mix of chain and parallel within one ticket — most common shape in this repo</td><td>Chain + team explicitly in the plan, with named phase transitions</td></tr>
+      </tbody>
+    </table>
+
+    <h3 id="decision-flow">Decision flow</h3>
+    <p>Two mandatory gate checks run first, regardless of shape. After that, sub-task count splits the path.</p>
+    <div class="p-diagram">
+      <svg viewBox="0 0 800 490" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Orchestration decision flow: Q7 gate check, Q4 gate check, then Q1 count splits to single-task or multi-task branches">
+        <defs>
+          <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10z" fill="#5f5f6a"/></marker>
+          <marker id="arr-d" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10z" fill="#a82a3f"/></marker>
+          <marker id="arr-w" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10z" fill="#8b4a05"/></marker>
+        </defs>
+
+        <!-- Q7 gate -->
+        <rect x="130" y="14" width="450" height="46" rx="8" fill="#fbe6ea" stroke="#a82a3f" stroke-width="1.5"/>
+        <text x="355" y="32" text-anchor="middle" font-family="ui-sans-serif,system-ui,sans-serif" font-size="11" font-weight="700" letter-spacing="0.05" fill="#a82a3f">GATE · Q7</text>
+        <text x="355" y="50" text-anchor="middle" font-family="ui-sans-serif,system-ui,sans-serif" font-size="13" fill="#0a0a0f">Is this a coordinator-agent shape?</text>
+        <line x1="580" y1="37" x2="625" y2="37" stroke="#a82a3f" stroke-width="1.5" marker-end="url(#arr-d)"/>
+        <text x="602" y="32" text-anchor="middle" font-family="ui-sans-serif,system-ui,sans-serif" font-size="11" fill="#a82a3f">yes</text>
+        <rect x="628" y="21" width="78" height="32" rx="6" fill="#a82a3f"/>
+        <text x="667" y="41" text-anchor="middle" font-family="ui-monospace,monospace" font-size="12" font-weight="700" fill="white">REJECT</text>
+        <line x1="355" y1="60" x2="355" y2="90" stroke="#5f5f6a" stroke-width="1.5" marker-end="url(#arr)"/>
+        <text x="363" y="80" font-family="ui-sans-serif,system-ui,sans-serif" font-size="11" fill="#5f5f6a">no</text>
+
+        <!-- Q4 gate -->
+        <rect x="130" y="95" width="450" height="46" rx="8" fill="#fbf0e0" stroke="#8b4a05" stroke-width="1.5"/>
+        <text x="355" y="113" text-anchor="middle" font-family="ui-sans-serif,system-ui,sans-serif" font-size="11" font-weight="700" letter-spacing="0.05" fill="#8b4a05">GATE · Q4</text>
+        <text x="355" y="131" text-anchor="middle" font-family="ui-sans-serif,system-ui,sans-serif" font-size="13" fill="#0a0a0f">Does anything change a public contract?</text>
+        <line x1="580" y1="118" x2="625" y2="118" stroke="#8b4a05" stroke-width="1.5" marker-end="url(#arr-w)"/>
+        <text x="602" y="113" text-anchor="middle" font-family="ui-sans-serif,system-ui,sans-serif" font-size="11" fill="#8b4a05">yes</text>
+        <rect x="628" y="102" width="128" height="32" rx="6" fill="#fbf0e0" stroke="#8b4a05" stroke-width="1.5"/>
+        <text x="692" y="122" text-anchor="middle" font-family="ui-monospace,monospace" font-size="11" font-weight="700" fill="#8b4a05">+ plan-review gate</text>
+        <line x1="355" y1="141" x2="355" y2="170" stroke="#5f5f6a" stroke-width="1.5" marker-end="url(#arr)"/>
+        <text x="363" y="160" font-family="ui-sans-serif,system-ui,sans-serif" font-size="11" fill="#5f5f6a">no</text>
+
+        <!-- Q1 box -->
+        <rect x="245" y="175" width="220" height="38" rx="8" fill="white" stroke="#e3e3ea" stroke-width="1.5"/>
+        <text x="355" y="190" text-anchor="middle" font-family="ui-sans-serif,system-ui,sans-serif" font-size="11" font-weight="700" fill="#5f5f6a">Q1</text>
+        <text x="355" y="205" text-anchor="middle" font-family="ui-sans-serif,system-ui,sans-serif" font-size="13" fill="#0a0a0f">How many sub-tasks?</text>
+        <!-- left fork -->
+        <polyline points="245,194 175,194 175,246" fill="none" stroke="#5f5f6a" stroke-width="1.5" marker-end="url(#arr)"/>
+        <text x="208" y="190" text-anchor="middle" font-family="ui-sans-serif,system-ui,sans-serif" font-size="11" fill="#5f5f6a">one</text>
+        <!-- right fork -->
+        <polyline points="465,194 535,194 535,246" fill="none" stroke="#5f5f6a" stroke-width="1.5" marker-end="url(#arr)"/>
+        <text x="502" y="190" text-anchor="middle" font-family="ui-sans-serif,system-ui,sans-serif" font-size="11" fill="#5f5f6a">several</text>
+
+        <!-- LEFT BRANCH -->
+        <!-- Q6 diamond -->
+        <polygon points="175,246 228,272 175,298 122,272" fill="white" stroke="#e3e3ea" stroke-width="1.5"/>
+        <text x="175" y="268" text-anchor="middle" font-family="ui-sans-serif,system-ui,sans-serif" font-size="10" font-weight="700" fill="#5f5f6a">Q6</text>
+        <text x="175" y="281" text-anchor="middle" font-family="ui-sans-serif,system-ui,sans-serif" font-size="11" fill="#0a0a0f">Spike?</text>
+        <polyline points="122,272 80,272 80,348" fill="none" stroke="#5f5f6a" stroke-width="1.5" marker-end="url(#arr)"/>
+        <text x="100" y="268" text-anchor="middle" font-family="ui-sans-serif,system-ui,sans-serif" font-size="11" fill="#5f5f6a">yes</text>
+        <line x1="175" y1="298" x2="175" y2="340" stroke="#5f5f6a" stroke-width="1.5" marker-end="url(#arr)"/>
+        <text x="183" y="322" font-family="ui-sans-serif,system-ui,sans-serif" font-size="11" fill="#5f5f6a">no</text>
+        <!-- Spike terminal -->
+        <rect x="47" y="348" width="66" height="30" rx="6" fill="#e6f5ed" stroke="#047a44" stroke-width="1.5"/>
+        <text x="80" y="368" text-anchor="middle" font-family="ui-monospace,monospace" font-size="12" font-weight="700" fill="#047a44">Spike</text>
+
+        <!-- Q5 diamond -->
+        <polygon points="175,340 245,372 175,404 105,372" fill="white" stroke="#e3e3ea" stroke-width="1.5"/>
+        <text x="175" y="368" text-anchor="middle" font-family="ui-sans-serif,system-ui,sans-serif" font-size="10" font-weight="700" fill="#5f5f6a">Q5</text>
+        <text x="175" y="381" text-anchor="middle" font-family="ui-sans-serif,system-ui,sans-serif" font-size="11" fill="#0a0a0f">Mech or subj?</text>
+        <polyline points="105,372 50,372 50,440" fill="none" stroke="#5f5f6a" stroke-width="1.5" marker-end="url(#arr)"/>
+        <text x="76" y="368" text-anchor="middle" font-family="ui-sans-serif,system-ui,sans-serif" font-size="10" fill="#5f5f6a">mech</text>
+        <polyline points="245,372 305,372 305,440" fill="none" stroke="#5f5f6a" stroke-width="1.5" marker-end="url(#arr)"/>
+        <text x="277" y="368" text-anchor="middle" font-family="ui-sans-serif,system-ui,sans-serif" font-size="10" fill="#5f5f6a">subj</text>
+        <!-- Single mech -->
+        <rect x="10" y="440" width="82" height="30" rx="6" fill="#e7f0fd" stroke="#1957c4" stroke-width="1.5"/>
+        <text x="51" y="460" text-anchor="middle" font-family="ui-monospace,monospace" font-size="11" font-weight="700" fill="#1957c4">Single: mech</text>
+        <!-- Single subj -->
+        <rect x="263" y="440" width="82" height="30" rx="6" fill="#e7f0fd" stroke="#1957c4" stroke-width="1.5"/>
+        <text x="304" y="460" text-anchor="middle" font-family="ui-monospace,monospace" font-size="11" font-weight="700" fill="#1957c4">Single: subj</text>
+
+        <!-- RIGHT BRANCH -->
+        <!-- Q2 diamond -->
+        <polygon points="535,246 610,275 535,304 460,275" fill="white" stroke="#e3e3ea" stroke-width="1.5"/>
+        <text x="535" y="270" text-anchor="middle" font-family="ui-sans-serif,system-ui,sans-serif" font-size="10" font-weight="700" fill="#5f5f6a">Q2</text>
+        <text x="535" y="283" text-anchor="middle" font-family="ui-sans-serif,system-ui,sans-serif" font-size="11" fill="#0a0a0f">Arrows between them?</text>
+        <polyline points="460,275 400,275 400,348" fill="none" stroke="#5f5f6a" stroke-width="1.5" marker-end="url(#arr)"/>
+        <text x="428" y="271" text-anchor="middle" font-family="ui-sans-serif,system-ui,sans-serif" font-size="11" fill="#5f5f6a">yes</text>
+        <line x1="535" y1="304" x2="535" y2="340" stroke="#5f5f6a" stroke-width="1.5" marker-end="url(#arr)"/>
+        <text x="543" y="325" font-family="ui-sans-serif,system-ui,sans-serif" font-size="11" fill="#5f5f6a">no</text>
+        <!-- Sequential chain terminal -->
+        <rect x="344" y="348" width="112" height="30" rx="6" fill="#efedff" stroke="#4a3bef" stroke-width="1.5"/>
+        <text x="400" y="368" text-anchor="middle" font-family="ui-monospace,monospace" font-size="11" font-weight="700" fill="#4a3bef">Sequential chain</text>
+
+        <!-- Q3 diamond -->
+        <polygon points="535,340 605,370 535,400 465,370" fill="white" stroke="#e3e3ea" stroke-width="1.5"/>
+        <text x="535" y="366" text-anchor="middle" font-family="ui-sans-serif,system-ui,sans-serif" font-size="10" font-weight="700" fill="#5f5f6a">Q3</text>
+        <text x="535" y="379" text-anchor="middle" font-family="ui-sans-serif,system-ui,sans-serif" font-size="11" fill="#0a0a0f">Same file?</text>
+        <polyline points="465,370 410,370 410,440" fill="none" stroke="#5f5f6a" stroke-width="1.5" marker-end="url(#arr)"/>
+        <text x="436" y="366" text-anchor="middle" font-family="ui-sans-serif,system-ui,sans-serif" font-size="11" fill="#5f5f6a">yes</text>
+        <polyline points="605,370 660,370 660,440" fill="none" stroke="#5f5f6a" stroke-width="1.5" marker-end="url(#arr)"/>
+        <text x="636" y="366" text-anchor="middle" font-family="ui-sans-serif,system-ui,sans-serif" font-size="11" fill="#5f5f6a">no</text>
+        <!-- Demote to chain -->
+        <rect x="358" y="440" width="104" height="30" rx="6" fill="#fbf0e0" stroke="#8b4a05" stroke-width="1.5"/>
+        <text x="410" y="460" text-anchor="middle" font-family="ui-monospace,monospace" font-size="11" font-weight="700" fill="#8b4a05">Demote &#x2192; chain</text>
+        <!-- Parallel team -->
+        <rect x="618" y="440" width="90" height="30" rx="6" fill="#e6f5ed" stroke="#047a44" stroke-width="1.5"/>
+        <text x="663" y="460" text-anchor="middle" font-family="ui-monospace,monospace" font-size="11" font-weight="700" fill="#047a44">Parallel team</text>
+      </svg>
+      <p class="p-diagram-caption">Q7 rejects the plan outright (platform constraint). Q4 adds a plan-review gate before any implementation begins — it doesn't stop the work, it adds a review step first. Both gates are mandatory regardless of the shape that follows.</p>
+    </div>
+
+    <h3 id="phase-transitions">Phase transitions inside a composition</h3>
+    <p>A gate check at each phase boundary takes ~90 seconds. The bug-fold scan is a <code>git diff --stat</code>: any commit touching files outside the active phase's scope aborts the gate before the next phase starts.</p>
+    <div class="p-diagram">
+      <svg viewBox="0 0 730 138" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Phase transition flow: chain phase, gate check, team phase, gate check, chain phase">
+        <defs>
+          <marker id="arr2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10z" fill="#5f5f6a"/></marker>
+        </defs>
+        <rect x="8" y="24" width="128" height="82" rx="8" fill="#efedff" stroke="#4a3bef" stroke-width="1.5"/>
+        <text x="72" y="57" text-anchor="middle" font-family="ui-monospace,monospace" font-size="12" font-weight="700" fill="#4a3bef">chain phase</text>
+        <text x="72" y="74" text-anchor="middle" font-family="ui-monospace,monospace" font-size="11" fill="#4a3bef">sub-tasks 1–3</text>
+        <text x="72" y="96" text-anchor="middle" font-family="ui-sans-serif,system-ui,sans-serif" font-size="10" fill="#5f5f6a">sequential, gated</text>
+        <line x1="136" y1="65" x2="155" y2="65" stroke="#5f5f6a" stroke-width="1.5" marker-end="url(#arr2)"/>
+        <rect x="158" y="8" width="142" height="114" rx="8" fill="#fbf0e0" stroke="#8b4a05" stroke-width="1.5"/>
+        <text x="229" y="32" text-anchor="middle" font-family="ui-sans-serif,system-ui,sans-serif" font-size="11" font-weight="700" fill="#8b4a05">gate check</text>
+        <text x="229" y="50" text-anchor="middle" font-family="ui-sans-serif,system-ui,sans-serif" font-size="10" fill="#8b4a05">&#9312; Read AC of last slice</text>
+        <text x="229" y="64" text-anchor="middle" font-family="ui-sans-serif,system-ui,sans-serif" font-size="10" fill="#8b4a05">&#9313; git diff scope scan</text>
+        <text x="229" y="78" text-anchor="middle" font-family="ui-sans-serif,system-ui,sans-serif" font-size="10" fill="#8b4a05">&#9314; Name next shape</text>
+        <text x="229" y="108" text-anchor="middle" font-family="ui-sans-serif,system-ui,sans-serif" font-size="9" fill="#5f5f6a">~90 seconds</text>
+        <line x1="300" y1="65" x2="319" y2="65" stroke="#5f5f6a" stroke-width="1.5" marker-end="url(#arr2)"/>
+        <rect x="322" y="24" width="128" height="82" rx="8" fill="#e6f5ed" stroke="#047a44" stroke-width="1.5"/>
+        <text x="386" y="57" text-anchor="middle" font-family="ui-monospace,monospace" font-size="12" font-weight="700" fill="#047a44">team phase</text>
+        <text x="386" y="74" text-anchor="middle" font-family="ui-monospace,monospace" font-size="11" fill="#047a44">sub-tasks 4–6</text>
+        <text x="386" y="96" text-anchor="middle" font-family="ui-sans-serif,system-ui,sans-serif" font-size="10" fill="#5f5f6a">parallel, lead + 3</text>
+        <line x1="450" y1="65" x2="469" y2="65" stroke="#5f5f6a" stroke-width="1.5" marker-end="url(#arr2)"/>
+        <rect x="472" y="8" width="142" height="114" rx="8" fill="#fbf0e0" stroke="#8b4a05" stroke-width="1.5"/>
+        <text x="543" y="32" text-anchor="middle" font-family="ui-sans-serif,system-ui,sans-serif" font-size="11" font-weight="700" fill="#8b4a05">gate check</text>
+        <text x="543" y="50" text-anchor="middle" font-family="ui-sans-serif,system-ui,sans-serif" font-size="10" fill="#8b4a05">&#9312; Read AC of last slice</text>
+        <text x="543" y="64" text-anchor="middle" font-family="ui-sans-serif,system-ui,sans-serif" font-size="10" fill="#8b4a05">&#9313; git diff scope scan</text>
+        <text x="543" y="78" text-anchor="middle" font-family="ui-sans-serif,system-ui,sans-serif" font-size="10" fill="#8b4a05">&#9314; Name next shape</text>
+        <text x="543" y="108" text-anchor="middle" font-family="ui-sans-serif,system-ui,sans-serif" font-size="9" fill="#5f5f6a">~90 seconds</text>
+        <line x1="614" y1="65" x2="633" y2="65" stroke="#5f5f6a" stroke-width="1.5" marker-end="url(#arr2)"/>
+        <rect x="636" y="24" width="80" height="82" rx="8" fill="#efedff" stroke="#4a3bef" stroke-width="1.5"/>
+        <text x="676" y="57" text-anchor="middle" font-family="ui-monospace,monospace" font-size="12" font-weight="700" fill="#4a3bef">chain</text>
+        <text x="676" y="73" text-anchor="middle" font-family="ui-monospace,monospace" font-size="11" fill="#4a3bef">phase</text>
+        <text x="676" y="96" text-anchor="middle" font-family="ui-sans-serif,system-ui,sans-serif" font-size="10" fill="#5f5f6a">sub-task 7</text>
+      </svg>
+      <p class="p-diagram-caption">Same three-step gate check at every phase boundary. If the diff scan finds a commit touching files outside the active phase's scope, abort the gate before the next phase starts.</p>
+    </div>
+
+    <p>For a composition shape, write the orchestration line as a sequence of phase names — e.g. <code>chain(1-3) → team(4‖5‖6) → chain(7)</code>.</p>
+  </section>
+
+  <!-- 4 -->
+  <section class="s" id="the-60-second-ritual">
+    <header><span class="ix">04</span><h2>The 60-second ritual</h2></header>
+    <p>For each parent ticket during cycle planning — about a minute per ticket once the questions are memorised:</p>
+    <ol>
+      <li><strong>Count</strong> the sub-tasks (<a href="#q1">Q1</a>). One → jump to single-session shapes. Several → continue.</li>
+      <li><strong>Draw the dependencies</strong> (<a href="#q2">Q2</a>). All arrows → chain. No arrows after a shared prefix → composition. Pure independent → queue.</li>
+      <li><strong>Look for same-file overlaps</strong> (<a href="#q3">Q3</a>). Any overlap means that pair serialises regardless of step 2.</li>
+      <li><strong>Mark one-way doors</strong> (<a href="#q4">Q4</a>). Any → run <code>/pde-plan-review</code> before kicking off any sub-task implementation.</li>
+      <li><strong>Check for coordinator-agent shapes</strong> (<a href="#q7">Q7</a>). Any "supervisor sub-agent that spawns workers" wording → reject and reshape before continuing.</li>
+      <li><strong>Mark subjective acceptance</strong> (<a href="#q5">Q5</a>). Any → schedule a reviewer pass and paste the matching <a href="#reviewer-prompts">reviewer prompt</a> into the plan now, not at review time.</li>
+      <li><strong>Write one line into <code>plan.md</code></strong> describing the orchestration. Example:</li>
+    </ol>
+    <div class="p-orch-line" style="margin-left:26px">
+      <span class="p-orch-chip p-orch-gate">plan-review</span>
+      <span class="p-orch-arrow">→</span>
+      <span class="p-orch-chip p-orch-chain">chain(1-3)</span>
+      <span class="p-orch-arrow">→</span>
+      <span class="p-orch-chip p-orch-team">team-of-3(4‖5‖6)</span>
+      <span class="p-orch-arrow">→</span>
+      <span class="p-orch-chip p-orch-chain">chain(7)</span>
+      <span class="p-orch-arrow">→</span>
+      <span class="p-orch-chip p-orch-review">reviewer pass on UI</span>
+    </div>
+    <p>Also add to the bottom of <code>plan.md</code> for every multi-slice ticket:</p>
+    <ul>
+      <li>The orchestration line from step 7.</li>
+      <li>The reviewer prompt (if step 6 fired) — pre-written, ready to paste.</li>
+      <li>This sentence, verbatim:</li>
+    </ul>
+    <div class="p-verbatim">
+      <div class="p-verbatim-label">Paste verbatim into every multi-slice plan.md</div>
+      <div class="p-verbatim-body">"If an agent finds a bug from a prior sub-task, commit the fix as a separate commit attributed to the originating ticket before continuing. Do not silently fold."</div>
+    </div>
+  </section>
+
+  <!-- 5 -->
+  <section class="s" id="reviewer-prompts">
+    <header><span class="ix">05</span><h2>Reviewer prompts</h2></header>
+    <p>Three prompts the reviewer agent receives in place of the original acceptance criteria. The point is to ask a <em>different</em> set of questions than the implementer answered — otherwise the reviewer reproduces the implementer's blind spot.</p>
+    <p>Pick by output type. Paste into the ticket's <code>plan.md</code> at planning time.</p>
+
+    <h3 id="chart-prompt">Chart prompt</h3>
+    <p>Use for any ticket that produces a rendered chart or visualisation (e.g. anything under <code>ui/src/components/charts/</code>).</p>
+    <div class="p-prompt">
+      <div class="p-prompt-header">
+        <span class="p-prompt-label">Chart reviewer prompt</span>
+        <button class="p-copy-btn" onclick="copyPrompt(this)">Copy</button>
+      </div>
+      <pre class="p-prompt-body">You have not seen the acceptance criteria for this chart. Open the rendered chart at its canonical viewport size (the size a reader would actually see — assume desktop browser unless told otherwise).
+
+Answer these questions, in order. Do not skip any.
+
+1. **One-sentence thesis test.** Without reading the underlying data or any caption, can you state in one sentence what this chart is arguing? If no — what's confusing?
+2. **Label legibility.** Are any labels overlapping, clipped at chart edges, or unreadable at the rendered size? Look in particular at: axis tick labels, scenario/series endpoints (right edge, top edge), data-point callouts, and any annotation that points at a specific location on the chart.
+3. **Axis sanity.** Does the y-axis range make sense — or is one extreme outlier blowing out the scale and flattening the rest? Does the x-axis tick density match the rendered width (too dense = ticks collide; too sparse = unclear time scale)?
+4. **Colour and ordering.** If there's an implied ordering (bear &lt; base &lt; bull, low to high, etc.), does the visual ordering match? Do any two series share enough colour/style that a reader could swap them?
+5. **Edge cases.** What happens at the chart's edges — left edge (start of series), right edge (most-recent or projected-Y5), top edge (chart maximum)? List anything that looks wrong, ugly, overlapping, or unclear at the edges specifically. Edges are where label collisions hide.
+6. **What's missing.** Is there a current-state reference line, a callout for a fired condition (e.g. a growth cap), or a unit/scale indicator that a reader needs and isn't there?
+
+Name every issue, even small ones. Do not stop at the first issue — list them all.</pre>
+    </div>
+
+    <h3 id="narrative-prompt">Narrative prompt</h3>
+    <p>Use for any ticket that produces prose — playbooks, methodology notes, signal/model rationale text. Particularly useful when reviewing several documents together (cross-document vocabulary drift is invisible in any single document).</p>
+    <div class="p-prompt">
+      <div class="p-prompt-header">
+        <span class="p-prompt-label">Narrative reviewer prompt</span>
+        <button class="p-copy-btn" onclick="copyPrompt(this)">Copy</button>
+      </div>
+      <pre class="p-prompt-body">You have not seen the acceptance criteria for this document. Read it once at normal speed — do not study it.
+
+Answer in order:
+
+1. **One-paragraph thesis test.** In one paragraph, what is this document arguing? If you can't state the thesis after one read-through, the document is unclear.
+2. **Vocabulary consistency.** Are the same concepts named with the same words throughout? List any term that drifts (e.g. "segment" in one section, "business line" in another, "vertical" in a third — three names for the same thing is a smell).
+3. **Confident-but-unsupported claims.** Are there assertions that a sceptical reader would push back on — and is the supporting evidence in the document? Quote one such claim verbatim if you find one.
+4. **Audience leakage.** Is this written for the same reader throughout? If sections switch register (technical → marketing → internal-jargon), name the shifts.
+5. **Structural mismatch.** Does the document's section ordering match what a reader looking for the answer would expect? Or do they have to hunt?
+6. **Comparison to siblings (only if applicable).** If you are reviewing this alongside sibling documents (e.g. multiple playbooks), what's *different* between them in style, depth, structure, or vocabulary that isn't justified by the subject matter?
+
+Name every issue.</pre>
+    </div>
+
+    <h3 id="tabular-prompt">Tabular prompt</h3>
+    <p>Use for any ticket that produces a structured report — Signal/Model/Screen JSON output, a tab in the report viewer, a results table.</p>
+    <div class="p-prompt">
+      <div class="p-prompt-header">
+        <span class="p-prompt-label">Tabular reviewer prompt</span>
+        <button class="p-copy-btn" onclick="copyPrompt(this)">Copy</button>
+      </div>
+      <pre class="p-prompt-body">You have not seen the acceptance criteria for this report or JSON output. Open the rendered view (UI tab if applicable, or the JSON itself).
+
+Answer in order:
+
+1. **At-a-glance verdict.** What is this report telling a reader? State the verdict and primary number in one sentence. If you have to read three sections to know, the report is buried.
+2. **Number sanity.** For every numeric field: does the magnitude look right (units in the right place — billions vs millions, percent vs decimal)? Does any number conflict with another (e.g. P/E and PEG implying different growth rates without explanation)?
+3. **Missing fields, silent.** Are there fields you'd expect for this kind of report that are absent — and is the absence acknowledged (e.g. "N/A — pre-profit") or just silently missing?
+4. **Audit trail.** If overrides, caps, or substitutions were applied, are they named — or did some assumption silently swap in?
+5. **Reader's next question.** What's the most likely next question a reader has after seeing this? Is the answer in the report?
+
+Name every issue you find.</pre>
+    </div>
+  </section>
+
+  <!-- 6 -->
+  <section class="s" id="worked-example">
+    <header><span class="ix">06</span><h2>Worked example — ABA-115</h2></header>
+    <p>The Model tab v1 feature. Seven sub-tasks: (1) UI shell, (2) skill schema change — emit <code>historical_fcf_margins[]</code>, (3) re-run covered tickers, (4) CAGR glidepath chart, (5) FCF margin trajectory chart, (6) scenario fan chart, (7) captions and styling.</p>
+
+    <h3>Running the seven questions</h3>
+    <table>
+      <thead><tr><th>Question</th><th>Answer</th><th>Consequence</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Q1</strong> count</td><td>Seven sub-tasks</td><td>Multi-slice — continue</td></tr>
+        <tr><td><strong>Q2</strong> order</td><td>1→2→3 have arrows (UI consumes schema; schema requires re-run). 4, 5, 6 share the same JSON from sub-task 3 but don't depend on each other. 7 follows the rest.</td><td>Composition: chain(1-3) + team(4‖5‖6) + chain(7)</td></tr>
+        <tr><td><strong>Q3</strong> same file</td><td>4, 5, 6 each touch their own chart component. No overlap.</td><td>Parallel-safe — team confirmed</td></tr>
+        <tr><td><strong>Q4</strong> one-way door</td><td>Sub-task 2 changes a JSON contract field.</td><td>Plan-review gate required before any implementation</td></tr>
+        <tr><td><strong>Q5</strong> acceptance type</td><td>1–3 mechanical (JSON field present, audit row matches). 4–7 subjective (chart legibility).</td><td>Chart reviewer pass scheduled after sub-task 7</td></tr>
+        <tr><td><strong>Q6</strong> spike?</td><td>Implementation.</td><td>No spike branch</td></tr>
+        <tr><td><strong>Q7</strong> coordinator shape?</td><td>Lead spawns teammates directly — no sub-agent spawning sub-agents.</td><td>Valid. Proceed.</td></tr>
+      </tbody>
+    </table>
+
+    <h3>The orchestration line</h3>
+    <div class="p-orch-line">
+      <span class="p-orch-chip p-orch-gate">plan-review</span>
+      <span class="p-orch-arrow">→</span>
+      <span class="p-orch-chip p-orch-chain">chain(1-3)</span>
+      <span class="p-orch-arrow">→</span>
+      <span class="p-orch-chip p-orch-team">team-of-3(4‖5‖6)</span>
+      <span class="p-orch-arrow">→</span>
+      <span class="p-orch-chip p-orch-chain">chain(7)</span>
+      <span class="p-orch-arrow">→</span>
+      <span class="p-orch-chip p-orch-review">chart-reviewer pass on UI</span>
+    </div>
+
+    <h3>Where each guard fires</h3>
+    <div class="p-diagram">
+      <svg viewBox="0 0 760 155" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="ABA-115 execution pipeline: plan-review then chain 1-3 then gate check then team 4 5 6 in parallel then gate check then chain 7 then chart reviewer">
+        <defs>
+          <marker id="arr3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10z" fill="#5f5f6a"/></marker>
+        </defs>
+        <rect x="4" y="42" width="84" height="56" rx="6" fill="#fbf0e0" stroke="#8b4a05" stroke-width="1.5"/>
+        <text x="46" y="64" text-anchor="middle" font-family="ui-monospace,monospace" font-size="10" font-weight="700" fill="#8b4a05">plan-review</text>
+        <text x="46" y="79" text-anchor="middle" font-family="ui-sans-serif,system-ui,sans-serif" font-size="9" fill="#8b4a05">Q4 + Q7</text>
+        <line x1="88" y1="70" x2="107" y2="70" stroke="#5f5f6a" stroke-width="1.5" marker-end="url(#arr3)"/>
+
+        <rect x="110" y="42" width="84" height="56" rx="6" fill="#efedff" stroke="#4a3bef" stroke-width="1.5"/>
+        <text x="152" y="66" text-anchor="middle" font-family="ui-monospace,monospace" font-size="11" font-weight="700" fill="#4a3bef">chain</text>
+        <text x="152" y="80" text-anchor="middle" font-family="ui-monospace,monospace" font-size="11" fill="#4a3bef">(1–3)</text>
+        <line x1="194" y1="70" x2="213" y2="70" stroke="#5f5f6a" stroke-width="1.5" marker-end="url(#arr3)"/>
+
+        <rect x="216" y="16" width="112" height="122" rx="6" fill="#fbf0e0" stroke="#8b4a05" stroke-width="1.5"/>
+        <text x="272" y="38" text-anchor="middle" font-family="ui-sans-serif,system-ui,sans-serif" font-size="10" font-weight="700" fill="#8b4a05">gate check</text>
+        <text x="272" y="56" text-anchor="middle" font-family="ui-sans-serif,system-ui,sans-serif" font-size="9" fill="#8b4a05">Read AC of task 3</text>
+        <text x="272" y="70" text-anchor="middle" font-family="ui-sans-serif,system-ui,sans-serif" font-size="9" fill="#8b4a05">git diff scope scan</text>
+        <text x="272" y="84" text-anchor="middle" font-family="ui-sans-serif,system-ui,sans-serif" font-size="9" fill="#8b4a05">Name next shape</text>
+        <text x="272" y="124" text-anchor="middle" font-family="ui-sans-serif,system-ui,sans-serif" font-size="8" fill="#5f5f6a">bug fold = abort</text>
+        <line x1="328" y1="70" x2="347" y2="70" stroke="#5f5f6a" stroke-width="1.5" marker-end="url(#arr3)"/>
+
+        <rect x="350" y="42" width="100" height="56" rx="6" fill="#e6f5ed" stroke="#047a44" stroke-width="1.5"/>
+        <text x="400" y="63" text-anchor="middle" font-family="ui-monospace,monospace" font-size="10" font-weight="700" fill="#047a44">team-of-3</text>
+        <text x="400" y="77" text-anchor="middle" font-family="ui-monospace,monospace" font-size="10" fill="#047a44">(4‖5‖6)</text>
+        <line x1="450" y1="70" x2="469" y2="70" stroke="#5f5f6a" stroke-width="1.5" marker-end="url(#arr3)"/>
+
+        <rect x="472" y="16" width="112" height="122" rx="6" fill="#fbf0e0" stroke="#8b4a05" stroke-width="1.5"/>
+        <text x="528" y="38" text-anchor="middle" font-family="ui-sans-serif,system-ui,sans-serif" font-size="10" font-weight="700" fill="#8b4a05">gate check</text>
+        <text x="528" y="56" text-anchor="middle" font-family="ui-sans-serif,system-ui,sans-serif" font-size="9" fill="#8b4a05">Read AC of task 6</text>
+        <text x="528" y="70" text-anchor="middle" font-family="ui-sans-serif,system-ui,sans-serif" font-size="9" fill="#8b4a05">git diff scope scan</text>
+        <text x="528" y="84" text-anchor="middle" font-family="ui-sans-serif,system-ui,sans-serif" font-size="9" fill="#8b4a05">Name next shape</text>
+        <text x="528" y="124" text-anchor="middle" font-family="ui-sans-serif,system-ui,sans-serif" font-size="8" fill="#5f5f6a">teammate file scope</text>
+        <line x1="584" y1="70" x2="603" y2="70" stroke="#5f5f6a" stroke-width="1.5" marker-end="url(#arr3)"/>
+
+        <rect x="606" y="42" width="68" height="56" rx="6" fill="#efedff" stroke="#4a3bef" stroke-width="1.5"/>
+        <text x="640" y="66" text-anchor="middle" font-family="ui-monospace,monospace" font-size="11" font-weight="700" fill="#4a3bef">chain</text>
+        <text x="640" y="80" text-anchor="middle" font-family="ui-monospace,monospace" font-size="11" fill="#4a3bef">(7)</text>
+        <line x1="674" y1="70" x2="693" y2="70" stroke="#5f5f6a" stroke-width="1.5" marker-end="url(#arr3)"/>
+
+        <rect x="696" y="42" width="60" height="56" rx="6" fill="#e7f0fd" stroke="#1957c4" stroke-width="1.5"/>
+        <text x="726" y="63" text-anchor="middle" font-family="ui-monospace,monospace" font-size="9" font-weight="700" fill="#1957c4">chart</text>
+        <text x="726" y="76" text-anchor="middle" font-family="ui-monospace,monospace" font-size="9" fill="#1957c4">reviewer</text>
+        <text x="726" y="88" text-anchor="middle" font-family="ui-sans-serif,system-ui,sans-serif" font-size="8" fill="#5f5f6a">Q5 fires</text>
+      </svg>
+      <p class="p-diagram-caption">The chart reviewer catches label collisions and axis blowouts before merge — defects a mechanical acceptance check re-passes because it checks for presence, not readability.</p>
+    </div>
+  </section>
+
+  <!-- 7 -->
+  <section class="s" id="limitations">
+    <header><span class="ix">07</span><h2>Limitations</h2></header>
+    <p>Three limitations worth naming before you rely on this checklist:</p>
+    <div class="p-risks">
+      <div class="p-risks-row p-risks-head">
+        <div>Risk</div><div>Strength</div><div>Caught by</div>
+      </div>
+      <div class="p-risks-row">
+        <div>Coordinator-agent plan assumes platform capability that doesn't exist</div>
+        <div><span class="p-sev p-sev-low">STRONG</span></div>
+        <div><a href="#q7">Q7</a> + plan-review gate. The question is mechanical; the gate runs before any code.</div>
+      </div>
+      <div class="p-risks-row">
+        <div>Bug from an earlier sub-task silently bundled into a later sub-task's commit</div>
+        <div><span class="p-sev p-sev-med">PARTIAL</span></div>
+        <div>The "do not silently fold" rule in the ticket plan + a 15-second <code>git diff --stat</code> eyeball before each commit. Depends on a written rule the agent must remember to follow.</div>
+      </div>
+      <div class="p-risks-row">
+        <div>Subjective defect (overlapping labels, axis blowout) passing mechanical acceptance</div>
+        <div><span class="p-sev p-sev-low">STRONG</span></div>
+        <div><a href="#q5">Q5</a> + the <a href="#chart-prompt">chart reviewer prompt</a>. Reviewer never sees the original acceptance criteria, so it can't re-pass the same checks.</div>
+      </div>
+    </div>
+
+    <h3>Caveats</h3>
+    <p><strong>The bundled-fix problem is mitigated, not eliminated.</strong> The short-term mitigation is fifteen seconds of you reading the staged diff yourself before each commit lands. The durable fix is a <code>PreToolUse</code> hook that rejects any commit touching files outside the assigned sub-task's scope — about a cycle's worth of work, worth building after a couple of cycles of manual checking.</p>
+    <p><strong>Agent-team costs are not measured.</strong> Rough mental model: N+1× a single session for N parallel teammates. Rule of thumb: only run agents in parallel when each parallel sub-task would take an hour or more of work on its own. The token cost is roughly the same either way — you only buy back wall-clock time by parallelising.</p>
+    <p><strong>Agent teams use an experimental flag.</strong> <code>CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1</code> could be removed or renamed without warning. If it goes away, run the same sub-tasks sequentially in single sessions. The checklist still works; only the parallelism goes away.</p>
+  </section>
+
+  <!-- 8 -->
+  <section class="s" id="reference">
+    <header><span class="ix">08</span><h2>Reference</h2></header>
+    <p>If this guide doesn't answer a question, the depth is in three companion files in the same folder:</p>
+    <div class="p-companions">
+      <div class="p-companion">
+        <div class="p-companion-file">pattern-map.md</div>
+        <div class="p-companion-title">Research-grade decision model</div>
+        <div class="p-companion-desc">Formal axis definitions (A1–A7), decision-tree leaves (L0–L7), activation triggers, and three worked examples in full detail. Denser, uses internal codes, but authoritative. Read this when you want to understand why the checklist makes the choices it does.</div>
+      </div>
+      <div class="p-companion">
+        <div class="p-companion-file">landscape.md</div>
+        <div class="p-companion-title">Full orchestration primitive catalogue</div>
+        <div class="p-companion-desc">Every Claude Code orchestration primitive: single session, sub-agents via the Agent tool, custom sub-agents, agent teams, hooks, skills, slash commands, <code>/batch</code>, MCP servers, channels, Agent SDK, worktrees, the agent view, and third-party tools. Includes platform constraints, cost notes, and setup friction. Read this when you need to know what an agent team actually is, or what <code>/batch</code> does.</div>
+      </div>
+      <div class="p-companion">
+        <div class="p-companion-file">critique.md</div>
+        <div class="p-companion-title">Stress-test of the recommendation</div>
+        <div class="p-companion-desc">The "what could still go wrong" view — items that didn't fully close, reasoning behind deferral decisions, and the limits of the checklist approach.</div>
+      </div>
+    </div>
+
+    <h3>Quick glossary</h3>
+    <table>
+      <thead><tr><th>Term</th><th>What it is</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Sub-task</strong></td><td>One numbered item in a Linear ticket's <code>plan.md</code></td></tr>
+        <tr><td><strong>One-way door</strong></td><td>A change that's expensive to reverse: schema field, public command name, methodology constant, frontmatter key, anything in <code>DESIGN.md</code></td></tr>
+        <tr><td><strong>Chain</strong></td><td>Multiple sub-tasks in a single session with explicit gates between them</td></tr>
+        <tr><td><strong>Team</strong></td><td>Agent teams primitive — top-level lead plus 3–5 teammates running in parallel</td></tr>
+        <tr><td><strong>Composition</strong></td><td>A ticket that mixes chain and team phases — most common shape in this repo</td></tr>
+        <tr><td><strong>Reviewer pass</strong></td><td>A fresh-context second look at subjective output using one of the prompts in <a href="#reviewer-prompts">Section 5</a></td></tr>
+        <tr><td><strong>Gate check</strong></td><td>Three-step procedure at each phase boundary: read prior phase's AC, scan <code>git log</code> for cross-phase bug folds, name the next shape out loud</td></tr>
+      </tbody>
+    </table>
+  </section>
+</main>
+
+<footer>Rendered from <code>docs/operations/orchestration/guide.md</code> on 2026-05-19 · regenerate to update.</footer>
+</div>
+
+<script>
+  function copyPrompt(btn) {
+    var pre = btn.closest('.p-prompt').querySelector('.p-prompt-body');
+    navigator.clipboard.writeText(pre.textContent).then(function() {
+      btn.textContent = '✓ Copied';
+      btn.classList.add('copied');
+      setTimeout(function() { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 1800);
+    });
+  }
+  var links = Array.from(document.querySelectorAll('aside nav a'));
+  var targets = links.map(function(a) { return document.getElementById(a.getAttribute('href').slice(1)); }).filter(Boolean);
+  var byId = new Map(targets.map(function(el, i) { return [el.id, links[i]]; }));
+  var io = new IntersectionObserver(function(entries) {
+    for (var i = 0; i < entries.length; i++) {
+      if (entries[i].isIntersecting) {
+        links.forEach(function(a) { a.classList.remove('active'); });
+        var lnk = byId.get(entries[i].target.id);
+        if (lnk) lnk.classList.add('active');
+      }
+    }
+  }, { rootMargin: '-30% 0px -60% 0px' });
+  targets.forEach(function(t) { io.observe(t); });
+</script>
+</body>
+</html>
