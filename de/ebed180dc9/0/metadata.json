@@ -1,0 +1,79 @@
+{
+  "cli_version": "0.6.1",
+  "checkpoint_id": "deebed180dc9",
+  "session_id": "847a48fd-edc4-42c5-9b85-f9332f7fc512",
+  "strategy": "manual-commit",
+  "created_at": "2026-05-19T05:21:24.889106Z",
+  "branch": "main",
+  "checkpoints_count": 3,
+  "files_touched": [
+    "tasks/plan.md",
+    "tasks/todo.md"
+  ],
+  "agent": "Claude Code",
+  "model": "claude-opus-4-7[1m]",
+  "turn_id": "19eee10c12e1",
+  "checkpoint_transcript_start": 304,
+  "transcript_lines_at_start": 304,
+  "token_usage": {
+    "input_tokens": 147,
+    "cache_creation_tokens": 410255,
+    "cache_read_tokens": 9510861,
+    "output_tokens": 52554,
+    "api_call_count": 72
+  },
+  "session_metrics": {
+    "turn_count": 5
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-05-19T05:21:24.86319Z",
+    "agent_lines": 242,
+    "agent_removed": 163,
+    "human_added": 224,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 466,
+    "total_lines_changed": 630,
+    "agent_percentage": 64.28571428571429,
+    "metric_version": 2
+  },
+  "prompt_attributions": [
+    {
+      "checkpoint_number": 1,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0
+    },
+    {
+      "checkpoint_number": 2,
+      "user_lines_added": 109,
+      "user_lines_removed": 0,
+      "agent_lines_added": 242,
+      "agent_lines_removed": 163,
+      "user_added_per_file": {
+        ".claude/settings.local.json": 109
+      }
+    },
+    {
+      "checkpoint_number": 3,
+      "user_lines_added": 109,
+      "user_lines_removed": 0,
+      "agent_lines_added": 242,
+      "agent_lines_removed": 163,
+      "user_added_per_file": {
+        ".claude/settings.local.json": 109
+      }
+    },
+    {
+      "checkpoint_number": 4,
+      "user_lines_added": 109,
+      "user_lines_removed": 0,
+      "agent_lines_added": 242,
+      "agent_lines_removed": 163,
+      "user_added_per_file": {
+        ".claude/settings.local.json": 109
+      }
+    }
+  ]
+}

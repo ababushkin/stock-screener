@@ -1,0 +1,5 @@
+what skill (if any) should i use to execute the implementation
+
+---
+
+lets create these as "sub-tasks" against the linear ticket, with all the necessary context, including which skill to use when executing these sub-tasks. make sure they're ordered in the order they shold be executed and name them appropriately so the order is obvious
