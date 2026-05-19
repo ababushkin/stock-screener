@@ -314,6 +314,7 @@ yfinance's OCF adds SBC back as a non-cash charge, so reported `free_cash_flow` 
 - `fcf_margin_ttm_reported` = `fcf_ttm_reported / years[0].revenue` (audit-trail only; surfaces in OUTPUT side-by-side with the clean margin).
 - `fcf_margin_ttm` = `fcf_ttm / years[0].revenue` (the **clean** SBC-stripped margin — this is the margin that anchors the Y1 FCF projection in Step 2).
 - `fcf_cagr_3y` is computed on **clean** FCF on both ends — never on reported. For each historical year used, derive `clean_fcf_y = years[y].free_cash_flow − years[y].stock_based_compensation`. Then `fcf_cagr_3y = (clean_fcf_y0 / clean_fcf_y3) ^ (1/3) − 1` when 4y of usable history is available; if only 3y is available use `^(1/2)` with the oldest available year as the base; if only 2y is available, set `fcf_cagr_3y = (clean_fcf_y0 / clean_fcf_yprior) − 1` and flag confidence = MEDIUM. State which formulation was used. If any historical-year `stock_based_compensation` is null, the SBC paste-in (GATHER null-handler) must cover the full required series — never silently fall back to reported-FCF CAGR for the missing year.
+- `historical_fcf_margins` is a per-fiscal-year series matching `years[]` order (newest-first). For each `y ∈ [0..min(3, len(years)−1)]` where `years[y].revenue` and `years[y].stock_based_compensation` are both non-null, emit `{"year": years[y].date, "fcf_margin_clean": (years[y].free_cash_flow − years[y].stock_based_compensation) / years[y].revenue, "fcf_margin_reported": years[y].free_cash_flow / years[y].revenue}` (ISO `YYYY-MM-DD` for the fiscal-year-end date). Years missing either required field are skipped — the array stays dense rather than emitting `null` cells. The newest entry's `fcf_margin_clean` must equal `fcf_margin_ttm` within float tolerance (same numerator and denominator); this is the reconciliation point for the OUTPUT audit row.
 
 **Step 2 — Year-1 FCF anchor under each scenario.**
 
@@ -510,6 +511,7 @@ MODEL OUTPUT
   Shares (dil.):   XXX.X M (source: get_financials.years[0].shares_outstanding_diluted | get_ratios.sharesOutstanding fallback)
   Net debt:        $X.X B (total_debt $X.X B − cash $X.X B, FY ending YYYY-MM-DD)
   FCF (TTM):       $X.X B reported  |  SBC: $X.X B  |  clean FCF: $X.X B  |  clean margin: XX% (reported margin: XX%)  |  clean 3y CAGR: XX%
+  Historical clean FCF margin: y-3 X.X% / y-2 X.X% / y-1 X.X% / TTM X.X%   ← reads from `historical_fcf_margins[]` oldest→newest; TTM cell equals `fcf_margin_ttm`. Shorter window if fewer years available.
   FCF margin anchor: XX% (playbook override; TTM clean: XX%)   ← emitted only when playbook supplies terminal_margin; omit line otherwise
   NTM revenue:     $X.X B (consensus, n=N analysts)
   Base WACC:       X.X% (source: runtime_flag | playbook | user_paste)
@@ -564,6 +566,10 @@ Run `mkdir -p reports` and read-modify-write the existing file (it already conta
   "sbc_ttm": <number>,
   "fcf_margin_ttm": <number>,
   "fcf_margin_ttm_reported": <number>,
+  "historical_fcf_margins": [
+    {"year": "YYYY-MM-DD", "fcf_margin_clean": <number>, "fcf_margin_reported": <number>},
+    ...
+  ],
   "fcf_cagr_3y": <number>,
   "growth_rate": {
     "trailing_3y_cagr": <number>,
@@ -658,6 +664,8 @@ The `engagement_modifier` block is emitted only when `--engagement-modifier` was
 
 `fcf_ttm`, `fcf_margin_ttm`, and `fcf_cagr_3y` are the **SBC-stripped (clean)** values per ABA-110 — they anchor the DCF. `fcf_ttm_reported`, `fcf_margin_ttm_reported`, and `sbc_ttm` are audit-only fields exposing the pre-strip numbers so consumers can reconcile against yfinance's `free_cash_flow` and `stock_based_compensation` directly. The two pairs must satisfy `fcf_ttm == fcf_ttm_reported − sbc_ttm` and `fcf_margin_ttm == fcf_ttm / revenue_ttm` (within float tolerance).
 
+`historical_fcf_margins` is emitted every run per ABA-115 (v1.11) — a per-fiscal-year series of clean and reported FCF margins matching `years[]` order (newest-first). Up to 4 entries (TTM through y-3) when SBC and revenue are both non-null for the full window; years missing either field are skipped (dense array, no `null` cells). The newest entry's `fcf_margin_clean` equals `fcf_margin_ttm` within float tolerance — this is the cell-for-cell reconciliation point the OUTPUT audit row reads against. UI consumers (Model tab v1) render this on ESTABLISHED only; the pre-profit path emits the same series for audit parity.
+
 `growth_rate` is emitted every run per ABA-111. `trailing_3y_cagr` mirrors `fcf_cagr_3y` (the raw clean-FCF trailing CAGR, pre-cap). `consensus_5y_growth` is the value pulled from `get_estimates(ticker).eps_growth_5y` — `null` when yfinance has no long-term consensus. `fallback_ceiling` is the hard-coded 18% ceiling used when consensus is null. `applied_base_cagr` is `min(trailing_3y_cagr, ceiling)` — the value that drove the base scenario's Y2–Y5 projection (and the anchor that bear/bull scale off). `cap_applied` is `true` when `applied_base_cagr < trailing_3y_cagr`; `cap_source` is `consensus_5y_growth` / `fallback_ceiling` / `null` respectively. When the cap does not fire (trailing already at or below ceiling), `applied_base_cagr == trailing_3y_cagr` and `cap_source == null`.
 
 `intrinsic_value_range` is a flat extract of `scenarios.{bear,base,bull}.intrinsic_value_per_share` for UI convenience — must reconcile cell-for-cell with the scenarios block.
@@ -751,6 +759,7 @@ Project `revenue_y_n = revenue_y_(n−1) × (1 + cagr)` for n = 2..5. When `rev_
 - `fcf_ttm_clean = fcf_ttm_reported − sbc_ttm` (SBC-stripped FCF — the cash-flow side of the trajectory).
 - `margin_ttm_reported = fcf_ttm_reported / years[0].revenue` (audit-trail only; surfaced in OUTPUT side-by-side with clean).
 - `margin_ttm = fcf_ttm_clean / years[0].revenue` (the **clean** SBC-stripped margin — this is the trajectory baseline, may be negative). The user-confirmed terminal margin in the GATHER MIP is a **clean FCF margin target** — surface this label explicitly in the prompt so users do not anchor on industry-reported (SBC-included) margins.
+- `historical_fcf_margins` is computed the same way as on the ESTABLISHED path (COMPUTE Step 1 — clean and reported per-year margins, newest-first, matching `years[]` order, skip years missing required fields). The series is emitted to JSON for audit parity even though the UI does not render it on the pre-profit path in v1.
 - Target Year-5 margin per scenario: `target − 5pp` (bear) / `target` (base) / `target + 5pp` (bull), where `target` is the user-confirmed terminal clean FCF margin.
 - Linear interpolation across Years 1–5: `margin_y_n = margin_ttm + (target − margin_ttm) × (n / 5)`.
 - `fcf_y_n = revenue_y_n × margin_y_n` (negative in early years if the company is still cash-burning).
@@ -884,6 +893,10 @@ If any scenario's inflection year is `beyond Y5`, the line reads `FCF inflection
   "sbc_ttm": <number>,
   "fcf_margin_ttm": <number>,
   "fcf_margin_ttm_reported": <number>,
+  "historical_fcf_margins": [
+    {"year": "YYYY-MM-DD", "fcf_margin_clean": <number>, "fcf_margin_reported": <number>},
+    ...
+  ],
   "ntm_revenue": <number>,
   "base_wacc": <number>,
   "comp_set": [{"ticker": "...", "ntm_ev_revenue": <number>}],
@@ -1103,3 +1116,11 @@ RDDT — pre-profit DCF bear/base/bull = $X / $Y / $Z (price $P, WITHIN BEAR–B
 68. **COVERAGE.md bypass removed →** the v1.9 bypass (gate_bypass: "coverage") is removed. All COVERAGE.md tickers produce `MODEL_READY=YES` through correctly calibrated thresholds in `/stock-signal`. The gate enforces uniformly for all tickers.
 69. **MODEL_READY=NO refusal unchanged →** invoking `/stock-model` on any ticker with `model_ready=NO` emits the standard refusal regardless of whether the ticker is in COVERAGE.md.
 70. **`gate_bypass` field retired →** `stages.model.gate_bypass` is no longer emitted. Existing report files may contain the field; it is ignored on read.
+
+### v1.11 — ABA-115 (historical FCF margin series for Model-tab visuals)
+
+71. **`stages.model.historical_fcf_margins` present →** every ESTABLISHED and pre-profit run emits an array of per-fiscal-year `{year, fcf_margin_clean, fcf_margin_reported}` entries, newest-first, matching `years[]` order. Up to 4 entries (TTM through y-3) when SBC and revenue are both non-null for the full window. Years missing either required field are skipped — the array is dense (no `null` cells).
+72. **Newest entry reconciles with TTM →** `historical_fcf_margins[0].fcf_margin_clean` equals `fcf_margin_ttm` within float tolerance (same numerator and denominator); `historical_fcf_margins[0].fcf_margin_reported` equals `fcf_margin_ttm_reported` within the same tolerance.
+73. **OUTPUT audit row present →** the ESTABLISHED MODEL OUTPUT block contains a `Historical clean FCF margin: y-3 X.X% / y-2 X.X% / y-1 X.X% / TTM X.X%` line directly after the `FCF (TTM):` summary. The four values read from `historical_fcf_margins[]` printed oldest→newest (array index 3 → 0); shorter window when fewer historical years are available. The line is omitted entirely when the array is empty (zero usable historical years).
+74. **Audit row reconciles cell-for-cell with JSON →** running `/stock-model META` (or any ESTABLISHED ticker with 4y of clean history) produces an audit-row percentage in each cell that matches the corresponding `historical_fcf_margins[]` entry's `fcf_margin_clean × 100`, rounded to the same precision (one decimal place). Disagreement is a stop-the-line gate — debug COMPUTE Step 1 or the OUTPUT print step before mass re-runs.
+75. **Pre-profit emits the same field for audit parity →** `/stock-model RDDT --pre-profit` (or any EMERGING run with a 3y SBC+revenue window) emits `historical_fcf_margins` in JSON with the same shape and the same `[0]`-equals-TTM reconciliation rule. The Model-tab UI does not render this on the pre-profit path in v1; the JSON field exists for audit-trail parity only.

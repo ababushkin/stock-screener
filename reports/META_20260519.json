@@ -1,0 +1,135 @@
+{
+  "ticker": "META",
+  "company": "Meta Platforms, Inc.",
+  "date": "2026-05-19",
+  "stages": {
+    "signal": {
+      "verdict": "WATCH",
+      "profit_stage": "ESTABLISHED",
+      "track": "GROWTH",
+      "ai_layer": "INCUMBENT",
+      "clean_eps_ttm": 18.20,
+      "sbc_stripped": true,
+      "sbc_adjustment_per_share": 9.30,
+      "peg_ratio": 1.74,
+      "ps_ratio": 7.22,
+      "rule_of_40": null,
+      "qualitative": "PASS",
+      "qualitative_note": "AI optionality premium 14.6% — AI investment appears proportionate to core business value.",
+      "signal": "WATCH",
+      "model_ready": "YES",
+      "condition": null
+    },
+    "model": {
+      "method": "two-stage DCF",
+      "profit_stage": "ESTABLISHED",
+      "current_price": 611.21,
+      "shares_diluted": 2574000000,
+      "net_debt": 48024000000,
+      "fcf_ttm": 25682000000,
+      "fcf_ttm_reported": 46109000000,
+      "sbc_ttm": 20427000000,
+      "fcf_margin_ttm": 0.12779,
+      "fcf_margin_ttm_reported": 0.22944,
+      "historical_fcf_margins": [
+        {"year": "2025-12-31", "fcf_margin_clean": 0.12779, "fcf_margin_reported": 0.22944},
+        {"year": "2024-12-31", "fcf_margin_clean": 0.22725, "fcf_margin_reported": 0.32870},
+        {"year": "2023-12-31", "fcf_margin_clean": 0.22269, "fcf_margin_reported": 0.32668},
+        {"year": "2022-12-31", "fcf_margin_clean": 0.06258, "fcf_margin_reported": 0.16541}
+      ],
+      "fcf_cagr_3y": 0.521,
+      "growth_rate": {
+        "trailing_3y_cagr": 0.521,
+        "consensus_5y_growth": null,
+        "fallback_ceiling": 0.18,
+        "applied_base_cagr": 0.18,
+        "cap_applied": true,
+        "cap_source": "playbook"
+      },
+      "ntm_revenue": 301634788930,
+      "base_wacc": 0.09,
+      "base_wacc_source": "playbook",
+      "scenarios": {
+        "bear": {
+          "y1_fcf": 71777400000,
+          "y2_5_cagr": 0.09,
+          "terminal_growth": 0.015,
+          "wacc": 0.10,
+          "intrinsic_value_per_share": 397.68,
+          "upside_pct": -34.94,
+          "narrative": "Reality Labs cash drain intensifies; regulatory antitrust action (EU structural remedy or US Instagram/WhatsApp dissolution) forces business separation; AI ad-targeting fails to improve ROAS meaningfully in a macro downturn — Family of Apps revenue decelerates sharply while elevated capex continues"
+        },
+        "base": {
+          "y1_fcf": 84449741300,
+          "y2_5_cagr": 0.18,
+          "terminal_growth": 0.025,
+          "wacc": 0.09,
+          "intrinsic_value_per_share": 810.76,
+          "upside_pct": 32.64,
+          "narrative": "Family of Apps sustains mid-teens revenue growth on AI-targeting ROAS gains and Threads monetisation; Reality Labs losses stabilise below $20B/year as smart-glasses hardware gains commercial traction; regulatory fines (DMA, GDPR) remain manageable without structural remedy"
+        },
+        "bull": {
+          "y1_fcf": 92894715430,
+          "y2_5_cagr": 0.236,
+          "terminal_growth": 0.035,
+          "wacc": 0.08,
+          "intrinsic_value_per_share": 1522.75,
+          "upside_pct": 149.13,
+          "narrative": "AI-driven ad-targeting unlocks a step-change in advertiser ROAS, re-accelerating revenue growth above consensus; Reality Labs smart-glasses pivot toward profitable hardware and enterprise AR; EU/US regulatory outcomes resolved without structural separation — regulatory overhang re-rated as a non-event"
+        }
+      },
+      "intrinsic_value_range": {
+        "bear": 397.68,
+        "base": 810.76,
+        "bull": 1522.75
+      },
+      "range_vs_price": "WITHIN BEAR-BASE",
+      "sensitivity": {
+        "dominant_driver": "WACC",
+        "note": "WACC dominates — ±100 bps WACC moves base IV by ±17.1%"
+      },
+      "sensitivity_table": {
+        "wacc_axis": [0.08, 0.085, 0.09, 0.095, 0.10],
+        "terminal_growth_axis": [0.015, 0.02, 0.025, 0.03, 0.035],
+        "intrinsic_value_per_share": [
+          [840.4, 900.4, 971.0, 1056.0, 1159.9],
+          [775.0, 825.4, 884.2, 953.8, 1037.2],
+          [718.3, 761.2, 810.8, 868.6, 936.8],
+          [668.9, 705.8, 748.0, 796.5, 853.3],
+          [625.4, 657.3, 693.5, 735.0, 782.8]
+        ],
+        "base_cell": {"row": 2, "col": 2}
+      },
+      "position_sizing": {
+        "band": "2–3% of portfolio",
+        "lower_pct": 2,
+        "upper_pct": 3,
+        "signal_verdict": "WATCH",
+        "range_vs_price": "WITHIN BEAR-BASE",
+        "margin_of_safety_pct": 32.6,
+        "confidence_cap_applied": false,
+        "rationale": "WATCH × WITHIN BEAR-BASE (price $611.21 vs base IV $810.76, MoS +32.6%) → 2–3% band (HIGH confidence anchor from playbook, no cap applied)."
+      },
+      "playbook": {
+        "loaded": true,
+        "path": "playbooks/META.md",
+        "last_updated": "2026-05-18",
+        "overrides_applied": ["base_wacc", "growth_ceiling", "terminal_margin", "bear_narrative", "base_narrative", "bull_narrative", "confidence_anchor"],
+        "failure_modes": [
+          "DAP (Daily Active People) growth decelerates below 3% YoY — engagement floor premise breaks, monetisation leverage disappears",
+          "EU antitrust forced structural separation of Messenger, WhatsApp, or Instagram from the core Facebook platform",
+          "US DOJ action seeking dissolution of the Instagram and/or WhatsApp acquisitions",
+          "Reality Labs capex sustainably above $20B/year without a credible near-term monetisation path — free cash flow drag becomes consensus-thesis-breaking",
+          "AI-generated content floods the feed and degrades ad-targeting signal quality — privacy-sandbox-style ROAS deterioration without a regulatory catalyst",
+          "Threads fails to retain users at scale; no advertising revenue materialises by 2027 — eliminates the third-pillar optionality embedded in the base case"
+        ]
+      }
+    }
+  },
+  "meta": {
+    "profit_stage": "ESTABLISHED",
+    "track": "GROWTH",
+    "ai_layer": "INCUMBENT",
+    "confidence": "HIGH"
+  }
+}
