@@ -1,0 +1,129 @@
+{
+  "ticker": "AMZN",
+  "company": "Amazon.com, Inc.",
+  "date": "2026-05-19",
+  "stages": {
+    "signal": {
+      "verdict": "WATCH",
+      "profit_stage": "ESTABLISHED",
+      "track": "GROWTH",
+      "ai_layer": "INCUMBENT",
+      "clean_eps_ttm": 6.56,
+      "sbc_stripped": true,
+      "sbc_adjustment_per_share": 1.81,
+      "peg_ratio": 3.90,
+      "ps_ratio": 3.84,
+      "rule_of_40": null,
+      "qualitative": "PASS",
+      "qualitative_note": "AI optionality premium 13.9% ≤ 20%; AI investment appears proportionate to core business value (Assumption: ~60% of $131.8B TTM capex attributed to AI; 5× proxy multiple applied to AI capex run-rate of ~$79.1B).",
+      "signal": "WATCH",
+      "model_ready": "YES",
+      "condition": null
+    },
+    "model": {
+      "method": "two-stage DCF",
+      "profit_stage": "ESTABLISHED",
+      "current_price": 264.86,
+      "shares_diluted": 10827000000,
+      "net_debt": 66177000000,
+      "fcf_ttm": -11772000000,
+      "fcf_ttm_reported": 7695000000,
+      "sbc_ttm": 19467000000,
+      "fcf_margin_ttm": -0.01642,
+      "fcf_margin_ttm_reported": 0.01073,
+      "fcf_margin_anchor_note": "Y1 anchor uses normalised 7.75% clean FCF margin (steady-state, post AI-capex cycle); TTM clean margin is distorted negative by the data-centre capex spike. No playbook present — AMZN needs playbooks/AMZN.md with terminal_margin: 0.0775 to be spec-compliant (follow-up).",
+      "historical_fcf_margins": [
+        {"year": "2025-12-31", "fcf_margin_clean": -0.01642, "fcf_margin_reported": 0.01073},
+        {"year": "2024-12-31", "fcf_margin_clean": 0.01703, "fcf_margin_reported": 0.05154},
+        {"year": "2023-12-31", "fcf_margin_clean": 0.01426, "fcf_margin_reported": 0.05605},
+        {"year": "2022-12-31", "fcf_margin_clean": -0.07103, "fcf_margin_reported": -0.03287}
+      ],
+      "fcf_cagr_3y": 1.457,
+      "growth_rate": {
+        "trailing_3y_cagr": 1.457,
+        "consensus_5y_growth": null,
+        "fallback_ceiling": 0.18,
+        "applied_base_cagr": 0.18,
+        "cap_applied": true,
+        "cap_source": "fallback_ceiling"
+      },
+      "ntm_revenue": 928523508830,
+      "base_wacc": 0.085,
+      "base_wacc_source": "user_paste",
+      "scenarios": {
+        "bear": {
+          "y1_fcf": 61175000000,
+          "y2_5_cagr": 0.09,
+          "terminal_growth": 0.015,
+          "wacc": 0.095,
+          "intrinsic_value_per_share": 83.7,
+          "upside_pct": -68.40,
+          "narrative": "revenue miss, capex cycle extends, multiple compression, higher cost of capital"
+        },
+        "base": {
+          "y1_fcf": 71960573000,
+          "y2_5_cagr": 0.18,
+          "terminal_growth": 0.025,
+          "wacc": 0.085,
+          "intrinsic_value_per_share": 176.7,
+          "upside_pct": -33.30,
+          "narrative": "consensus revenue, AI capex normalises at 9% intensity, clean FCF expands linearly to steady state"
+        },
+        "bull": {
+          "y1_fcf": 79156630300,
+          "y2_5_cagr": 0.236,
+          "terminal_growth": 0.035,
+          "wacc": 0.075,
+          "intrinsic_value_per_share": 347.1,
+          "upside_pct": 31.05,
+          "narrative": "AWS + Ads outperform, capex decelerates faster than consensus, rate-easing tailwind"
+        }
+      },
+      "intrinsic_value_range": {
+        "bear": 83.7,
+        "base": 176.7,
+        "bull": 347.1
+      },
+      "range_vs_price": "WITHIN BASE-BULL",
+      "sensitivity": {
+        "dominant_driver": "WACC",
+        "note": "WACC dominates — ±100 bps WACC moves base IV by ±16.8%"
+      },
+      "sensitivity_table": {
+        "wacc_axis": [0.075, 0.080, 0.085, 0.090, 0.095],
+        "terminal_growth_axis": [0.015, 0.020, 0.025, 0.030, 0.035],
+        "intrinsic_value_per_share": [
+          [183.2, 197.8, 215.3, 236.8, 263.6],
+          [167.7, 179.9, 194.3, 211.5, 232.6],
+          [154.6, 164.8, 176.7, 190.8, 207.8],
+          [143.1, 151.8, 161.9, 173.6, 187.4],
+          [133.1, 140.6, 149.1, 159.0, 170.5]
+        ],
+        "base_cell": {"row": 2, "col": 2}
+      },
+      "position_sizing": {
+        "band": "1–2% of portfolio",
+        "lower_pct": 1,
+        "upper_pct": 2,
+        "signal_verdict": "WATCH",
+        "range_vs_price": "WITHIN BASE-BULL",
+        "margin_of_safety_pct": -33.3,
+        "confidence_cap_applied": true,
+        "rationale": "WATCH × WITHIN BASE–BULL (price $264.86 vs base IV $176.70, MoS −33.3%) → 1–2% band (MEDIUM confidence: manual WACC paste-in + manual FCF margin normalisation; upper bound capped at 2%)."
+      },
+      "playbook": {
+        "loaded": false,
+        "path": null,
+        "last_updated": null,
+        "overrides_applied": [],
+        "failure_modes": []
+      }
+    }
+  },
+  "meta": {
+    "profit_stage": "ESTABLISHED",
+    "track": "GROWTH",
+    "ai_layer": "INCUMBENT",
+    "confidence": "MEDIUM"
+  }
+}

@@ -1,0 +1,141 @@
+{
+  "ticker": "NVDA",
+  "company": "NVIDIA Corporation",
+  "date": "2026-05-19",
+  "stages": {
+    "signal": {
+      "verdict": "BUY",
+      "profit_stage": "ESTABLISHED",
+      "track": "GROWTH",
+      "ai_layer": "INFRASTRUCTURE",
+      "clean_eps_ttm": 4.63,
+      "sbc_stripped": true,
+      "sbc_adjustment_per_share": 0.26,
+      "peg_ratio": 1.00,
+      "ps_ratio": 24.94,
+      "rule_of_40": null,
+      "qualitative": "FLAG",
+      "qualitative_note": "TAM ceiling risk — data centre GPU TAM ~$300B est.; NVDA at ~$190B annualised DC revenue = ~63% penetration; meaningful ceiling risk at current trajectory.",
+      "signal": "BUY",
+      "model_ready": "YES",
+      "condition": null
+    },
+    "model": {
+      "method": "pre-profit (revenue-multiple exit + FCF inflection)",
+      "profit_stage": "ESTABLISHED",
+      "route_override": "pre-profit",
+      "current_price": 222.32,
+      "shares_today": 24514000000,
+      "net_debt": 435000000,
+      "revenue_ttm": 215938000000,
+      "rev_cagr_3y": 1.0000,
+      "growth_rate": {
+        "trailing_3y_cagr": 1.0000,
+        "consensus_5y_growth": null,
+        "fallback_ceiling": 0.35,
+        "applied_base_cagr": 1.0000,
+        "cap_applied": false,
+        "cap_source": null
+      },
+      "fcf_ttm_reported": 96676000000,
+      "sbc_ttm": 6386000000,
+      "fcf_margin_ttm": 0.41813,
+      "fcf_margin_ttm_reported": 0.44771,
+      "historical_fcf_margins": [
+        {"year": "2026-01-31", "fcf_margin_clean": 0.41813, "fcf_margin_reported": 0.44771},
+        {"year": "2025-01-31", "fcf_margin_clean": 0.43003, "fcf_margin_reported": 0.46632},
+        {"year": "2024-01-31", "fcf_margin_clean": 0.38528, "fcf_margin_reported": 0.44354},
+        {"year": "2023-01-31", "fcf_margin_clean": 0.04074, "fcf_margin_reported": 0.14117}
+      ],
+      "ntm_revenue": 491623985350,
+      "base_wacc": 0.09,
+      "base_wacc_source": "user_paste",
+      "comp_set": [
+        {"ticker": "AVGO", "ntm_ev_revenue": 14.24},
+        {"ticker": "ASML", "ntm_ev_revenue": 14.2},
+        {"ticker": "TSM",  "ntm_ev_revenue": 5.5},
+        {"ticker": "AMD",  "ntm_ev_revenue": 13.0}
+      ],
+      "base_exit_multiple": 10.0,
+      "terminal_margin_target": 0.40,
+      "sbc_dilution_base": 0.0,
+      "sbc_dilution_3y_trailing": -0.0075,
+      "growth_cap_note": "rev_cagr_3y of 100% is FY23-base-effect inflation (pre-AI revenue base). Spec fallback ceiling for pre-profit is 35%; today's run preserves prior methodology (uncapped trailing CAGR) for IV continuity per slice-3 acceptance criterion. NVDA needs playbooks/NVDA.md with growth_ceiling: 0.35 (and confidence_anchor: MEDIUM) to be spec-compliant going forward (follow-up).",
+      "scenarios": {
+        "bear": {
+          "y1_revenue": 417880388548,
+          "y2_5_rev_cagr": 0.50,
+          "exit_multiple": 6.0,
+          "terminal_margin": 0.35,
+          "dilution_rate": 0.0,
+          "fcf_inflection_year": 1,
+          "shares_y5": 24514000000,
+          "dilution_pct_5y": 0.0,
+          "intrinsic_value_per_share": 381.26,
+          "upside_pct": 71.51,
+          "narrative": "revenue miss, custom-silicon (ASIC) penetration accelerates, exit multiple compresses to AVGO/AMD weighted average, terminal margin compresses 500bps as competition intensifies"
+        },
+        "base": {
+          "y1_revenue": 491623985350,
+          "y2_5_rev_cagr": 1.00,
+          "exit_multiple": 10.0,
+          "terminal_margin": 0.40,
+          "dilution_rate": 0.0,
+          "fcf_inflection_year": 1,
+          "shares_y5": 24514000000,
+          "dilution_pct_5y": 0.0,
+          "intrinsic_value_per_share": 2263.92,
+          "upside_pct": 918.30,
+          "narrative": "consensus revenue trajectory holds, AI-data-centre TAM expands faster than hyperscaler capex deceleration, exit multiple at comp-set median, terminal margin sustains at current run rate"
+        },
+        "bull": {
+          "y1_revenue": 565367583153,
+          "y2_5_rev_cagr": 1.18,
+          "exit_multiple": 14.0,
+          "terminal_margin": 0.45,
+          "dilution_rate": 0.0,
+          "fcf_inflection_year": 1,
+          "shares_y5": 24514000000,
+          "dilution_pct_5y": 0.0,
+          "intrinsic_value_per_share": 5269.50,
+          "upside_pct": 2270.31,
+          "narrative": "TAM expands to include physical/edge AI, AVGO/ASML-tier exit multiple, terminal margin expands as software/networking attach lifts ASPs, sovereign AI demand provides volume floor"
+        }
+      },
+      "intrinsic_value_range": {
+        "bear": 381.26,
+        "base": 2263.92,
+        "bull": 5269.50
+      },
+      "range_vs_price": "MARGIN OF SAFETY",
+      "sensitivity": {
+        "dominant_driver": "exit_multiple",
+        "note": "Exit multiple ±1.0× absolute moves base IV by ~±9%; dilution ±200bps moves IV by ~±10% (close second); WACC ±100bps ±8%; terminal margin ±300bps <±1% (exit EV is revenue × multiple, not FCF × multiple, so margin only affects the small explicit-FCF PV). Caveat: revenue base-year effect (FY23 pre-AI) inflates base & bull; bear IV ($381) is the more defensible reference point."
+      },
+      "sensitivity_table": null,
+      "position_sizing": {
+        "band": "4–4% of portfolio",
+        "lower_pct": 4,
+        "upper_pct": 4,
+        "signal_verdict": "BUY",
+        "range_vs_price": "MARGIN OF SAFETY",
+        "margin_of_safety_pct": 918.3,
+        "confidence_cap_applied": true,
+        "rationale": "BUY × MARGIN OF SAFETY (price $222.32 vs base IV $2263.92, MoS +918%) → 4–6% band, capped to 4–4% by MEDIUM confidence (pre-profit variant always caps at MEDIUM). Caveat: base IV inflated by trailing 3y revenue CAGR (100%, FY23 pre-AI base-effect) — size off the bear IV ($381.26, MoS +72%), not base."
+      },
+      "playbook": {
+        "loaded": false,
+        "path": null,
+        "last_updated": null,
+        "overrides_applied": [],
+        "failure_modes": []
+      }
+    }
+  },
+  "meta": {
+    "profit_stage": "ESTABLISHED",
+    "track": "GROWTH",
+    "ai_layer": "INFRASTRUCTURE",
+    "confidence": "MEDIUM"
+  }
+}
