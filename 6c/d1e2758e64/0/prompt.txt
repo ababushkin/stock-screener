@@ -1,0 +1,19 @@
+i want to audit and reconcile the differences between the ASML and GOOGL playbooks from a substance, complexity and depth perspective -- the goal is here to ensure both playbooks have the same "quality bar"
+
+starting with the markdown files, as they're the sources of truth and then later on to the friendlier HTML rendered versions
+
+research and let me know what you learn
+
+ultrathink
+
+---
+
+make a plan for this
+
+---
+
+continue with the task list
+
+---
+
+/pde-render-html playbooks/GOOG.md
