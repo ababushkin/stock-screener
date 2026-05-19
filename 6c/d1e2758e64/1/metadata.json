@@ -1,0 +1,58 @@
+{
+  "cli_version": "0.6.1",
+  "checkpoint_id": "6cd1e2758e64",
+  "session_id": "ecf3dad9-2d18-4669-9e60-2efd14fab1e9",
+  "strategy": "manual-commit",
+  "created_at": "2026-05-19T04:10:15.953349Z",
+  "branch": "main",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "playbooks/ASML.html",
+    "playbooks/ASML.md",
+    "playbooks/GOOG.html",
+    "playbooks/GOOG.md"
+  ],
+  "agent": "Claude Code",
+  "model": "claude-sonnet-4-6",
+  "turn_id": "e6f64d023ca2",
+  "token_usage": {
+    "input_tokens": 13,
+    "cache_creation_tokens": 167121,
+    "cache_read_tokens": 453557,
+    "output_tokens": 61701,
+    "api_call_count": 9
+  },
+  "session_metrics": {
+    "turn_count": 1
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-05-19T04:10:15.941479Z",
+    "agent_lines": 719,
+    "agent_removed": 1258,
+    "human_added": 121,
+    "human_modified": 156,
+    "human_removed": 0,
+    "total_committed": 996,
+    "total_lines_changed": 2254,
+    "agent_percentage": 87.71073646850044,
+    "metric_version": 2
+  },
+  "prompt_attributions": [
+    {
+      "checkpoint_number": 1,
+      "user_lines_added": 183,
+      "user_lines_removed": 20,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0,
+      "user_added_per_file": {
+        ".claude/settings.local.json": 109,
+        "playbooks/ASML.md": 70,
+        "playbooks/GOOG.md": 4
+      },
+      "user_removed_per_file": {
+        "playbooks/ASML.md": 18,
+        "playbooks/GOOG.md": 2
+      }
+    }
+  ]
+}

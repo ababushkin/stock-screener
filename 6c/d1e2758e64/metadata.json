@@ -3,7 +3,7 @@
   "checkpoint_id": "6cd1e2758e64",
   "strategy": "manual-commit",
   "branch": "main",
-  "checkpoints_count": 2,
+  "checkpoints_count": 3,
   "files_touched": [
     "playbooks/ASML.html",
     "playbooks/ASML.md",
@@ -16,13 +16,19 @@
       "transcript": "/6c/d1e2758e64/0/full.jsonl",
       "content_hash": "/6c/d1e2758e64/0/content_hash.txt",
       "prompt": "/6c/d1e2758e64/0/prompt.txt"
+    },
+    {
+      "metadata": "/6c/d1e2758e64/1/metadata.json",
+      "transcript": "/6c/d1e2758e64/1/full.jsonl",
+      "content_hash": "/6c/d1e2758e64/1/content_hash.txt",
+      "prompt": "/6c/d1e2758e64/1/prompt.txt"
     }
   ],
   "token_usage": {
-    "input_tokens": 5210,
-    "cache_creation_tokens": 868206,
-    "cache_read_tokens": 9019604,
-    "output_tokens": 189672,
-    "api_call_count": 97
+    "input_tokens": 5223,
+    "cache_creation_tokens": 1035327,
+    "cache_read_tokens": 9473161,
+    "output_tokens": 251373,
+    "api_call_count": 106
   }
 }
