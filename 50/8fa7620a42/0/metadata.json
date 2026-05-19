@@ -1,0 +1,60 @@
+{
+  "cli_version": "0.6.1",
+  "checkpoint_id": "508fa7620a42",
+  "session_id": "35cab0f1-95cf-4153-9d21-6621e6776ba4",
+  "strategy": "manual-commit",
+  "created_at": "2026-05-19T14:09:43.428112Z",
+  "branch": "main",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "playbooks/NVDA.md",
+    "reports/NVDA_20260520.json"
+  ],
+  "agent": "Claude Code",
+  "model": "",
+  "turn_id": "d7fe51263633",
+  "token_usage": {
+    "input_tokens": 44,
+    "cache_creation_tokens": 157655,
+    "cache_read_tokens": 3883675,
+    "output_tokens": 48100,
+    "api_call_count": 34
+  },
+  "session_metrics": {
+    "turn_count": 1
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-05-19T14:09:43.409742Z",
+    "agent_lines": 140,
+    "agent_removed": 0,
+    "human_added": 105,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 245,
+    "total_lines_changed": 245,
+    "agent_percentage": 57.14285714285714,
+    "metric_version": 2
+  },
+  "prompt_attributions": [
+    {
+      "checkpoint_number": 1,
+      "user_lines_added": 110,
+      "user_lines_removed": 0,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0,
+      "user_added_per_file": {
+        ".claude/settings.local.json": 110
+      }
+    },
+    {
+      "checkpoint_number": 2,
+      "user_lines_added": 110,
+      "user_lines_removed": 0,
+      "agent_lines_added": 140,
+      "agent_lines_removed": 0,
+      "user_added_per_file": {
+        ".claude/settings.local.json": 110
+      }
+    }
+  ]
+}
