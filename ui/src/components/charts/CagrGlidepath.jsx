@@ -38,33 +38,49 @@ export default function CagrGlidepath({ model }) {
   if (method.startsWith('pre-profit')) return null;
 
   const fcfTtm = model.fcf_ttm;
+  const fcfNormalized = model.fcf_normalized;
   const scenarios = model.scenarios ?? {};
   const growthRate = model.growth_rate ?? {};
   const trailing = growthRate.trailing_3y_cagr;
   const hasTrailing = trailing != null && Number.isFinite(trailing);
 
-  // Build series: [trailing?, y1, y2, y3, y4, y5] per scenario. Drop the
+  // Y1 anchor: prefer fcf_normalized if positive (handles capex-distorted TTM like AMZN),
+  // fall back to fcf_ttm if positive, else null → skip Y1 to avoid nonsensical growth rate.
+  const y1Anchor =
+    (fcfNormalized != null && Number.isFinite(fcfNormalized) && fcfNormalized > 0)
+      ? fcfNormalized
+      : (Number.isFinite(fcfTtm) && fcfTtm > 0)
+        ? fcfTtm
+        : null;
+
+  // Build series: [trailing?, y1?, y2, y3, y4, y5] per scenario. Drop the
   // trailing column entirely when growth_rate.trailing_3y_cagr is missing
-  // (older pre-v1.11 reports), so we never plot NaN.
+  // (older pre-v1.11 reports), so we never plot NaN. Drop Y1 when y1Anchor
+  // is null (negative TTM and no normalised alternative).
   const series = SCENARIOS.map(({ key, label, color }) => {
     const s = scenarios[key];
-    if (!s || fcfTtm == null || !Number.isFinite(fcfTtm) || fcfTtm === 0) {
+    if (!s || !Number.isFinite(s.y1_fcf) || !Number.isFinite(s.y2_5_cagr)) {
       return null;
     }
-    if (!Number.isFinite(s.y1_fcf) || !Number.isFinite(s.y2_5_cagr)) {
-      return null;
-    }
-    const y1Cagr = s.y1_fcf / fcfTtm - 1;
     const y25Cagr = s.y2_5_cagr;
+    if (y1Anchor !== null) {
+      const y1Cagr = s.y1_fcf / y1Anchor - 1;
+      const points = hasTrailing
+        ? [trailing, y1Cagr, y25Cagr, y25Cagr, y25Cagr, y25Cagr]
+        : [y1Cagr, y25Cagr, y25Cagr, y25Cagr, y25Cagr];
+      return { key, label, color, points };
+    }
+    // Y1 anchor unavailable — skip Y1 point
     const points = hasTrailing
-      ? [trailing, y1Cagr, y25Cagr, y25Cagr, y25Cagr, y25Cagr]
-      : [y1Cagr, y25Cagr, y25Cagr, y25Cagr, y25Cagr];
+      ? [trailing, y25Cagr, y25Cagr, y25Cagr, y25Cagr]
+      : [y25Cagr, y25Cagr, y25Cagr, y25Cagr];
     return { key, label, color, points };
   }).filter(Boolean);
 
   if (series.length === 0) return null;
 
-  const xLabels = hasTrailing ? X_LABELS : X_LABELS.slice(1);
+  const baseLabels = hasTrailing ? X_LABELS : X_LABELS.slice(1);
+  const xLabels = y1Anchor !== null ? baseLabels : baseLabels.filter((l) => l !== 'Y1');
 
   // Y-axis domain: include trailing + all scenario points, pad 10%
   const allValues = series.flatMap((s) => s.points).filter((v) => v != null && Number.isFinite(v));
