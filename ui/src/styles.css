@@ -266,6 +266,14 @@ body {
   border-radius: 2px;
 }
 
+.chart-legend .legend-diamond {
+  width: 10px;
+  height: 10px;
+  background: #1565c0;
+  border-radius: 0;
+  transform: rotate(45deg);
+}
+
 .chart-svg {
   display: block;
   width: 100%;

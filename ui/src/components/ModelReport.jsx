@@ -6,6 +6,7 @@ import {
 } from '../lib/formatters.js';
 import CagrGlidepath from './charts/CagrGlidepath.jsx';
 import FcfMarginTrajectory from './charts/FcfMarginTrajectory.jsx';
+import ScenarioFan from './charts/ScenarioFan.jsx';
 
 const PRE_PROFIT_NOTE = 'Visual breakdown is ESTABLISHED-only for v1.';
 
@@ -92,6 +93,7 @@ export default function ModelReport({ stage }) {
 
       {!isPreProfit && <CagrGlidepath model={stage} />}
       {!isPreProfit && <FcfMarginTrajectory model={stage} />}
+      {!isPreProfit && <ScenarioFan model={stage} />}
     </div>
   );
 }
