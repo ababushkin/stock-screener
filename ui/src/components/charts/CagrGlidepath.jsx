@@ -41,24 +41,30 @@ export default function CagrGlidepath({ model }) {
   const scenarios = model.scenarios ?? {};
   const growthRate = model.growth_rate ?? {};
   const trailing = growthRate.trailing_3y_cagr;
+  const hasTrailing = trailing != null && Number.isFinite(trailing);
 
-  // Build series: [trailing, y1, y2, y3, y4, y5] per scenario
+  // Build series: [trailing?, y1, y2, y3, y4, y5] per scenario. Drop the
+  // trailing column entirely when growth_rate.trailing_3y_cagr is missing
+  // (older pre-v1.11 reports), so we never plot NaN.
   const series = SCENARIOS.map(({ key, label, color }) => {
     const s = scenarios[key];
     if (!s || fcfTtm == null || !Number.isFinite(fcfTtm) || fcfTtm === 0) {
       return null;
     }
+    if (!Number.isFinite(s.y1_fcf) || !Number.isFinite(s.y2_5_cagr)) {
+      return null;
+    }
     const y1Cagr = s.y1_fcf / fcfTtm - 1;
     const y25Cagr = s.y2_5_cagr;
-    return {
-      key,
-      label,
-      color,
-      points: [trailing, y1Cagr, y25Cagr, y25Cagr, y25Cagr, y25Cagr]
-    };
+    const points = hasTrailing
+      ? [trailing, y1Cagr, y25Cagr, y25Cagr, y25Cagr, y25Cagr]
+      : [y1Cagr, y25Cagr, y25Cagr, y25Cagr, y25Cagr];
+    return { key, label, color, points };
   }).filter(Boolean);
 
   if (series.length === 0) return null;
+
+  const xLabels = hasTrailing ? X_LABELS : X_LABELS.slice(1);
 
   // Y-axis domain: include trailing + all scenario points, pad 10%
   const allValues = series.flatMap((s) => s.points).filter((v) => v != null && Number.isFinite(v));
@@ -73,7 +79,7 @@ export default function CagrGlidepath({ model }) {
 
   const plotW = WIDTH - PAD_LEFT - PAD_RIGHT;
   const plotH = HEIGHT - PAD_TOP - PAD_BOTTOM;
-  const xStep = plotW / (X_LABELS.length - 1);
+  const xStep = xLabels.length > 1 ? plotW / (xLabels.length - 1) : 0;
 
   const xAt = (i) => PAD_LEFT + i * xStep;
   const yAt = (v) => PAD_TOP + plotH * (1 - (v - yMin) / (yMax - yMin));
@@ -146,7 +152,7 @@ export default function CagrGlidepath({ model }) {
         )}
 
         {/* X-axis tick labels */}
-        {X_LABELS.map((label, i) => (
+        {xLabels.map((label, i) => (
           <text
             key={`xlbl-${i}`}
             x={xAt(i)}
