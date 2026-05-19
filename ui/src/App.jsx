@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { loadReports } from './lib/reports.js';
 import ScreenReport from './components/ScreenReport.jsx';
+import ModelReport from './components/ModelReport.jsx';
 
 const TABS = ['Screen', 'Signal', 'Model', 'Timing', 'Summary'];
 
@@ -61,7 +62,10 @@ export default function App() {
       </div>
 
       {tab === 'Screen' && <ScreenReport stage={stages.screen} />}
-      {tab !== 'Screen' && <p className="empty">{tab} view not yet implemented.</p>}
+      {tab === 'Model' && <ModelReport stage={stages.model} />}
+      {tab !== 'Screen' && tab !== 'Model' && (
+        <p className="empty">{tab} view not yet implemented.</p>
+      )}
     </div>
   );
 }

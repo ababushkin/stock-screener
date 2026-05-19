@@ -134,3 +134,98 @@ body {
   padding: 0.35rem 0.5rem;
   font-size: 0.9rem;
 }
+
+.model-header {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.model-header-cell {
+  background: #fafafa;
+  border: 1px solid #eee;
+  border-radius: 6px;
+  padding: 0.5rem 0.75rem;
+}
+
+.model-header-cell .label {
+  color: #777;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.model-header-cell .value {
+  font-size: 0.95rem;
+  font-weight: 600;
+  margin-top: 0.25rem;
+  word-break: break-word;
+}
+
+.iv-range {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.5rem;
+  margin-top: 1.25rem;
+}
+
+.iv-cell {
+  background: #fafafa;
+  border: 1px solid #e5e5e5;
+  border-radius: 6px;
+  padding: 0.6rem 0.75rem;
+  text-align: center;
+}
+
+.iv-cell .label {
+  color: #777;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.iv-cell .value {
+  font-size: 1.15rem;
+  font-weight: 600;
+  margin-top: 0.25rem;
+}
+
+.iv-cell-current {
+  border-color: #1a1a1a;
+  background: #fff;
+}
+
+.iv-cell-current .label {
+  color: #1a1a1a;
+}
+
+.position-sizing {
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid #eee;
+}
+
+.position-sizing-line {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.position-sizing-line .label {
+  color: #777;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.position-sizing-line .band {
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+.pre-profit-note {
+  margin-top: 1rem;
+  font-size: 0.85rem;
+}

@@ -1,57 +1,81 @@
-# Todo — ABA-72 yf MCP HTML fallback
+# Todo — ABA-115 `/stock-model` glidepath + scenario fan visuals
 
-Tracking the slices in `plan.md`. Tick boxes as work completes.
+Tracking slices in `plan.md`. Tick boxes as work completes.
 
-## Slice 1 — KSPI spike + parser
-- [ ] Fetch KSPI quote + key-statistics HTML with realistic UA
-- [ ] Implement `_parse_kv_table(soup, label)`
-- [ ] Implement `_ratios_from_html(ticker)` for the KSPI fields
-- [ ] Define `_ScrapeError`
-- [ ] Resolve Open Question 1 — does the page expose currency? Document in design doc
-- [ ] Verify: REPL call to `_ratios_from_html("KSPI")` populated; values within ±2% of live page
+## Slice 1 — Model-tab shell
+- [ ] Add new formatters to `ui/src/lib/formatters.js` (`formatCurrency`, `formatPercent`, `formatBillions`, `formatPerShare`), each returning `'—'` on null/NaN
+- [ ] Create `ui/src/components/ModelReport.jsx` (header row, IV-range strip, range_vs_price badge, position-sizing line, pre-profit branch)
+- [ ] Replace stub in `ui/src/App.jsx:64` to mount `ModelReport` when `tab === 'Model'`
+- [ ] Add Model-tab section styles to `ui/src/styles.css`
+- [ ] Verify: `npm run dev` → cycle through AMZN/META/NVDA/RDDT, no console errors; RDDT shows ESTABLISHED-only italic; ASML/GOOG keep Model tab disabled
 
-## Slice 2 — `_fetch_with_retry`
-- [ ] Implement helper with 3 attempts, exponential backoff (0.5/1.0/2.0s), 5s timeout
-- [ ] Distinguish transient (retry) from non-transient (raise) errors
-- [ ] Unit tests with mocked HTTP — confirm retry counts for each error class
+**Gate to Slice 2:** all four ticker reports render the shell correctly.
 
-## Checkpoint 1
-- [ ] Hand-combined smoke test (Slice 1 parser + Slice 2 retry against live Yahoo)
-- [ ] Human review of Open Question 1 resolution
+## Slice 2 — SKILL emits `historical_fcf_margins[]`
+- [ ] Add per-year clean+reported margin derivation in COMPUTE Step 1 of `skills/stock-model/SKILL.md` (~line 316)
+- [ ] Add `historical_fcf_margins` to ESTABLISHED JSON schema block (~line 567, after `fcf_margin_ttm_reported`, before `fcf_cagr_3y`)
+- [ ] Add same field to pre-profit JSON schema block
+- [ ] Add audit line to printed OUTPUT block (~line 512 area)
+- [ ] Document gap-handling rule (omit years missing `revenue` or `stock_based_compensation`)
+- [ ] Add `### v1.11 — ABA-115` changelog entry (line 1101+)
+- [ ] Smoke-run `/stock-signal META` → `/stock-model META`; verify audit row reconciles cell-for-cell with JSON `historical_fcf_margins[]`
 
-## Slice 3 — wire fallback into `get_ratios`
-- [ ] Extract current body into `_ratios_from_info(ticker, info)`
-- [ ] Add `source` + `reporting_currency` fields to both paths
-- [ ] Add try/`_ScrapeError`/`YFNoDataError` branch
-- [ ] Add three stderr log lines per Operability section
-- [ ] Verify: `get_ratios("AAPL")` unchanged numerics + `source: "yahoo_api"`
-- [ ] Verify: `get_ratios("KSPI")` populated + `source: "yahoo_html"`
-- [ ] Verify: `get_ratios("NOTREAL")` still raises `YFNoDataError`
+**Gate to Slice 3:** audit row matches JSON values exactly.
 
-## Checkpoint 2
-- [ ] End-to-end `/signal KSPI` succeeds
-- [ ] End-to-end `/signal AAPL` unchanged
-- [ ] Human review before codifying fitness tests
+## Slice 3 — Re-run covered tickers
+- [ ] `/stock-signal META` → `/stock-model META` → confirm `historical_fcf_margins` present and `intrinsic_value_range` within ±1% of prior file
+- [ ] Same for AMZN (note: `gate_bypass: "coverage"`)
+- [ ] Same for NVDA
+- [ ] Re-run RDDT — confirm `method` still starts with `"pre-profit"` and field is present (or cleanly absent)
+- [ ] UI picker picks up new dated reports; shell still renders
 
-## Slice 4 — fitness functions
-- [ ] `test_get_ratios_latency` (AAPL, p95 < 1.0s, nightly)
-- [ ] `test_get_ratios_html_fallback_latency` (KSPI < 3.0s, nightly)
-- [ ] `test_get_ratios_html_retry_budget` (mocked, < 12s)
-- [ ] `test_get_ratios_kspi_fallback_values` (±2% vs fixture, nightly)
-- [ ] `test_get_ratios_us_megacap_unchanged` (golden, every commit)
-- [ ] `test_get_ratios_html_malformed_raises` (stub HTML)
-- [ ] `test_fetch_with_retry_*` (carried over from Slice 2)
-- [ ] All tests green locally (hermetic + nightly markers)
+**Gate to Slices 4–6:** four fresh same-day reports in `reports/`.
 
-## Slice 5 — deps + CI
-- [ ] Pin `beautifulsoup4>=4.12` in `mcp/yf/requirements.txt`
-- [ ] Confirm `requests` resolves (transitive via yfinance) or pin explicitly
-- [ ] `pip-audit` clean on new dep
-- [ ] CI workflow (extend existing or document manual command)
-- [ ] Clean-venv install passes on Python 3.11+
+## Slice 4 — Glidepath chart
+- [ ] Create `ui/src/components/charts/CagrGlidepath.jsx` (hand-rolled SVG)
+- [ ] Trailing-3y point + Y1 implicit + Y2–Y5 flat per scenario
+- [ ] Cap annotation reads from `growth_rate.cap_applied / applied_base_cagr / cap_source`
+- [ ] Pre-profit guard (no render when `method` starts with `"pre-profit"`)
+- [ ] Mount from `ModelReport.jsx`
+- [ ] Verify: META cap callout fires; AMZN base bends from 145.7% → 18%; NVDA matches pattern; bear < base < bull at every Y2+ point
+
+## Slice 5 — FCF margin trajectory chart
+- [ ] Create `ui/src/components/charts/FcfMarginTrajectory.jsx`
+- [ ] Read `historical_fcf_margins[]` + TTM points (clean + reported)
+- [ ] Flat-line extension Y1–Y5 at `fcf_margin_ttm`
+- [ ] Shade gap between clean and reported (SBC drag)
+- [ ] Fallback note when `historical_fcf_margins` absent
+- [ ] Handle negative margins (AMZN clean TTM = −1.6%) without breaking Y-axis
+- [ ] Pre-profit guard
+- [ ] Mount from `ModelReport.jsx`
+- [ ] Verify: AMZN dip visible; META gap narrow; NVDA both lines high
+
+## Slice 6 — Scenario fan chart
+- [ ] Create `ui/src/components/charts/ScenarioFan.jsx`
+- [ ] Per-scenario Y1→Y5 FCF series via `y1_fcf × (1 + y2_5_cagr)^(n-1)`
+- [ ] Convert all to FCF/share via `shares_diluted` (raw count — sanity-check magnitude)
+- [ ] Terminal IV diamond marker at Y5 per scenario
+- [ ] Current-price horizontal reference line
+- [ ] Pre-profit guard
+- [ ] Mount from `ModelReport.jsx`
+- [ ] Verify: META current $614 sits between bear $444 + base $1155 markers (matches `WITHIN BEAR-BASE`); AMZN $264 above base IV $176 marker (matches `WITHIN BASE-BULL`)
+
+## Slice 7 — Captions, styling, docs
+- [ ] One-sentence thesis caption under each of the three charts (refine drafts from plan)
+- [ ] Harmonise chart styling with existing palette (`#777` / `#fafafa` / `#e5e5e5`) in `ui/src/styles.css`
+- [ ] Add Model-tab v1 note to `DESIGN.md` UI Layer section
+- [ ] Draft PR description: subsumes ABA-42 v1; ABA-43 explicitly deferred; link both
+- [ ] Manual visual review at 960px on all six tickers (META/AMZN/NVDA/RDDT/ASML/GOOG)
+- [ ] Capture screenshots of all three charts
+
+## Linear hygiene
+- [ ] Move ABA-115 → In Progress on Slice 1 start
+- [ ] Move ABA-115 → Done after commits pushed
+- [ ] Comment on ABA-42 with PR link + scope-narrowing note
+- [ ] Confirm ABA-115 sits in current cycle (Cycle 1, 17–24 May)
 
 ## Pre-merge
-- [ ] Linear ABA-72 → Done after push
-- [ ] Design doc status: `draft` → `accepted`
-- [ ] Smoke `/signal KSPI` on `main` post-merge
-- [ ] Linear wave promotion: find blocked-by-ABA-72 issues, promote 1–3
+- [ ] All slice gates passed
+- [ ] `npm run build` succeeds from `ui/`
+- [ ] Hot-reload latency in `npm run dev` still <1s
+- [ ] Final end-to-end verification per `plan.md`
