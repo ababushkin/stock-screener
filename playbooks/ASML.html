@@ -153,7 +153,40 @@ tr:hover td { background: var(--surface); }
 .p-fm-tag-fx           { background: var(--info-soft);   color: var(--info); }
 .p-fm-tag-accounting   { background: var(--rule-soft);   color: var(--muted); }
 .p-fm-tag-other        { background: var(--rule-soft);   color: var(--muted); }
-
+/* P18 — Segment-mix bar */
+.p-seg-bar-fig { margin: 0.5rem 0 0.25rem; }
+.p-seg-bar { display: flex; height: 36px; border-radius: 4px; overflow: hidden; gap: 1px; background: var(--rule); }
+.p-seg-s0 { background: var(--accent);  flex-shrink: 0; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+.p-seg-s1 { background: var(--info);    flex-shrink: 0; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+.p-seg-s2 { background: var(--warn);    flex-shrink: 0; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+.p-seg-s3 { background: var(--ok);      flex-shrink: 0; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+.p-seg-s4 { background: var(--danger);  flex-shrink: 0; overflow: hidden; }
+.p-seg-s5 { background: var(--muted);   flex-shrink: 0; overflow: hidden; }
+.p-seg-bar-lbl { color: white; font-size: 0.68rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 0 6px; }
+/* P20 — Catalyst probability × IV-impact mini-bars */
+.p-cat-table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+.p-cat-table th, .p-cat-table td { padding: 0.5rem 0.65rem; border-bottom: 1px solid var(--rule); vertical-align: top; }
+.p-cat-table th { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); font-weight: 600; border-bottom: 2px solid var(--rule); white-space: nowrap; }
+.p-cat-bar-track { height: 4px; background: var(--rule); border-radius: 2px; margin-top: 5px; overflow: hidden; }
+.p-cat-bar-fill  { height: 100%; border-radius: 2px; }
+.p-cat-bar-prob  { background: var(--accent); }
+.p-cat-bar-pos   { background: var(--ok); }
+.p-cat-bar-neg   { background: var(--danger); }
+.p-cat-bar-mixed { background: var(--warn); }
+.p-cat-dir { display: inline-block; padding: 0.15rem 0.5rem; border-radius: 4px; font-size: 0.75rem; font-weight: 600; }
+.p-cat-dir-pos   { background: var(--ok-soft);    color: var(--ok); }
+.p-cat-dir-neg   { background: var(--danger-soft); color: var(--danger); }
+.p-cat-dir-mixed { background: var(--warn-soft);   color: var(--warn); }
+/* P24 — Historical reset-and-recover scatter */
+.p-sc-fig { margin: 0.75rem 0 0; }
+.p-sc-svg { width: 100%; max-width: 500px; height: auto; display: block; }
+.p-sc-axis { stroke: var(--fg); stroke-width: 1.5; }
+.p-sc-grid { stroke: var(--rule); stroke-width: 1; stroke-dasharray: 3 3; }
+.p-sc-lbl    { fill: var(--muted); font-size: 11px; }
+.p-sc-danger { fill: var(--danger); opacity: 0.8; }
+.p-sc-warn   { fill: var(--warn);   opacity: 0.8; }
+.p-sc-partial { fill: none; stroke: var(--muted); stroke-width: 2; stroke-dasharray: 3 2; }
+.p-sc-note { font-size: 0.75rem; color: var(--muted); margin: 0.3rem 0 0; }
 .pos { color: var(--bull); font-weight: 600; }
 .neg { color: var(--bear); font-weight: 600; }
 
@@ -265,6 +298,14 @@ tr:hover td { background: var(--surface); }
   <h2>1. Business Architecture</h2>
 
   <h3 id="segment-mix">Segment mix (approximate FY2025 basis)</h3>
+  <div class="p-seg-bar-fig" role="img" aria-label="Segment mix: EUV systems 50%, Advanced DUV 25%, Mature DUV 10%, Installed Base Management 15%">
+    <div class="p-seg-bar">
+      <div class="p-seg-s0" style="width:50%" title="EUV systems (standard + High-NA) ~50%"><span class="p-seg-bar-lbl">EUV</span></div>
+      <div class="p-seg-s1" style="width:25%" title="Advanced DUV (immersion) ~25%"><span class="p-seg-bar-lbl">Adv DUV</span></div>
+      <div class="p-seg-s2" style="width:10%" title="Mature DUV ~10%"><span class="p-seg-bar-lbl">Mature</span></div>
+      <div class="p-seg-s3" style="width:15%" title="Installed Base Management ~15%"><span class="p-seg-bar-lbl">IBM</span></div>
+    </div>
+  </div>
   <table>
     <thead><tr><th>Segment</th><th>Revenue share</th><th>Growth trajectory</th></tr></thead>
     <tbody>
@@ -313,48 +354,58 @@ tr:hover td { background: var(--surface); }
 
 <section id="active-catalysts">
   <h2>3. Active Catalysts</h2>
-  <table>
-    <thead><tr><th>Catalyst</th><th>Probability</th><th>IV impact</th><th>Direction</th></tr></thead>
+  <table class="p-cat-table">
+    <thead>
+      <tr><th>Catalyst</th><th>Probability</th><th>IV Impact</th><th>Direction</th></tr>
+    </thead>
     <tbody>
       <tr>
         <td>High-NA volume production milestone at TSMC (first 5+ unit run-rate quarter)</td>
-        <td>~40% by end-2027</td><td>+10&#8211;15%</td>
-        <td class="pos">Positive &#8212; validates post-2027 ASP and unit thesis</td>
+        <td>~40% by end-2027<div class="p-cat-bar-track"><div class="p-cat-bar-fill p-cat-bar-prob" style="width:40%"></div></div></td>
+        <td>+10&#8211;15%<div class="p-cat-bar-track"><div class="p-cat-bar-fill p-cat-bar-pos" style="width:42%"></div></div></td>
+        <td><span class="p-cat-dir p-cat-dir-pos">Positive</span> &#8212; validates post-2027 ASP and unit thesis</td>
       </tr>
       <tr>
         <td>China export-control broadened to DUV service/spare-parts</td>
-        <td>~25%</td><td>&#8722;15&#8211;20%</td>
-        <td class="neg">Strongly negative &#8212; removes earnings floor</td>
+        <td>~25%<div class="p-cat-bar-track"><div class="p-cat-bar-fill p-cat-bar-prob" style="width:25%"></div></div></td>
+        <td>&#8722;15&#8211;20%<div class="p-cat-bar-track"><div class="p-cat-bar-fill p-cat-bar-neg" style="width:58%"></div></div></td>
+        <td><span class="p-cat-dir p-cat-dir-neg">Strongly negative</span> &#8212; removes earnings floor</td>
       </tr>
       <tr>
         <td>TSMC Arizona N2 ramp goes to plan (capex not deferred)</td>
-        <td>~55%</td><td>+5&#8211;8%</td>
-        <td class="pos">Positive &#8212; confirms leading-edge demand base</td>
+        <td>~55%<div class="p-cat-bar-track"><div class="p-cat-bar-fill p-cat-bar-prob" style="width:55%"></div></div></td>
+        <td>+5&#8211;8%<div class="p-cat-bar-track"><div class="p-cat-bar-fill p-cat-bar-pos" style="width:22%"></div></div></td>
+        <td><span class="p-cat-dir p-cat-dir-pos">Positive</span> &#8212; confirms leading-edge demand base</td>
       </tr>
       <tr>
         <td>Intel 18A achieves volume yield (customer ramp on-track)</td>
-        <td>~30%</td><td>+5&#8211;10%</td>
-        <td class="pos">Positive &#8212; adds a third High-NA anchor customer</td>
+        <td>~30%<div class="p-cat-bar-track"><div class="p-cat-bar-fill p-cat-bar-prob" style="width:30%"></div></div></td>
+        <td>+5&#8211;10%<div class="p-cat-bar-track"><div class="p-cat-bar-fill p-cat-bar-pos" style="width:25%"></div></div></td>
+        <td><span class="p-cat-dir p-cat-dir-pos">Positive</span> &#8212; adds a third High-NA anchor customer</td>
       </tr>
       <tr>
         <td>Broad semi-capex freeze (memory + logic simultaneously)</td>
-        <td>~20%</td><td>&#8722;20&#8211;30%</td>
-        <td class="neg">Strongly negative &#8212; all segments decelerate</td>
+        <td>~20%<div class="p-cat-bar-track"><div class="p-cat-bar-fill p-cat-bar-prob" style="width:20%"></div></div></td>
+        <td>&#8722;20&#8211;30%<div class="p-cat-bar-track"><div class="p-cat-bar-fill p-cat-bar-neg" style="width:83%"></div></div></td>
+        <td><span class="p-cat-dir p-cat-dir-neg">Strongly negative</span> &#8212; all segments decelerate</td>
       </tr>
       <tr>
         <td>Hyperscaler custom-silicon fab commitments (Google/Amazon/Meta)</td>
-        <td>~35% by 2028</td><td>+5&#8211;10%</td>
-        <td class="pos">Positive &#8212; incremental leading-edge demand</td>
+        <td>~35% by 2028<div class="p-cat-bar-track"><div class="p-cat-bar-fill p-cat-bar-prob" style="width:35%"></div></div></td>
+        <td>+5&#8211;10%<div class="p-cat-bar-track"><div class="p-cat-bar-fill p-cat-bar-pos" style="width:25%"></div></div></td>
+        <td><span class="p-cat-dir p-cat-dir-pos">Positive</span> &#8212; incremental leading-edge demand</td>
       </tr>
       <tr>
         <td>Rapidus (Japan) first production milestone</td>
-        <td>~25% by 2027</td><td>+3&#8211;5%</td>
-        <td class="pos">Positive &#8212; new geographic customer</td>
+        <td>~25% by 2027<div class="p-cat-bar-track"><div class="p-cat-bar-fill p-cat-bar-prob" style="width:25%"></div></div></td>
+        <td>+3&#8211;5%<div class="p-cat-bar-track"><div class="p-cat-bar-fill p-cat-bar-pos" style="width:13%"></div></div></td>
+        <td><span class="p-cat-dir p-cat-dir-pos">Positive</span> &#8212; new geographic customer</td>
       </tr>
       <tr>
         <td>Semi-cycle inflection confirmed (SEMI book-to-bill &gt;1.2 for 2+ quarters)</td>
-        <td>~50% by end-2026</td><td>+8&#8211;12%</td>
-        <td class="pos">Positive &#8212; re-rates forward estimates</td>
+        <td>~50% by end-2026<div class="p-cat-bar-track"><div class="p-cat-bar-fill p-cat-bar-prob" style="width:50%"></div></div></td>
+        <td>+8&#8211;12%<div class="p-cat-bar-track"><div class="p-cat-bar-fill p-cat-bar-pos" style="width:33%"></div></div></td>
+        <td><span class="p-cat-dir p-cat-dir-pos">Positive</span> &#8212; re-rates forward estimates</td>
       </tr>
     </tbody>
   </table>
@@ -554,6 +605,34 @@ tr:hover td { background: var(--surface); }
 
 <section id="historical-reset">
   <h2>7. Historical Reset-and-Recover Priors</h2>
+  <figure class="p-sc-fig" aria-label="Scatter plot of ASML historical drawdown episodes: x-axis recovery duration in months, y-axis drawdown percent. 2018–2019 memory downturn: −35%, ~14 months. 2022–2023 post-COVID reset: −45%, ~12 months. 2024 DUV-rule expansion: −25%, partial recovery ongoing.">
+    <svg class="p-sc-svg" viewBox="0 0 500 260" role="img" aria-hidden="true">
+      <line x1="55" y1="220" x2="470" y2="220" class="p-sc-axis"/>
+      <line x1="55" y1="20"  x2="55"  y2="220" class="p-sc-axis"/>
+      <line x1="193" y1="20" x2="193" y2="220" class="p-sc-grid"/>
+      <line x1="332" y1="20" x2="332" y2="220" class="p-sc-grid"/>
+      <line x1="470" y1="20" x2="470" y2="220" class="p-sc-grid"/>
+      <line x1="55" y1="180" x2="470" y2="180" class="p-sc-grid"/>
+      <line x1="55" y1="140" x2="470" y2="140" class="p-sc-grid"/>
+      <line x1="55" y1="100" x2="470" y2="100" class="p-sc-grid"/>
+      <line x1="55" y1="60"  x2="470" y2="60"  class="p-sc-grid"/>
+      <line x1="55" y1="20"  x2="470" y2="20"  class="p-sc-grid"/>
+      <text x="193" y="238" text-anchor="middle" class="p-sc-lbl">6 mo</text>
+      <text x="332" y="238" text-anchor="middle" class="p-sc-lbl">12 mo</text>
+      <text x="470" y="238" text-anchor="middle" class="p-sc-lbl">18 mo</text>
+      <text x="48" y="184" text-anchor="end" class="p-sc-lbl">10%</text>
+      <text x="48" y="144" text-anchor="end" class="p-sc-lbl">20%</text>
+      <text x="48" y="104" text-anchor="end" class="p-sc-lbl">30%</text>
+      <text x="48" y="64"  text-anchor="end" class="p-sc-lbl">40%</text>
+      <text x="48" y="24"  text-anchor="end" class="p-sc-lbl">50%</text>
+      <text x="262" y="255" text-anchor="middle" class="p-sc-lbl">Recovery duration</text>
+      <text x="14" y="120" text-anchor="middle" class="p-sc-lbl" transform="rotate(-90,14,120)">Drawdown</text>
+      <circle cx="378" cy="80"  r="7" class="p-sc-danger"><title>2018&#8211;2019 memory downturn: &#8722;35%, ~14 months</title></circle>
+      <circle cx="332" cy="40"  r="7" class="p-sc-danger"><title>2022&#8211;2023 post-COVID reset: &#8722;45%, ~12 months</title></circle>
+      <circle cx="478" cy="120" r="7" class="p-sc-partial"><title>2024 DUV-rule expansion: &#8722;25%, partial recovery</title></circle>
+    </svg>
+    <p class="p-sc-note">&#x25CF; filled = recovery complete &nbsp; &#x25CB; dashed = recovery not yet complete &nbsp; red = &gt;30% drawdown &nbsp; amber = &le;30% drawdown</p>
+  </figure>
   <table>
     <thead><tr><th>Episode</th><th>Drawdown</th><th>Catalyst</th><th>Recovery</th><th>Lesson</th></tr></thead>
     <tbody>
