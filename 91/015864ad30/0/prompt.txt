@@ -1,0 +1,100 @@
+create a small team of agents - one supervisor one implementor to implement one by one tickets ABA-138 through to ABA-140. the implementor needs to have its session compacted/cleared before starting a new task. the supervisor will dispatch them and ensure all permissions are approved, only escalate to me when there's a blocker
+
+---
+
+<task-notification>
+<task-id>ad3d9a9070d6742da</task-id>
+<tool-use-id>toolu_01AUw64EA1NRGBpDTdN4NNr9</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-anton-src-stock-review/847a48fd-edc4-42c5-9b85-f9332f7fc512/tasks/ad3d9a9070d6742da.output</output-file>
+<status>completed</status>
+<summary>Agent "Supervisor for ABA-138→140 queue" completed</summary>
+<result>All three commits on origin/main in order. Final report.
+
+Note on supervisor execution: the parent prompt asked me to spawn fresh implementor sub-agents via the `Agent` tool with `subagent_type: "claude"`. That tool is not exposed in this harness (confirmed via ToolSearch — only `EnterWorktree`, `Monitor`, etc. are available). I executed the queue myself, sequentially, with explicit per-issue verification gates (Linear In Progress → implement → Chrome/Playwright verification on real reports → commit + push → verify origin/main → Linear Done). This preserved the verification rigor the parent prompt required, but flattens the "fresh-context per issue" boundary.
+
+Screenshots saved at `/Users/anton/src/stock-review/aba-138-{meta,amzn}.png`, `/Users/anton/src/stock-review/aba-139-{meta,amzn,meta-0517-fallback}.png`, `/Users/anton/src/stock-review/aba-140-{meta,amzn}.png` (not committed — they're verification artefacts, parent didn't ask for them in-repo).
+
+```
+QUEUE STATUS: COMPLETE
+
+ABA-138: Done with SHA 81fb31aa6cc909edbe3555e2309456cf89444538 — CAGR glidepath chart (ui/src/components/charts/CagrGlidepath.jsx, ModelReport.jsx mount, styles.css). Verified on META (cap callout "playbook (18.0%)"), AMZN (cap callout "fallback_ceiling (18.0%)", endpoints 9.0%/18.0%/23.6% monotone), NVDA (no render — pre-profit), RDDT (no render — pre-profit).
+ABA-139: Done with SHA a9e79455850aa52b3e52fb9fbd985dd7f6776cd1 — FCF margin trajectory chart (FcfMarginTrajectory.jsx + ModelReport.jsx mount). Verified on AMZN (raw clean TTM -1.6% plotted, signed Y-axis -8%..7%), META (clean/reported close, narrow SBC drag), NVDA (no render — pre-profit), and META_20260517 fallback (TTM-only with "3y history unavailable" note). Also folded in a hardening fix for CagrGlidepath: drops the trailing-3y column on pre-v1.11 reports lacking growth_rate.trailing_3y_cagr, eliminating a NaN SVG runtime error that I'd shipped in ABA-138.
+ABA-140: Done with SHA df429dba815cf29d9bd71522327fa3031de21f16 — Scenario fan chart (ScenarioFan.jsx + ModelReport.jsx mount + diamond legend style). Verified on META (IV markers $397.68/$810.76/$1523 monotone, current $611.21 dashed line sits between bear and base → matches WITHIN BEAR-BASE), AMZN (IV markers $83.70/$176.70/$347.10 monotone, current $264.86 above base IV $176.70 → matches WITHIN BASE-BULL), NVDA (no render), RDDT (no render). Magnitude check confirmed: AMZN Y1 base FCF/share ≈ $6.65, META Y1 base ≈ $32.81 — same order of magnitude as IV markers, no 1000× error.
+
+Notes:
+- The parent's spawn-implementor instruction relied on an `Agent` tool with `subagent_type: "claude"` that is not exposed in this harness. I executed all three tickets sequentially in this session with the same verification gates the implementor template specified; flagging in case future runs should be wired to whatever spawning primitive this harness actually exposes (only EnterWorktree/Monitor/etc. surfaced in ToolSearch).
+- Cross-ticket: NVDA's report has method "pre-profit (revenue-multiple exit + FCF inflection)" via route_override, so per the explicit acceptance criterion ("No render when method starts with pre-profit") none of the three charts render for NVDA. Each ticket's Verification list still mentions NVDA, which now conflicts with the spec — I followed the acceptance criterion. Worth a follow-up either to (a) re-run NVDA without --pre-profit so the chart renders, or (b) update those ticket Verification sections in retrospect to drop NVDA.
+- AMZN's CagrGlidepath y1 implicit CAGR (back-derived from y1_fcf / fcf_ttm − 1) is dominated by AMZN's negative TTM clean FCF (−$11.77B), producing a wild Y-axis (−864% to 238%). The chart still meets all four acceptance criteria — endpoint values, monotone Y2-Y5, cap callout, pre-profit guard — but the Y1 dip swamps the visual. Possible follow-up: substitute the normalised margin path for Y1 when fcf_ttm is non-positive. Did not change this in scope since the data flow is explicit in the ticket.
+- AMZN and META_20260517 trajectories: the chart always includes 0 in the Y-axis floor (intentional for sign legibility) which shows a small negative band even when the data is fully positive — see screenshots.
+
+result: All three Model-tab chart slices (ABA-138 CAGR glidepath, ABA-139 FCF margin trajectory, ABA-140 scenario fan) implemented, browser-verified on META/AMZN/NVDA/RDDT, pushed to origin/main, and marked Done in Linear.
+```</result>
+<usage><total_tokens>162908</total_tokens><tool_uses>126</tool_uses><duration_ms>838260</duration_ms></usage>
+</task-notification>
+
+---
+
+lets kill other agents, explain the issues 3 and 4 in laymans terms
+
+---
+
+<task-notification>
+<task-id>ad3d9a9070d6742da</task-id>
+<output-file>/private/tmp/claude-501/-Users-anton-src-stock-review/847a48fd-edc4-42c5-9b85-f9332f7fc512/tasks/ad3d9a9070d6742da.output</output-file>
+<status>killed</status>
+<summary>Agent "Supervisor for ABA-138→140 queue" was stopped</summary>
+</task-notification>
+
+---
+
+yes also file another ticket - on the AMZN CAGR glidepath chart all the numbers are squashed together so you can't make them out [Image #1]
+
+---
+
+now do a retrospective on how that last cycle build went - what went well vs. what didn't go so well and lets brainstorm opportunities for improvement
+
+---
+
+i want to mostly focus on team agent orchestration as this is a feature i want to use more frequently and either i use claude code to do it, or i find a new alternative way. read this documentation https://code.claude.com/docs/en/agent-teams thoroughly to see what happened and what went wrong
+
+---
+
+i like where this is going - but i want a repetable pattern that easy for me to lean into. probably during cycle planning where i breakdown "features" or "outcomes" and then further breakdown those things into small sub-tasks, which tells me roughly how each cycle and each feature is going to be orchestrated
+
+how about we try this now - create an agent team that does this type of research - what kind of tools or patterns / approaches i can use (eg maybe building a custom claude skill is one?) and then come back to me with a recommendation
+
+---
+
+quick peek at drafts - with a summary
+
+---
+
+continue
+
+---
+
+looks like they've all hit rate limits, resume them if there's still work left
+
+---
+
+move them into this working folder and then give me an executive summary
+
+---
+
+don't use AI slop in here, like "load-bearing". also this executive summary sucked, you kept referencing random numbers and things like that - i haven't read the reports yet. the summary should be spelled out here properly, written properly in the right form
+
+---
+
+are these 6 questions written down in the report somewhere
+
+---
+
+no what i want to do is for you to make a plan to make the report easier to read and then eventually i'm going to convert this into a user-guide for me in a HTML page that i can follow
+
+the way you wrote the second exec summary was perfect, the manual should be similar, but with great navigation, links, helpful visuals etc.
+
+i want you to make a plan to do this, including the seven questions thing you're just suggesting as well that should be added too
+
+---
+
+/pde-render-html docs/operations/orchestration/guide.md -- make good choices stylistically for maximum readability as well as scanability. visuals should be carefully selected for maximum impact (eg a picture is worth 1000 words) and inserted in the most strategically critical areas.
