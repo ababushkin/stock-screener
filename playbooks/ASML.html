@@ -187,6 +187,26 @@ tr:hover td { background: var(--surface); }
 .p-sc-warn   { fill: var(--warn);   opacity: 0.8; }
 .p-sc-partial { fill: none; stroke: var(--muted); stroke-width: 2; stroke-dasharray: 3 2; }
 .p-sc-note { font-size: 0.75rem; color: var(--muted); margin: 0.3rem 0 0; }
+/* P19 — margin position-band strip */
+.p-band-fig { margin: 0.5rem 0 0.75rem; }
+.p-band-row { display: flex; align-items: center; gap: 0.75rem; }
+.p-band-ep { font-size: 0.75rem; color: var(--muted); text-align: center; white-space: nowrap; min-width: 2.5rem; line-height: 1.3; }
+.p-band-ep-r { text-align: right; }
+.p-band-ep-lbl { font-size: 0.65rem; }
+.p-band-track { flex: 1; height: 12px; border-radius: 6px; background: linear-gradient(to right, var(--danger-soft), var(--warn-soft), var(--ok-soft)); position: relative; }
+.p-band-tick { position: absolute; top: -4px; width: 3px; height: 20px; background: var(--fg); border-radius: 2px; transform: translateX(-50%); }
+.p-band-tick-lbl { position: absolute; bottom: 24px; left: 50%; transform: translateX(-50%); font-size: 0.7rem; font-weight: 700; color: var(--fg); white-space: nowrap; background: var(--bg); padding: 0 2px; }
+/* P23 — scenario-axes shape plot */
+.p-ax-fig { margin: 0.75rem 0 0; }
+.p-ax-svg { width: 100%; max-width: 500px; height: auto; display: block; }
+.p-ax-axis { stroke: var(--fg); stroke-width: 1.5; }
+.p-ax-grid { stroke: var(--rule); stroke-width: 1; stroke-dasharray: 3 3; }
+.p-ax-lbl  { fill: var(--muted); font-size: 11px; }
+.p-ax-poly { fill: var(--accent-soft); stroke: var(--accent); stroke-width: 1.5; fill-opacity: 0.5; }
+.p-ax-bear { fill: var(--danger); opacity: 0.85; }
+.p-ax-base { fill: var(--accent); opacity: 0.85; }
+.p-ax-bull { fill: var(--ok);     opacity: 0.85; }
+.p-ax-pt-lbl { fill: var(--fg-soft); font-size: 10px; }
 .pos { color: var(--bull); font-weight: 600; }
 .neg { color: var(--bear); font-weight: 600; }
 
@@ -340,6 +360,17 @@ tr:hover td { background: var(--surface); }
 
 <section id="capex-cycle-position">
   <h2>2. Capex-Cycle Position</h2>
+  <figure class="p-band-fig" role="img" aria-label="Normalised-margin range: floor ~24%, base ~30%, ceiling ~35%">
+    <div class="p-band-row">
+      <span class="p-band-ep">~24%<br><span class="p-band-ep-lbl">floor</span></span>
+      <div class="p-band-track">
+        <div class="p-band-tick" style="left:55%">
+          <span class="p-band-tick-lbl">~30%</span>
+        </div>
+      </div>
+      <span class="p-band-ep p-band-ep-r">~35%<br><span class="p-band-ep-lbl">ceiling</span></span>
+    </div>
+  </figure>
   <p>ASML is in a <strong>cycle-trough / inflection</strong> phase as of mid-2026. The 2024&#8211;2025 digestion period (customers pausing orders after COVID-era over-ordering of DUV tools) is expected to trough in 2026, with re-acceleration in 2027&#8211;2029 on two overlapping drivers:</p>
   <ol>
     <li><strong>AI-driven advanced-node demand:</strong> TSMC N2/N2P, Samsung 2GAP, Intel 18A ramps require sustained EUV intensity. Hyperscaler custom-silicon fabs (Google, Meta, Amazon) are incremental new demand on top of smartphone-driven baseline.</li>
@@ -570,6 +601,31 @@ tr:hover td { background: var(--surface); }
 
 <section id="ticker-overrides">
   <h2>6. Ticker-Specific Overrides (Rationale)</h2>
+  <figure class="p-ax-fig" aria-label="Scenario-axes shape: bear gc=15% tm=24%; base gc=15% tm=30%; bull gc=20% tm=30%">
+    <svg class="p-ax-svg" viewBox="0 0 500 260" role="img" aria-hidden="true">
+      <line x1="55" y1="220" x2="470" y2="220" class="p-ax-axis"/>
+      <line x1="55" y1="20"  x2="55"  y2="220" class="p-ax-axis"/>
+      <line x1="193" y1="20" x2="193" y2="220" class="p-ax-grid"/>
+      <line x1="332" y1="20" x2="332" y2="220" class="p-ax-grid"/>
+      <line x1="470" y1="20" x2="470" y2="220" class="p-ax-grid"/>
+      <line x1="55" y1="140" x2="470" y2="140" class="p-ax-grid"/>
+      <line x1="55" y1="60"  x2="470" y2="60"  class="p-ax-grid"/>
+      <text x="193" y="238" text-anchor="middle" class="p-ax-lbl">10%</text>
+      <text x="332" y="238" text-anchor="middle" class="p-ax-lbl">20%</text>
+      <text x="470" y="238" text-anchor="middle" class="p-ax-lbl">25%</text>
+      <text x="48"  y="144" text-anchor="end"    class="p-ax-lbl">25%</text>
+      <text x="48"  y="64"  text-anchor="end"    class="p-ax-lbl">35%</text>
+      <text x="262" y="255" text-anchor="middle" class="p-ax-lbl">Growth ceiling</text>
+      <text x="14"  y="120" text-anchor="middle" class="p-ax-lbl" transform="rotate(-90,14,120)">Terminal margin</text>
+      <polygon points="304,148 304,100 387,100" class="p-ax-poly"/>
+      <circle cx="304" cy="148" r="6" class="p-ax-bear"><title>Bear: gc=15% tm=24%</title></circle>
+      <circle cx="304" cy="100" r="6" class="p-ax-base"><title>Base: gc=15% tm=30%</title></circle>
+      <circle cx="387" cy="100" r="6" class="p-ax-bull"><title>Bull: gc=20% tm=30%</title></circle>
+      <text x="315" y="151" text-anchor="start" class="p-ax-pt-lbl">bear</text>
+      <text x="315" y="93"  text-anchor="start" class="p-ax-pt-lbl">base</text>
+      <text x="387" y="89"  text-anchor="middle" class="p-ax-pt-lbl">bull</text>
+    </svg>
+  </figure>
   <table>
     <thead><tr><th>Field</th><th>Value</th><th>Rationale</th></tr></thead>
     <tbody>
