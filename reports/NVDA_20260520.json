@@ -1,0 +1,135 @@
+{
+  "ticker": "NVDA",
+  "company": "NVIDIA Corporation",
+  "date": "2026-05-20",
+  "stages": {
+    "signal": {
+      "verdict": "BUY",
+      "profit_stage": "ESTABLISHED",
+      "track": "GROWTH",
+      "ai_layer": "INFRASTRUCTURE",
+      "clean_eps_ttm": 4.63,
+      "sbc_stripped": true,
+      "sbc_adjustment_per_share": 0.26,
+      "peg_ratio": 1.00,
+      "ps_ratio": 24.69,
+      "rule_of_40": null,
+      "qualitative": "FLAG",
+      "qualitative_note": "TAM ceiling risk — data centre GPU TAM ~$300B est.; NVDA at ~$188B annualised DC revenue = ~63% penetration; meaningful ceiling risk at current trajectory.",
+      "signal": "BUY",
+      "model_ready": "YES",
+      "condition": null
+    },
+    "model": {
+      "method": "two-stage DCF",
+      "profit_stage": "ESTABLISHED",
+      "current_price": 220.09,
+      "shares_diluted": 24514000000,
+      "net_debt": 435000000,
+      "fcf_ttm": 90290000000,
+      "fcf_ttm_reported": 96676000000,
+      "sbc_ttm": 6386000000,
+      "fcf_margin_ttm": 0.41813,
+      "fcf_margin_ttm_reported": 0.44771,
+      "historical_fcf_margins": [
+        {"year": "2026-01-31", "fcf_margin_clean": 0.41813, "fcf_margin_reported": 0.44771},
+        {"year": "2025-01-31", "fcf_margin_clean": 0.43003, "fcf_margin_reported": 0.46632},
+        {"year": "2024-01-31", "fcf_margin_clean": 0.38528, "fcf_margin_reported": 0.44354},
+        {"year": "2023-01-31", "fcf_margin_clean": 0.04074, "fcf_margin_reported": 0.14117}
+      ],
+      "fcf_cagr_3y": 3.3473,
+      "growth_rate": {
+        "trailing_3y_cagr": 3.3473,
+        "consensus_5y_growth": null,
+        "fallback_ceiling": 0.18,
+        "applied_base_cagr": 0.35,
+        "cap_applied": true,
+        "cap_source": "playbook"
+      },
+      "ntm_revenue": 498007011340,
+      "base_wacc": 0.09,
+      "base_wacc_source": "playbook",
+      "scenarios": {
+        "bear": {
+          "y1_fcf": 176997000000,
+          "y2_5_cagr": 0.175,
+          "terminal_growth": 0.015,
+          "wacc": 0.10,
+          "intrinsic_value_per_share": 139.60,
+          "upside_pct": -36.57,
+          "narrative": "Custom-silicon (ASIC) penetration accelerates beyond 25% of AI-inference workloads; hyperscaler capex decelerates as AI ROI disappoints relative to elevated spend; China export restrictions tighten to cover H20 successors; GPU pricing normalises as AMD MI-series and Intel Gaudi gain credible traction — revenue and margin compress simultaneously"
+        },
+        "base": {
+          "y1_fcf": 208232000000,
+          "y2_5_cagr": 0.35,
+          "terminal_growth": 0.025,
+          "wacc": 0.09,
+          "intrinsic_value_per_share": 351.65,
+          "upside_pct": 59.77,
+          "narrative": "Hyperscaler AI capex sustains through 2027 on Blackwell/Blackwell-Ultra upgrade cycle; CUDA ecosystem moat preserves ~65–70% data-centre GPU share; sovereign AI and enterprise rollout provide a volume floor as US hyperscaler growth normalises; FCF margin holds near current 40–42% as software and networking attach (NIMs, NVLink) offset GPU pricing pressure"
+        },
+        "bull": {
+          "y1_fcf": 229055000000,
+          "y2_5_cagr": 0.44,
+          "terminal_growth": 0.035,
+          "wacc": 0.08,
+          "intrinsic_value_per_share": 712.52,
+          "upside_pct": 223.74,
+          "narrative": "Physical AI (robotics, autonomous vehicles) opens a second major TAM independent of data-centre; sovereign AI buildouts in Europe, Middle East, and Asia add a demand floor outside US hyperscaler capex cycles; CUDA ecosystem becomes increasingly irreplaceable as model complexity grows; export control regime does not tighten further — addressable market expands rather than contracts"
+        }
+      },
+      "intrinsic_value_range": {
+        "bear": 139.60,
+        "base": 351.65,
+        "bull": 712.52
+      },
+      "range_vs_price": "WITHIN BEAR-BASE",
+      "sensitivity": {
+        "dominant_driver": "WACC",
+        "note": "WACC dominates — ±100 bps WACC moves base IV by approximately ±17%"
+      },
+      "sensitivity_table": {
+        "wacc_axis": [0.08, 0.085, 0.09, 0.095, 0.10],
+        "terminal_growth_axis": [0.015, 0.02, 0.025, 0.03, 0.035],
+        "intrinsic_value_per_share": [
+          [364.8, 391.5, 423.0, 460.7, 506.9],
+          [335.9, 358.3, 384.4, 415.3, 452.4],
+          [310.8, 329.9, 351.65, 377.4, 407.8],
+          [289.0, 305.4, 324.1, 345.6, 370.9],
+          [269.9, 284.1, 300.2, 318.5, 339.7]
+        ],
+        "base_cell": {"row": 2, "col": 2}
+      },
+      "position_sizing": {
+        "band": "3–4% of portfolio",
+        "lower_pct": 3,
+        "upper_pct": 4,
+        "signal_verdict": "BUY",
+        "range_vs_price": "WITHIN BEAR-BASE",
+        "margin_of_safety_pct": 59.77,
+        "confidence_cap_applied": false,
+        "rationale": "BUY × WITHIN BEAR–BASE (price $220.09 vs base IV $351.65, MoS +59.8%) → 3–4% band (MEDIUM confidence from playbook confidence_anchor; upper = min(4%, 4%) = 4%; cap present but does not reduce band)."
+      },
+      "playbook": {
+        "loaded": true,
+        "path": "playbooks/NVDA.md",
+        "last_updated": "2026-05-19",
+        "overrides_applied": ["base_wacc", "growth_ceiling", "confidence_anchor", "bear_narrative", "base_narrative", "bull_narrative", "failure_modes"],
+        "failure_modes": [
+          "Hyperscaler capex deceleration: any two of the big four (Microsoft, Google, Amazon, Meta) announcing cuts to AI infrastructure spend in the same quarter — ~70% revenue concentration means this flows through immediately",
+          "Custom-silicon penetration: ASIC inference chips (Broadcom, Marvell-designed) exceed ~25% of AI inference workloads by 2027 — removes the inference scaling tailwind from the CUDA lock-in thesis",
+          "Export control escalation: US tightens restrictions to cover H20 successors or gaming-grade chips used for inference in China — eliminates the residual China revenue and signals further restrictions are politically viable",
+          "CUDA ecosystem erosion: PyTorch or JAX achieve hardware-neutral performance parity at scale, reducing switching costs that keep workloads on NVIDIA silicon",
+          "Blackwell successor delay or defect (>2 quarters slip): breaks the cadence of architecture upgrades that historically sustains premium GPU pricing and hyperscaler forward commitments",
+          "TAM ceiling: DC GPU TAM saturates at ~$300–350B, capping NVDA's revenue around current annualised rates — the bull case requires TAM expansion to physical AI or inference at the edge, not just more data-centre"
+        ]
+      }
+    }
+  },
+  "meta": {
+    "profit_stage": "ESTABLISHED",
+    "track": "GROWTH",
+    "ai_layer": "INFRASTRUCTURE",
+    "confidence": "MEDIUM"
+  }
+}
