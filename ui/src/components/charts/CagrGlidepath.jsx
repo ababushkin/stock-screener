@@ -181,13 +181,11 @@ export default function CagrGlidepath({ model }) {
           </text>
         ))}
 
-        {/* Series lines + endpoint markers */}
+        {/* Series lines + point markers */}
         {series.map((s) => {
           const d = s.points
             .map((v, i) => `${i === 0 ? 'M' : 'L'}${xAt(i).toFixed(2)},${yAt(v).toFixed(2)}`)
             .join(' ');
-          const lastIdx = s.points.length - 1;
-          const lastVal = s.points[lastIdx];
           return (
             <g key={s.key}>
               <path d={d} fill="none" stroke={s.color} strokeWidth="2" />
@@ -200,19 +198,75 @@ export default function CagrGlidepath({ model }) {
                   fill={s.color}
                 />
               ))}
-              <text
-                x={xAt(lastIdx) + 8}
-                y={yAt(lastVal)}
-                dominantBaseline="middle"
-                fontSize="11"
-                fill={s.color}
-                fontWeight="600"
-              >
-                {formatPct(lastVal)}
-              </text>
             </g>
           );
         })}
+
+        {/* Y5 endpoint labels — collapse when all scenarios converge within 2pp */}
+        {(() => {
+          const CONVERGE_THRESHOLD = 0.02;
+          const MIN_SEP = 14; // px
+          const lastIdx = series[0].points.length - 1;
+          const lx = xAt(lastIdx) + 8;
+          const items = series.map((s) => ({
+            key: s.key,
+            color: s.color,
+            value: s.points[lastIdx],
+            rawY: yAt(s.points[lastIdx]),
+          }));
+          const vals = items.map((it) => it.value);
+          const spread = Math.max(...vals) - Math.min(...vals);
+          if (spread <= CONVERGE_THRESHOLD) {
+            const avgY = items.reduce((sum, it) => sum + it.rawY, 0) / items.length;
+            const avgVal = vals.reduce((a, b) => a + b, 0) / vals.length;
+            return (
+              <text
+                x={lx}
+                y={avgY}
+                dominantBaseline="middle"
+                fontSize="11"
+                fill="#555"
+                fontWeight="600"
+              >
+                {`all ≈ ${formatPct(avgVal)}`}
+              </text>
+            );
+          }
+          // Collision avoidance: sort by rawY, push apart by MIN_SEP
+          const adj = [...items]
+            .sort((a, b) => a.rawY - b.rawY)
+            .map((it) => ({ ...it, adjY: it.rawY }));
+          for (let i = 1; i < adj.length; i += 1) {
+            if (adj[i].adjY - adj[i - 1].adjY < MIN_SEP) {
+              adj[i].adjY = adj[i - 1].adjY + MIN_SEP;
+            }
+          }
+          return adj.map((it) => (
+            <g key={it.key}>
+              {Math.abs(it.adjY - it.rawY) > 3 && (
+                <line
+                  x1={lx - 4}
+                  y1={it.rawY}
+                  x2={lx - 4}
+                  y2={it.adjY}
+                  stroke={it.color}
+                  strokeWidth="0.7"
+                  strokeOpacity="0.5"
+                />
+              )}
+              <text
+                x={lx}
+                y={it.adjY}
+                dominantBaseline="middle"
+                fontSize="11"
+                fill={it.color}
+                fontWeight="600"
+              >
+                {formatPct(it.value)}
+              </text>
+            </g>
+          ));
+        })()}
       </svg>
       {footnote && <p className="chart-footnote">{footnote}</p>}
     </div>
