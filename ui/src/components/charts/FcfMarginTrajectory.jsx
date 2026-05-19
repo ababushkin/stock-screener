@@ -287,6 +287,7 @@ export default function FcfMarginTrajectory({ model }) {
           ) : null
         )}
       </svg>
+      <p className="chart-caption">Base case assumes today's clean FCF margin holds flat — operating-leverage upside lives in the bull case.</p>
       {!hasHistory && <p className="chart-footnote">{FALLBACK_NOTE}</p>}
     </div>
   );

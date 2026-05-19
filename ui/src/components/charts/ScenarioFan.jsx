@@ -239,6 +239,7 @@ export default function ScenarioFan({ model }) {
           );
         })}
       </svg>
+      <p className="chart-caption">Today's price is the market's read; the markers are ours. The fan is where the assumptions live.</p>
     </div>
   );
 }

@@ -268,6 +268,7 @@ export default function CagrGlidepath({ model }) {
           ));
         })()}
       </svg>
+      <p className="chart-caption">How fast the model thinks FCF compounds — and where the consensus/fallback ceiling clamps it.</p>
       {footnote && <p className="chart-footnote">{footnote}</p>}
     </div>
   );

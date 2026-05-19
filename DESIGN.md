@@ -352,7 +352,8 @@ The UI reads this file directly. Skills write valid JSON only — no prose in th
 - Opens the most recently written report JSON by default
 - Navigation tabs: Screen | Signal | Model | Timing | Summary
 - Each tab renders the corresponding skill output with charts and colour-coded verdicts
-- Sensitivity table in the Model tab is an interactive grid (editable WACC/terminal growth inputs that recalculate on the fly)
+- Model tab v1 shipped under ABA-115: CAGR glidepath, FCF margin trajectory, and scenario fan charts for ESTABLISHED-path runs.
+- Sensitivity table in the Model tab is an interactive grid (editable WACC/terminal growth inputs that recalculate on the fly) — deferred to ABA-43.
 - Verdict badges: green (BUY / PASS / ACT NOW), amber (WATCH / CONDITIONAL / WAIT FOR CATALYST), red (CAUTION / SKIP / WAIT FOR BETTER ENTRY)
 - Export button: saves current view as a PDF-ready print layout
 

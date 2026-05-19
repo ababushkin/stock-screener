@@ -203,7 +203,7 @@ body {
 .position-sizing {
   margin-top: 1.25rem;
   padding-top: 1rem;
-  border-top: 1px solid #eee;
+  border-top: 1px solid #e5e5e5;
 }
 
 .position-sizing-line {
@@ -233,7 +233,7 @@ body {
 .chart-block {
   margin-top: 1.5rem;
   padding-top: 1.25rem;
-  border-top: 1px solid #eee;
+  border-top: 1px solid #e5e5e5;
 }
 
 .chart-title {
@@ -281,8 +281,14 @@ body {
   max-width: 640px;
 }
 
-.chart-footnote {
+.chart-caption {
   margin-top: 0.5rem;
+  font-size: 0.8rem;
+  color: #666;
+}
+
+.chart-footnote {
+  margin-top: 0.25rem;
   font-size: 0.8rem;
   color: #666;
   font-style: italic;
