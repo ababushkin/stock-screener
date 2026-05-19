@@ -4,6 +4,7 @@ import {
   formatPercent,
   formatBillions
 } from '../lib/formatters.js';
+import CagrGlidepath from './charts/CagrGlidepath.jsx';
 
 const PRE_PROFIT_NOTE = 'Visual breakdown is ESTABLISHED-only for v1.';
 
@@ -87,6 +88,8 @@ export default function ModelReport({ stage }) {
       )}
 
       {isPreProfit && <p className="empty pre-profit-note">{PRE_PROFIT_NOTE}</p>}
+
+      {!isPreProfit && <CagrGlidepath model={stage} />}
     </div>
   );
 }
