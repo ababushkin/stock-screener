@@ -76,7 +76,7 @@ Customer specials: N/A — single-operator pack. The mix above is intentionally 
 | ABA-112 Playbook loader | diff | 8 | Now |
 | Write playbook: ASML | diff | 8 | Now |
 | Write playbook: GOOG | diff | 8 | Now |
-| `/stock-explain` skill | diff | 7 | Now |
+| `/stock-explain` skill | diff | 7 | Done (2026-05-20) |
 | `/stock-portfolio` skill | diff | 6 | Now — shipped 2026-05-17, pending QA |
 | ABA-115 Glidepath + scenario fan visuals | diff | 7 | Now |
 | Write playbooks: META, NVDA, AMZN, NFLX, ADYEN | diff | 7 | Next |
@@ -130,9 +130,10 @@ Customer specials: N/A — single-operator pack. The mix above is intentionally 
 **Appetite:** 2–3 days after ABA-112 lands.
 **Theme:** differentiator
 
-### `/stock-explain` skill
+### `/stock-explain` skill — DONE 2026-05-20 (ABA-118)
 **Problem:** For the operator, we believe model outputs use sophisticated terminology that's correct but not understandable on a quick read — making the IV a "stupid number" rather than something usable. Existing skills' methodology sections are present but dense.
 **Success criterion:** New `/stock-explain TICKER` skill takes the latest report for a ticker and produces a plain-English walkthrough — what the number means, how it was derived, what assumptions are doing the work, what would change it. Tested on two reports; operator confirms it reads as friendly without losing the audit trail.
+**Outcome:** Shipped. `skills/stock-explain/SKILL.md` reads the latest cached report and emits a five-question narrative (bottom line / how it was built / what's driving it — including WACC-to-interest-rate framing and an implied year-5 free cash flow anchor / failure modes / qualitative trust context). Three iterations on the eval loop; operator approved iter-3 output on NVDA + META as journalistic and decision-grade. Read-only — no MCP calls, no writes to `reports/`.
 **Appetite:** ~1 week.
 **Theme:** differentiator (legibility)
 **Notes:** Separate skill, not an inline output section — keeps existing outputs unchanged and lets the explainer evolve independently. Per operator: "i need to understand how the valuation system works."

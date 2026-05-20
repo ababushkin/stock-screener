@@ -12,3 +12,6 @@ __pycache__/
 .entire/
 .playwright-mcp/
 .skillshare/
+
+# Skill-creator eval workspaces — dev artifacts, not part of the skill
+skills/*-workspace/

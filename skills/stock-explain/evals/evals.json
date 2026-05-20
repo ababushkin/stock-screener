@@ -1,0 +1,143 @@
+{
+  "skill_name": "stock-explain",
+  "evals": [
+    {
+      "id": 0,
+      "prompt": "/stock-explain NVDA",
+      "expected_output": "A friendly plain-English narrative explaining the NVDA model output. Should answer five questions: (1) what the number says — current price vs base IV with % gap, (2) how it was built — FCF starting point with SBC strip explained, growth rate source, WACC, two-stage structure, (3) what drives it — WACC sensitivity in dollar terms with interest-rate framing, plus implied year-5 FCF figure, (4) failure modes (playbook-loaded for NVDA), (5) confidence with qualitative business context (market lifecycle, what kind of bet the base case is). All acronyms defined on first use. No JSON block.",
+      "files": [],
+      "assertions": [
+        {
+          "id": "acronyms_defined",
+          "description": "Key acronyms (FCF, WACC, SBC) are defined on first use — case-insensitive match for the full phrase",
+          "check": "regex_match",
+          "pattern": "(?i)free cash flow.*weighted.average cost of capital.*stock.based compensation|free cash flow[^\\n]{0,200}\\(FCF\\)|\\(WACC\\)|weighted.average cost of capital"
+        },
+        {
+          "id": "five_questions_answered",
+          "description": "All five content elements present: bottom line, model build, drivers, risks, trust",
+          "check": "string_contains_all",
+          "expected": ["base", "free cash flow", "growth", "confidence"]
+        },
+        {
+          "id": "dollar_figures_present",
+          "description": "Concrete dollar figures appear (current price and at least one IV scenario)",
+          "check": "regex_match",
+          "pattern": "\\$[0-9]+"
+        },
+        {
+          "id": "no_json_block",
+          "description": "No JSON code block in the output",
+          "check": "string_not_contains",
+          "expected": "```json"
+        },
+        {
+          "id": "report_date_shown",
+          "description": "Report date is shown",
+          "check": "regex_match",
+          "pattern": "202[0-9]-[0-9]{2}-[0-9]{2}"
+        },
+        {
+          "id": "failure_modes_present",
+          "description": "Risk content is substantive and NVDA-specific",
+          "check": "string_contains_any",
+          "expected": ["AI", "chip", "demand", "margin", "competitor", "competition", "slowdown", "ASIC", "export", "capex"]
+        },
+        {
+          "id": "wacc_sensitivity_quantified",
+          "description": "WACC sensitivity is discussed with a quantified dollar/percent impact and connected to interest rates",
+          "check": "regex_match",
+          "pattern": "(?i)(WACC|discount rate)[^.]{0,400}(interest rate|rate[s]? ris|1 percentage|one percentage|1 pp|1pp|by \\$|to \\$|drop[s]? .{0,30}\\$|rise[s]? .{0,30}\\$)"
+        },
+        {
+          "id": "implied_fcf_year5",
+          "description": "Concrete implied year-5 FCF figure with a future-year reference",
+          "check": "regex_match",
+          "pattern": "\\$[0-9,\\.]+\\s*billion.*20[23][0-9]|20[23][0-9].*\\$[0-9,\\.]+\\s*billion|five years.*\\$[0-9]|\\$[0-9].*five years|year[- ]5.*\\$[0-9]|\\$[0-9].*year[- ]5"
+        },
+        {
+          "id": "qualitative_trust_context",
+          "description": "Trust/confidence section includes qualitative business context (market position, lifecycle, kind of bet) rather than only confidence-tier mechanics",
+          "check": "regex_match",
+          "pattern": "(?i)(share|penetration|market|hyperscaler|sovereign|infrastructure|expansion|moat|lifecycle|workload|capex|buildout|adoption|secular)"
+        }
+      ]
+    },
+    {
+      "id": 1,
+      "prompt": "/stock-explain META",
+      "expected_output": "A friendly narrative for META. Should explain META's FCF (large, advertising-driven), the growth assumption and WACC sensitivity with interest-rate framing, what drives the spread between bear/base/bull, plus the implied year-5 FCF to justify the base estimate. Risks specific to META (ad spend, regulation, Reality Labs capex). Confidence with qualitative context (ad market dynamics, Reality Labs bet). All acronyms defined. No JSON.",
+      "files": [],
+      "assertions": [
+        {
+          "id": "acronyms_defined",
+          "description": "Key acronyms (FCF, WACC, SBC) are defined on first use — case-insensitive",
+          "check": "regex_match",
+          "pattern": "(?i)free cash flow.*weighted.average cost of capital.*stock.based compensation|free cash flow[^\\n]{0,200}\\(FCF\\)|\\(WACC\\)|weighted.average cost of capital"
+        },
+        {
+          "id": "five_questions_answered",
+          "description": "All five content elements present: bottom line, model build, drivers, risks, trust",
+          "check": "string_contains_all",
+          "expected": ["base", "free cash flow", "growth", "confidence"]
+        },
+        {
+          "id": "dollar_figures_present",
+          "description": "Concrete dollar figures appear",
+          "check": "regex_match",
+          "pattern": "\\$[0-9]+"
+        },
+        {
+          "id": "no_json_block",
+          "description": "No JSON code block in the output",
+          "check": "string_not_contains",
+          "expected": "```json"
+        },
+        {
+          "id": "wacc_sensitivity_quantified",
+          "description": "WACC sensitivity quantified and connected to interest rates",
+          "check": "regex_match",
+          "pattern": "(?i)(WACC|discount rate)[^.]{0,400}(interest rate|rate[s]? ris|1 percentage|one percentage|1 pp|1pp|by \\$|to \\$|drop[s]? .{0,30}\\$|rise[s]? .{0,30}\\$)"
+        },
+        {
+          "id": "implied_fcf_year5",
+          "description": "Concrete implied year-5 FCF figure with future-year reference",
+          "check": "regex_match",
+          "pattern": "\\$[0-9,\\.]+\\s*billion.*20[23][0-9]|20[23][0-9].*\\$[0-9,\\.]+\\s*billion|five years.*\\$[0-9]|\\$[0-9].*five years|year[- ]5.*\\$[0-9]|\\$[0-9].*year[- ]5"
+        },
+        {
+          "id": "qualitative_trust_context",
+          "description": "Trust section includes qualitative business context (ad market, Reality Labs bet, regulatory landscape)",
+          "check": "regex_match",
+          "pattern": "(?i)(ad |advertising|reality labs|regulation|antitrust|engagement|user|capex|infrastructure|AI|metaverse|moat|secular)"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "/stock-explain FAKE",
+      "expected_output": "A clear error message telling the user no report was found for FAKE, and instructing them to run /stock-signal FAKE and /stock-model FAKE first. Should not crash or produce partial output.",
+      "files": [],
+      "assertions": [
+        {
+          "id": "error_message_shown",
+          "description": "Output contains a helpful error message about no report being found",
+          "check": "string_contains_any",
+          "expected": ["No report found", "no report", "not found", "doesn't exist"]
+        },
+        {
+          "id": "guidance_to_run_upstream",
+          "description": "User is told to run /stock-signal and/or /stock-model first",
+          "check": "string_contains_any",
+          "expected": ["/stock-signal", "/stock-model", "stock-signal", "stock-model"]
+        },
+        {
+          "id": "no_partial_output",
+          "description": "No valuation sections appear when no report exists",
+          "check": "string_not_contains",
+          "expected": "## The bottom line"
+        }
+      ]
+    }
+  ]
+}
