@@ -1,0 +1,26 @@
+{
+  "cli_version": "0.6.1",
+  "checkpoint_id": "c76fd3b57e72",
+  "strategy": "manual-commit",
+  "branch": "main",
+  "checkpoints_count": 14,
+  "files_touched": [
+    "skills/stock-explain/SKILL.md",
+    "skills/stock-explain/evals/evals.json"
+  ],
+  "sessions": [
+    {
+      "metadata": "/c7/6fd3b57e72/0/metadata.json",
+      "transcript": "/c7/6fd3b57e72/0/full.jsonl",
+      "content_hash": "/c7/6fd3b57e72/0/content_hash.txt",
+      "prompt": "/c7/6fd3b57e72/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 3157,
+    "cache_creation_tokens": 516445,
+    "cache_read_tokens": 11188041,
+    "output_tokens": 101338,
+    "api_call_count": 134
+  }
+}

@@ -1,0 +1,337 @@
+review the task below - should it be broken down into smaller sub-tasks? is there a specific skill i should use that's available? Work on Linear issue ABA-118:
+
+<issue identifier="ABA-118">
+<title>New skill: /stock-explain</title>
+<description>
+**Problem:** For the operator, we believe model outputs use sophisticated terminology that's correct but not understandable on a quick read — making the IV a "stupid number" rather than something usable. Existing skills' methodology sections are present but dense.
+
+**Success criterion:** New `/stock-explain TICKER` skill takes the latest report for a ticker and produces a plain-English walkthrough — what the number means, how it was derived, what assumptions are doing the work, what would change it. Tested on two reports; operator confirms it reads as friendly without losing the audit trail.
+
+**Appetite:** \~1 week.
+
+**Theme:** differentiator (legibility)
+
+**Notes:** Separate skill, not an inline output section — keeps existing outputs unchanged and lets the explainer evolve independently. Per operator: "i need to understand how the valuation system works."
+
+**Roadmap entry:** docs/roadmap.md → Now → /stock-explain skill
+</description>
+<team name="Personal"/>
+<project name="Equity skill pack">Cycle 1 (17–24 May): Goal 1 — portfolio complete (all 7 tickers unblocked, /stock-portfolio returns 7 rows). Goal 2 — signal calibrated (≥5/7 tickers model_ready=YES). Full brief → Linear doc "Cycle 1 — goals & success criteria".</project>
+</issue>
+
+---
+
+<task-notification>
+<task-id>ae67ba8c0b612ade6</task-id>
+<tool-use-id>REDACTED</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-anton-src-stock-review/c6e2730b-1d15-49a9-b945-8489abc8353f/tasks/ae67ba8c0b612ade6.output</output-file>
+<status>completed</status>
+<summary>Agent "Run /stock-explain FAKE WITHOUT skill (baseline error case)" completed</summary>
+<result>Done. No report file matching `reports/FAKE_*.json` exists in the repository. The output saved to `/Users/anton/src/stock-review/skills/stock-explain-workspace/iteration-1/eval-2-fake/without_skill/outputs/output.txt` explains:
+
+- The report is missing for the FAKE ticker
+- A signal analysis report is required before an explanation can be generated
+- The user should run `/stock-signal FAKE` first to produce the report, then retry
+- If FAKE is not a real ticker, they should verify the symbol</result>
+<usage><total_tokens>27089</total_tokens><tool_uses>4</tool_uses><duration_ms>15795</duration_ms></usage>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>a0d372ee2d4a46ad7</task-id>
+<tool-use-id>REDACTED</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-anton-src-stock-review/c6e2730b-1d15-49a9-b945-8489abc8353f/tasks/a0d372ee2d4a46ad7.output</output-file>
+<status>completed</status>
+<summary>Agent "Run /stock-explain NVDA WITH skill" completed</summary>
+<result>The output has been written. Here's a summary of what was done:
+
+**Task completed:** `/stock-explain NVDA`
+
+**Report used:** `reports/NVDA_20260520.json` (most recent, dated 2026-05-20)
+
+**Output written to:** `/Users/anton/src/stock-review/skills/stock-explain-workspace/iteration-1/eval-0-nvda/with_skill/outputs/output.txt`
+
+**Key findings from the report:**
+- Current price: $220.09 — sitting between the bear ($139.60) and base ($351.65) intrinsic value estimates, implying ~60% upside to base
+- Signal verdict: BUY, but the price is within the bear-base range rather than below the bear floor
+- The dominant model driver is WACC (±100 bps moves IV by ~±17%)
+- The bear-to-bull spread is enormous: $139.60 to $712.52, driven by wide growth rate dispersion (17.5% bear vs. 44% bull)
+- Confidence: MEDIUM — playbook loaded, multi-year FCF history available, but no analyst consensus 5y growth estimate in the data feed
+- Four failure modes from the playbook were highlighted: hyperscaler capex deceleration, custom-silicon (ASIC) penetration, export control escalation, and TAM ceiling</result>
+<usage><total_tokens>35171</total_tokens><tool_uses>5</tool_uses><duration_ms>56254</duration_ms></usage>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>a0e426478eaae105c</task-id>
+<tool-use-id>REDACTED</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-anton-src-stock-review/c6e2730b-1d15-49a9-b945-8489abc8353f/tasks/a0e426478eaae105c.output</output-file>
+<status>completed</status>
+<summary>Agent "Run /stock-explain META WITH skill" completed</summary>
+<result>The task is complete. Here is what was done:
+
+**Report located:** `/Users/anton/src/stock-review/reports/META_20260519.json` (most recent of five META reports).
+
+**Validation:** Both `stages.signal` and `stages.model` are present and fully populated. The playbook was loaded from `playbooks/META.md`.
+
+**Output written to:** `/Users/anton/src/stock-review/skills/stock-explain-workspace/iteration-1/eval-1-meta/with_skill/outputs/output.txt`
+
+Key findings surfaced in the explanation:
+
+- META at $611.21 is trading ~25% below the base IV of $810.76 — a "watch" verdict, not a strong buy.
+- The SBC strip is massive: reported FCF of $46.1B drops to $25.7B after removing $20.4B in stock compensation — a critical distinction the skill highlights.
+- The 3-year FCF CAGR was 52%, capped to 18% by the Meta-specific playbook; the cap is load-bearing for a credible estimate.
+- WACC dominates: ±100 bps moves IV by ±17%, producing the enormous $398–$1,523 bear-to-bull spread.
+- Confidence is HIGH due to clean data, multi-year history, and a playbook with specific failure modes (DAP deceleration, EU/US structural separation, Reality Labs capex drag, AI ad-targeting degradation).</result>
+<usage><total_tokens>34867</total_tokens><tool_uses>5</tool_uses><duration_ms>58938</duration_ms></usage>
+</task-notification>
+
+---
+
+i left some feedback
+
+---
+
+<task-notification>
+<task-id>abb310cc496a2367f</task-id>
+<tool-use-id>REDACTED</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-anton-src-stock-review/c6e2730b-1d15-49a9-b945-8489abc8353f/tasks/abb310cc496a2367f.output</output-file>
+<status>completed</status>
+<summary>Agent "FAKE with-skill iteration 2 run" completed</summary>
+<result>Task complete. Here's what happened:
+
+**Execution summary:**
+
+- Read `/Users/anton/src/stock-review/skills/stock-explain/SKILL.md` and followed it exactly.
+- Phase 1 — LOCATE: searched `reports/FAKE_*.json` — no file found.
+- Per the skill's prescribed stop-and-report behavior: emitted the exact message the skill specifies when no report exists.
+- Output saved to `/Users/anton/src/stock-review/skills/stock-explain-workspace/iteration-2/eval-2-fake/with_skill/outputs/output.txt`.
+
+**Output content:**
+```
+/stock-explain FAKE
+
+No report found for FAKE. Run `/stock-signal FAKE` first, then `/stock-model FAKE`, and try again.
+```
+
+This is the correct behavior for a ticker with no cached report — the skill halts at Phase 1 and surfaces the user-facing error message without attempting any further phases.</result>
+<usage><total_tokens>31467</total_tokens><tool_uses>5</tool_uses><duration_ms>20767</duration_ms></usage>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>a3a6984960ef560ac</task-id>
+<tool-use-id>REDACTED</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-anton-src-stock-review/c6e2730b-1d15-49a9-b945-8489abc8353f/tasks/a3a6984960ef560ac.output</output-file>
+<status>completed</status>
+<summary>Agent "FAKE without-skill iteration 2 run" completed</summary>
+<result>Done. Here is what was produced:
+
+**Task:** `/stock-explain FAKE`
+
+**Outcome:** Report not found. `FAKE` is not a real ticker and no prior signal/model run exists for it. The output file handles this gracefully by:
+
+1. Clearly stating what was searched and what was missing.
+2. Explaining why the report is required (stock-explain reads the JSON produced by stock-signal/stock-model — it cannot fabricate numbers).
+3. Giving the user a concrete recovery path (check the ticker, run stock-signal first, then re-run stock-explain).
+4. Listing the real tickers that do have reports on file so the user can immediately try a valid example.
+
+Output saved to: `/Users/anton/src/stock-review/skills/stock-explain-workspace/iteration-2/eval-2-fake/without_skill/outputs/output.txt`</result>
+<usage><total_tokens>28062</total_tokens><tool_uses>6</tool_uses><duration_ms>27838</duration_ms></usage>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>a721c2db6b22c0a2b</task-id>
+<tool-use-id>toolu_01TEpvpb1Ru6h6YAp2ie55EK</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-anton-src-stock-review/c6e2730b-1d15-49a9-b945-8489abc8353f/tasks/a721c2db6b22c0a2b.output</output-file>
+<status>completed</status>
+<summary>Agent "NVDA with-skill iteration 2 run" completed</summary>
+<result>The output has been saved to `/Users/anton/src/stock-review/skills/stock-explain-workspace/iteration-2/eval-0-nvda/with_skill/outputs/output.txt`.
+
+Here is what was done:
+
+**Source:** `reports/NVDA_20260520.json` (most recent NVDA report, dated 2026-05-20).
+
+**Key figures computed:**
+- Clean FCF TTM (trailing twelve months) = $90.3B (reported $96.7B minus $6.4B SBC)
+- Current price $220.09 vs base IV (intrinsic value) $351.65 = 60% upside
+- Bear IV $139.60 (37% below current), bull IV $712.52 (224% above current)
+- Implied year-5 FCF at base growth: $208.2B × (1.35)^4 ≈ $691B — roughly 7.7× today's already-exceptional FCF base
+- WACC (weighted-average cost of capital) sensitivity: ±1 percentage point moves the base IV by ±17% (~$292 to ~$411)
+
+**Structure delivered:** All five required sections — bottom line, how we got here, what's driving the number most (including the mandatory year-5 FCF reality check), what could go wrong (all six playbook failure modes), and how much to trust this. All acronyms spelled out on first use; no live data fetched; no files written other than the requested output.</result>
+<usage><total_tokens>36894</total_tokens><tool_uses>6</tool_uses><duration_ms>74850</duration_ms></usage>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>ab0b50f4c5a700580</task-id>
+<tool-use-id>toolu_01CYeCTZNHrykejQdBBuotbb</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-anton-src-stock-review/c6e2730b-1d15-49a9-b945-8489abc8353f/tasks/ab0b50f4c5a700580.output</output-file>
+<status>completed</status>
+<summary>Agent "NVDA without-skill iteration 2 run" completed</summary>
+<result>The output has been written to the specified path. Here is a summary of what was done:
+
+**Source:** `/Users/anton/src/stock-review/reports/NVDA_20260520.json` (most recent report, dated 2026-05-20)
+
+**Output written to:** `/Users/anton/src/stock-review/skills/stock-explain-workspace/iteration-2/eval-0-nvda/without_skill/outputs/output.txt`
+
+**What the explanation covers:**
+
+1. **What the model does** — explains two-stage DCF in plain English (river of future cash, discounted back to today), and why FCF is used instead of accounting profit.
+
+2. **NVIDIA's current state** — $90.3B clean FCF TTM, 42% FCF margin, PEG of 1.0, 24.7× P/S, and the TAM ceiling flag (already at 63% penetration of a ~$300B market).
+
+3. **Three scenarios** — bear ($139.60, -37%), base ($351.65, +60%), bull ($712.52, +224%), with plain-English descriptions of what conditions drive each, and a clear statement that the stock sits in the "between bear and base" zone.
+
+4. **WACC sensitivity** — explains why the discount rate is the dominant driver and reproduces the sensitivity table with labels.
+
+5. **Six named failure modes** — hyperscaler capex cuts, ASIC penetration, China export controls, CUDA ecosystem erosion, Blackwell successor delays, TAM ceiling.
+
+6. **Position sizing rationale** — 3–4% portfolio band, explained by the bear-base price position and MEDIUM confidence rating.
+
+7. **Honest caveats** — the 334% trailing FCF CAGR is an artifact, the growth rate is a judgment call not analyst consensus, and the sensitivity table's lower bound still implies overvaluation at $220 in a severe downside.</result>
+<usage><total_tokens>32514</total_tokens><tool_uses>4</tool_uses><duration_ms>89920</duration_ms></usage>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>a7bfc81057cff83cd</task-id>
+<tool-use-id>toolu_01StfsPK6sasf8YSXEfPV8HM</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-anton-src-stock-review/c6e2730b-1d15-49a9-b945-8489abc8353f/tasks/a7bfc81057cff83cd.output</output-file>
+<status>completed</status>
+<summary>Agent "META without-skill iteration 2 run" completed</summary>
+<result>Done. The output is at `/Users/anton/src/stock-review/skills/stock-explain-workspace/iteration-2/eval-1-meta/without_skill/outputs/output.txt`.
+
+What was done and key findings:
+
+**Source used:** `reports/META_20260519.json` (most recent, 19 May 2026, $611.21 current price).
+
+**Structure of the explanation:**
+1. What the report is — context for a non-finance reader
+2. Signal check — explains WATCH verdict, PEG/P/S ratios in plain English, and the SBC (Stock-Based Compensation) strip with why it matters
+3. DCF mechanics — explains what a DCF is, what FCF (Free Cash Flow) means, and why the 52% historical growth rate was deliberately capped at 18%
+4. Three scenarios — bear ($398, -35%), base ($811, +33%), bull ($1,523, +149%) — each with the human story behind the numbers and what drives the divergence
+5. Six failure modes — all six playbook risks explained in concrete terms
+6. Sensitivity table — reproduced the full WACC × terminal growth grid in ASCII and noted that even the most pessimistic cell ($625) barely covers today's price
+7. Confidence calibration — explains what HIGH confidence means and, importantly, what it does not mean
+8. Position sizing — 2–3%, with reasoning grounded in the WATCH signal and WITHIN BEAR-BASE range classification
+9. Short version — a plain-language summary paragraph</result>
+<usage><total_tokens>33028</total_tokens><tool_uses>4</tool_uses><duration_ms>105148</duration_ms></usage>
+</task-notification>
+
+---
+
+i've submitted my reviews
+
+---
+
+i left feedback
+
+---
+
+overall i actually preferred the "non-skill" variant, here's the feedback: i prefer this version, its easier to read and mixes friendly language in quite nicely all the way through
+
+it also introduces and explains how much the WACC affects the share price, including the interest rate rise risk
+
+in some ways the "HOW MUCH TO TRUST THIS" is written better in the non-skill version
+
+especially parts where it talks about: A company already at 63% penetration of its core market has less room to
+   grow from share gains. Future growth requires the market to expand, which is
+   a bet on physical AI and sovereign AI buildouts — both real opportunities,
+   but further out and harder to forecast.
+
+---
+
+continue
+
+---
+
+continue
+
+---
+
+<task-notification>
+<task-id>ada6fa764d6acb228</task-id>
+<tool-use-id>toolu_01T76U65AdZ2Df7iWVR7ib2Y</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-anton-src-stock-review/c6e2730b-1d15-49a9-b945-8489abc8353f/tasks/ada6fa764d6acb228.output</output-file>
+<status>completed</status>
+<summary>Agent "Iter-3 FAKE with_skill" completed</summary>
+<result>Saved the missing-report message (per the skill's Phase 1 LOCATE fallback) to `/Users/anton/src/stock-review/skills/stock-explain-workspace/iteration-3/eval-2-fake/with_skill/outputs/output.txt`.</result>
+<usage><total_tokens>51945</total_tokens><tool_uses>4</tool_uses><duration_ms>16464</duration_ms></usage>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>a3c05f1f031039a90</task-id>
+<tool-use-id>toolu_01LMViwvzD3wFoR26hnzR9Wh</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-anton-src-stock-review/c6e2730b-1d15-49a9-b945-8489abc8353f/tasks/a3c05f1f031039a90.output</output-file>
+<status>completed</status>
+<summary>Agent "Iter-3 FAKE without_skill" completed</summary>
+<result>Saved the no-skill baseline response to `/Users/anton/src/stock-review/skills/stock-explain-workspace/iteration-3/eval-2-fake/without_skill/outputs/output.txt`.</result>
+<usage><total_tokens>46502</total_tokens><tool_uses>3</tool_uses><duration_ms>19939</duration_ms></usage>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>a8ed0772e2a99d649</task-id>
+<tool-use-id>REDACTED</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-anton-src-stock-review/c6e2730b-1d15-49a9-b945-8489abc8353f/tasks/a8ed0772e2a99d649.output</output-file>
+<status>completed</status>
+<summary>Agent "Iter-3 META without_skill" completed</summary>
+<result>Saved the plain-English META valuation walkthrough to `/Users/anton/src/stock-review/skills/stock-explain-workspace/iteration-3/eval-1-meta/without_skill/outputs/output.txt`.</result>
+<usage><total_tokens>51246</total_tokens><tool_uses>3</tool_uses><duration_ms>52649</duration_ms></usage>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>a5e0c7f3a6b797048</task-id>
+<tool-use-id>toolu_018aeyoPrDc58upaUh7tqPW4</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-anton-src-stock-review/c6e2730b-1d15-49a9-b945-8489abc8353f/tasks/a5e0c7f3a6b797048.output</output-file>
+<status>completed</status>
+<summary>Agent "Iter-3 META with_skill" completed</summary>
+<result>Saved the META walkthrough to `/Users/anton/src/stock-review/skills/stock-explain-workspace/iteration-3/eval-1-meta/with_skill/outputs/output.txt`.</result>
+<usage><total_tokens>57874</total_tokens><tool_uses>5</tool_uses><duration_ms>66909</duration_ms></usage>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>aac20f3aa39f9b13c</task-id>
+<tool-use-id>toolu_01PedoTwQFXUpBdWKCU1rBpY</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-anton-src-stock-review/c6e2730b-1d15-49a9-b945-8489abc8353f/tasks/aac20f3aa39f9b13c.output</output-file>
+<status>completed</status>
+<summary>Agent "Iter-3 NVDA with_skill" completed</summary>
+<result>Saved the NVDA walkthrough to `/Users/anton/src/stock-review/skills/stock-explain-workspace/iteration-3/eval-0-nvda/with_skill/outputs/output.txt`.</result>
+<usage><total_tokens>58885</total_tokens><tool_uses>5</tool_uses><duration_ms>78658</duration_ms></usage>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>a27d74bb01f55e7bc</task-id>
+<tool-use-id>toolu_01WYbmZQRHnQeUo6uKiGQJYM</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-anton-src-stock-review/c6e2730b-1d15-49a9-b945-8489abc8353f/tasks/a27d74bb01f55e7bc.output</output-file>
+<status>completed</status>
+<summary>Agent "Iter-3 NVDA without_skill" completed</summary>
+<result>Saved the plain-English NVDA valuation walkthrough to `/Users/anton/src/stock-review/skills/stock-explain-workspace/iteration-3/eval-0-nvda/without_skill/outputs/output.txt`.</result>
+<usage><total_tokens>54055</total_tokens><tool_uses>3</tool_uses><duration_ms>89492</duration_ms></usage>
+</task-notification>
+
+---
+
+open the file
+
+---
+
+looks good lets keep it
