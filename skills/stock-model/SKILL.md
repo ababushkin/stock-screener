@@ -30,7 +30,7 @@ The gate also routes on `model_ready`. Signal's classification is the authoritat
 
 v1.10 (ABA-132) removes the COVERAGE.md bypass introduced in v1.9 (ABA-130). The underlying mis-calibration is now fixed: `/stock-signal` uses profile-keyed PEG thresholds per `ai_layer` (INFRASTRUCTURE / APPLICATION / INCUMBENT / MODEL / N/A) and an 8% CAGR floor when `eps_growth_5y` is unavailable. All 7 COVERAGE.md tickers now produce `MODEL_READY=YES` through correctly calibrated thresholds rather than an exception path. The gate enforces uniformly; off-coverage tickers were always enforced and continue to be.
 
-v1.2 (ABA-31) lands the standard two-stage DCF for ESTABLISHED profile. v1.3 (ABA-34) lands the pre-profit variant — revenue-multiple exit, explicit FCF inflection year per scenario, and SBC-driven dilution schedule. The `--pre-profit` flag forces the pre-profit variant even on an ESTABLISHED upstream classification (useful for transition-year tickers like RDDT whose recent profitability does not yet support a stable terminal-value calculation). v1.7 (ABA-110) strips SBC from the FCF base on both paths — `fcf_ttm`, `fcf_margin_ttm`, and `fcf_cagr_3y` are now clean (SBC-stripped) on the ESTABLISHED path, and `margin_ttm` is clean on the pre-profit path. This brings Model into methodology consistency with Signal Step 5, which has always stripped SBC from EPS. v1.8 (ABA-111) caps the Y2–Y5 CAGR against `get_estimates.eps_growth_5y` (or an 18% fallback on ESTABLISHED / 35% on pre-profit) — trailing CAGR off a depressed base year is a useful floor signal but a poor central case; the cap prevents the entire scenario range from inheriting a trough-extrapolation. Both v1.7 and v1.8 are pre-requisites for any `/stock-model` report to be treated as decision-grade.
+v1.2 (ABA-31) lands the standard two-stage DCF for ESTABLISHED profile. v1.3 (ABA-34) lands the pre-profit variant — revenue-multiple exit, explicit FCF inflection year per scenario, and SBC-driven dilution schedule. The `--pre-profit` flag forces the pre-profit variant even on an ESTABLISHED upstream classification (useful for transition-year tickers like RDDT whose recent profitability does not yet support a stable terminal-value calculation). v1.7 (ABA-110) strips SBC from the FCF base on both paths — `fcf_ttm`, `fcf_margin_ttm`, and `fcf_cagr_3y` are now clean (SBC-stripped) on the ESTABLISHED path, and `margin_ttm` is clean on the pre-profit path. This brings Model into methodology consistency with Signal Step 5, which has always stripped SBC from EPS. v1.8 (ABA-111) caps the Y2–Y5 CAGR against `get_estimates.eps_growth_5y` (or an 18% fallback on ESTABLISHED / 35% on pre-profit) — trailing CAGR off a depressed base year is a useful floor signal but a poor central case; the cap prevents the entire scenario range from inheriting a trough-extrapolation. Both v1.7 and v1.8 are pre-requisites for any `/stock-model` report to be treated as decision-grade. v1.12 (ABA-134) adds a **base-year-effect guard** ahead of the v1.8 cap on both paths. Where v1.8 silently corrects the central case to a ceiling, the guard detects when the trailing window is distorted by a depressed lookback base year (NVDA FY23 pre-AI; post-pandemic rebounds; post-IPO ramps; post-restructuring recoveries) — an OR-composite of an absolute-CAGR ceiling (FCF > 40% / revenue > 50%) and a base-year ratio (`years[3]/years[0] < 0.15`) — and *halts for operator confirmation* rather than substituting silently. On a trip the operator confirms a suggested replacement CAGR (the playbook `growth_ceiling`, bounded by a 25% FCF / 30% revenue default) or pastes an override; without confirmation the model emits no IV. A confirmed trip caps `meta.confidence` at MEDIUM and is recorded in `meta.base_year_flag` with a per-scenario `scenarios.*.y2_5_cagr_source`.
 
 ---
 
@@ -342,9 +342,51 @@ Bear and bull are **never** modifier-perturbed — scenario-axis independence (C
 
 **Revision-direction agreement guardrail** (spike-decision §"Lead vs confirm", wired in GATHER Step 5b). When engagement direction and the trailing 30-day EPS revision direction strictly disagree, GATHER emits `status: "direction_disagreement"` with `base_anchor_multiplier = 1.00`, and this step is a no-op. When they agree (or revision data is unavailable — legacy fall-through), the modifier applies per C3/C4 and the audit trail records `agreement: true | null` respectively.
 
-**Step 3 — Years 2–5 FCF growth per scenario (sanity-capped per ABA-111).**
+**Step 3 — Years 2–5 FCF growth per scenario (base-year guard, then ABA-111 sanity cap).**
 
-Trailing 3y CAGR is a useful **floor** signal (the company actually grew this fast recently) but a poor **central case** when the trailing window includes a depressed base year — extrapolating that rate produces mechanical, not analytical, terminal FCFs (META FY22 was the Reality Labs / cost-reset trough; NVDA FY23 pre-dated the AI boom). Cap base-scenario growth against a consensus or fallback ceiling, then drive bear/bull off the capped base so scenario-axis independence is preserved.
+Trailing 3y CAGR is a useful **floor** signal (the company actually grew this fast recently) but a poor **central case** when the trailing window includes a depressed base year — extrapolating that rate produces mechanical, not analytical, terminal FCFs (META FY22 was the Reality Labs / cost-reset trough; NVDA FY23 pre-dated the AI boom). Two layers handle this, in order: the **base-year-effect guard** (Step 3a) is a stop-the-line gate for the strong case where the base year is genuinely depressed; the **ABA-111 ceiling** (Step 3b) is a silent central-case correction for everything that clears the guard. Both drive bear/bull off the resolved base so scenario-axis independence is preserved.
+
+**Step 3a — Base-year-effect guard (ABA-134).** Runs first. Computes two independent tripwires and trips on **either** (OR-composite — D5 AND-composite was rejected because the false-negative tail is the catastrophic-cost one):
+
+- **D1 — absolute CAGR ceiling:** `fcf_cagr_3y > 0.40`.
+- **D2 — base-year ratio:** `base_year_ratio < 0.15`, where `base_year_ratio = clean_fcf[oldest] / clean_fcf[latest]` over the same window and same SBC-stripped basis used for `fcf_cagr_3y` in Step 1 (oldest = `years[3]` when 4y is available, else the oldest usable year — state which). A zero, near-zero, or **negative** base-year clean FCF yields a ratio ≤ 0.15 and trips; the most distorted bases are exactly the depressed and negative ones, and this is also where the Step-1 CAGR formula itself degenerates — the guard catches it before the broken rate can reach an IV.
+
+Threshold rationale (do **not** retune inline — it is a published constant; a change requires a spec edit + written rationale per the ABA-104 spike, not an inline tweak to land on a particular IV): 0.15 was chosen over the obvious 0.25–0.30 range so a genuinely sustained 50–60% CAGR (ratio 0.30 / 0.24) does not false-trip; only a depressed base — or a sustained CAGR above ~85%, which does not exist at large-cap scale — fires.
+
+`tripped = D1 OR D2`. Set `tripwire`: D1 only → `"abs_cagr_40"`; D2 only → `"base_year_ratio_15"`; both → `"abs_cagr+ratio"`.
+
+**Guard does NOT trip** → set `meta.base_year_flag.tripped = false`, `scenarios.*.y2_5_cagr_source = "mechanical"`, and proceed to Step 3b (ABA-111 ceiling) unchanged.
+
+**Guard trips** → **halt** and surface the diagnostic before any IV is computed, then confirm via the Manual Input Protocol (`skills/_shared/MANUAL_INPUT_PROTOCOL.md`):
+
+```
+BASE-YEAR-EFFECT GUARD — TRIPPED. The trailing window is distorted; confirm before the DCF proceeds:
+  Ticker:                      NVDA
+  Path:                        ESTABLISHED (clean FCF CAGR)
+  Trailing 3y CAGR:            ~334%   (clean, SBC-stripped — off a depressed FY23 base; reported-basis ~194%)
+  Base-year ratio:             0.012    (clean FCF: oldest ~$1.1B / latest ~$90.3B; trips < 0.15)
+  Tripwire:                    abs_cagr+ratio  (CAGR > 40%  AND  ratio 0.012 < 0.15)
+  YoY clean FCF (informative): +611% / +125% / +59%  (latest 1y growth well below the 3y CAGR — deceleration-from-spike, not sustained growth)
+  Suggested replacement CAGR:  25%  (default_cap; playbook ceiling 35% bounded by the 25% default)
+  Confidence:                  caps at MEDIUM on confirm
+
+Confirm? (y = use 25%  /  paste an override, e.g. 0.20  /  n = abort, no IV emitted)
+```
+
+The `YoY clean FCF` line is informative only — directional disagreement (D3) was rejected as a *tripwire* (borderline on the case we most care about, and noisy on cyclical series), but the YoY series still helps the operator judge the confirm. Resolve the suggested replacement CAGR (the pre-fill):
+
+- `suggested_cagr = min(default_cap, playbook.growth_ceiling)` when `playbook.growth_ceiling` is present — the playbook may tighten the suggestion below the default but never raise it above the guard's conservative default; `suggestion_source = "playbook_ceiling"` when the playbook value wins (strictly lower), else `"default_cap"`.
+- `default_cap = 0.25` (ESTABLISHED FCF) otherwise; `suggestion_source = "default_cap"`.
+
+Branch on the operator response:
+
+- **`y` (accept)** → `base_cagr = suggested_cagr`; `operator_confirmed = true`. `scenarios.*.y2_5_cagr_source = "playbook_ceiling"` when `suggestion_source == "playbook_ceiling"`, else `"operator_confirmed_cap"`.
+- **paste an override** (e.g. `0.20`) → `base_cagr = override`; `suggestion_source = "operator_override"`; `operator_confirmed = true`; `scenarios.*.y2_5_cagr_source = "operator_override"`.
+- **`n` (decline) or non-interactive run** → **halt. Emit no scenarios and no IV.** Record `meta.base_year_flag` with `tripped = true`, `operator_confirmed = false`, the computed `suggested_cagr`/`suggestion_source` retained; the report carries the trip but no `stages.model.scenarios` and no `intrinsic_value_range`. This is the R2-rejected silent-substitution failure made structurally impossible — a distorted CAGR can never reach a per-share IV without an explicit human acknowledgement.
+
+A confirmed trip caps `meta.confidence` at MEDIUM (one-way, never raises — consistent with `meta.manual_inputs`) and records `base_year_flag.confidence_cap_applied = "MEDIUM"`. The confirmed `base_cagr` **replaces** the ABA-111 ceiling — skip Step 3b's `min(...)` and use `base_cagr` directly; `growth_rate.applied_base_cagr = base_cagr`, `growth_rate.cap_applied = true`, `growth_rate.cap_source = "base_year_guard"`.
+
+**Step 3b — ABA-111 sanity ceiling.** The `min(...)` ceiling computation below runs **only when the guard did not trip**; on a confirmed trip, `base_cagr` is already the operator-confirmed value (Step 3a) and this `min(...)` is skipped. Either way, the resolved `base_cagr` feeds the shared bear/base/bull projection that follows.
 
 ```
 consensus_growth = get_estimates(ticker).eps_growth_5y     # long-term sell-side consensus; may be null
@@ -365,7 +407,7 @@ cap_source       = ("consensus_5y_growth"   if (consensus_growth is not None and
 
 The cap only narrows growth — it never raises it. If `fcf_cagr_3y` is already at or below the ceiling, `base_cagr = fcf_cagr_3y` and `cap_applied = false` (e.g. GOOG, whose trailing FCF CAGR runs near consensus — the cap does not fire and the output discloses that explicitly: `Y2-5 CAGR: X% (trailing 3y, within consensus ceiling)`).
 
-Bear and bull formulas operate on the **capped** `base_cagr`, not on the raw trailing CAGR. This preserves bear/base/bull axis independence (each scenario applies its own multiplier on a common anchor) while preventing the entire range from inheriting a trough-extrapolation.
+**Shared bear/base/bull projection.** Bear and bull formulas operate on the resolved `base_cagr` (the Step-3b ceiling result, or the Step-3a operator-confirmed value on a trip), never on the raw trailing CAGR. This preserves bear/base/bull axis independence (each scenario applies its own multiplier on a common anchor) while preventing the entire range from inheriting a trough-extrapolation.
 
 | Scenario | Y2–Y5 CAGR | Narrative |
 |---|---|---|
@@ -375,7 +417,7 @@ Bear and bull formulas operate on the **capped** `base_cagr`, not on the raw tra
 
 Project: `fcf_y_n = fcf_y_(n−1) × (1 + cagr)` for n = 2, 3, 4, 5.
 
-When `cap_applied = true`, the OUTPUT block's Base scenario line must surface the cap explicitly (`Y2-5 CAGR: X.X% (capped from trailing Y.Y% by <cap_source>)`); silent caps are forbidden. The `growth_rate` JSON block (see OUTPUT) records all five fields (trailing rate, consensus value, fallback ceiling, applied rate, cap source) every run — even when the cap does not fire — so the audit trail is symmetric.
+When `cap_applied = true`, the OUTPUT block's Base scenario line must surface the cap explicitly (`Y2-5 CAGR: X.X% (capped from trailing Y.Y% by <cap_source>)`); silent caps are forbidden. When the cap fired because the **base-year guard** tripped and the operator confirmed (`cap_source = "base_year_guard"`), the disclosure reads `Y2-5 CAGR: X.X% (base-year guard: replaced trailing Y.Y%, <operator-confirmed cap | playbook ceiling | operator override>)`. The `growth_rate` JSON block (see OUTPUT) records all five fields (trailing rate, consensus value, fallback ceiling, applied rate, cap source) every run — even when neither layer fires — so the audit trail is symmetric.
 
 **Step 4 — Terminal value (Gordon Growth) per scenario.**
 
@@ -513,6 +555,7 @@ MODEL OUTPUT
   FCF (TTM):       $X.X B reported  |  SBC: $X.X B  |  clean FCF: $X.X B  |  clean margin: XX% (reported margin: XX%)  |  clean 3y CAGR: XX%
   Historical clean FCF margin: y-3 X.X% / y-2 X.X% / y-1 X.X% / TTM X.X%   ← reads from `historical_fcf_margins[]` oldest→newest; TTM cell equals `fcf_margin_ttm`. Shorter window if fewer years available.
   FCF margin anchor: XX% (playbook override; TTM clean: XX%)   ← emitted only when playbook supplies terminal_margin; omit line otherwise
+  Base-year guard: [TRIPPED — trailing 3y CAGR YY.Y% / base-year ratio 0.0XX (<tripwire>); Y2-5 base replaced by ZZ% (<source>, operator-confirmed) | not tripped (trailing 3y CAGR YY.Y%, ratio 0.XX)]
   NTM revenue:     $X.X B (consensus, n=N analysts)
   Base WACC:       X.X% (source: runtime_flag | playbook | user_paste)
 
@@ -577,14 +620,16 @@ Run `mkdir -p reports` and read-modify-write the existing file (it already conta
     "fallback_ceiling": 0.18,
     "applied_base_cagr": <number>,
     "cap_applied": <boolean>,
-    "cap_source": "consensus_5y_growth | playbook | fallback_ceiling | null"
+    "cap_source": "consensus_5y_growth | playbook | fallback_ceiling | base_year_guard | null"
   },
   "ntm_revenue": <number>,
   "base_wacc": <number>,
   "base_wacc_source": "runtime_flag | playbook | user_paste",
   "scenarios": {
     "bear": {
-      "y1_fcf": <number>, "y2_5_cagr": <number>, "terminal_growth": 0.015, "wacc": <number>,
+      "y1_fcf": <number>, "y2_5_cagr": <number>,
+      "y2_5_cagr_source": "mechanical | operator_confirmed_cap | playbook_ceiling | operator_override",
+      "terminal_growth": 0.015, "wacc": <number>,
       "intrinsic_value_per_share": <number>, "upside_pct": <number>,
       "narrative": "revenue miss, decelerating growth, tighter cost of capital"
     },
@@ -666,7 +711,32 @@ The `engagement_modifier` block is emitted only when `--engagement-modifier` was
 
 `historical_fcf_margins` is emitted every run per ABA-115 (v1.11) — a per-fiscal-year series of clean and reported FCF margins matching `years[]` order (newest-first). Up to 4 entries (TTM through y-3) when SBC and revenue are both non-null for the full window; years missing either field are skipped (dense array, no `null` cells). The newest entry's `fcf_margin_clean` equals `fcf_margin_ttm` within float tolerance — this is the cell-for-cell reconciliation point the OUTPUT audit row reads against. UI consumers (Model tab v1) render this on ESTABLISHED only; the pre-profit path emits the same series for audit parity.
 
-`growth_rate` is emitted every run per ABA-111. `trailing_3y_cagr` mirrors `fcf_cagr_3y` (the raw clean-FCF trailing CAGR, pre-cap). `consensus_5y_growth` is the value pulled from `get_estimates(ticker).eps_growth_5y` — `null` when yfinance has no long-term consensus. `fallback_ceiling` is the hard-coded 18% ceiling used when consensus is null. `applied_base_cagr` is `min(trailing_3y_cagr, ceiling)` — the value that drove the base scenario's Y2–Y5 projection (and the anchor that bear/bull scale off). `cap_applied` is `true` when `applied_base_cagr < trailing_3y_cagr`; `cap_source` is `consensus_5y_growth` / `fallback_ceiling` / `null` respectively. When the cap does not fire (trailing already at or below ceiling), `applied_base_cagr == trailing_3y_cagr` and `cap_source == null`.
+`growth_rate` is emitted every run per ABA-111. `trailing_3y_cagr` mirrors `fcf_cagr_3y` (the raw clean-FCF trailing CAGR, pre-cap). `consensus_5y_growth` is the value pulled from `get_estimates(ticker).eps_growth_5y` — `null` when yfinance has no long-term consensus. `fallback_ceiling` is the hard-coded 18% ceiling used when consensus is null. `applied_base_cagr` is `min(trailing_3y_cagr, ceiling)` — the value that drove the base scenario's Y2–Y5 projection (and the anchor that bear/bull scale off) — except when the base-year guard tripped and the operator confirmed, in which case `applied_base_cagr` is the confirmed `base_cagr` and `cap_source == "base_year_guard"`. `cap_applied` is `true` when `applied_base_cagr < trailing_3y_cagr`; `cap_source` is `consensus_5y_growth` / `playbook` / `fallback_ceiling` / `base_year_guard` / `null` respectively. When neither layer fires (trailing already at or below ceiling), `applied_base_cagr == trailing_3y_cagr` and `cap_source == null`.
+
+**Top-level `meta.base_year_flag` (ABA-134).** The base-year-effect guard (COMPUTE Step 3a on ESTABLISHED, Step 1a on pre-profit) writes a block under the report's top-level `meta` (sibling of `meta.confidence` / `meta.manual_inputs`), **every run** for audit symmetry:
+
+```json
+"meta": {
+  "base_year_flag": {
+    "tripped": true,
+    "tripwire": "abs_cagr_40 | abs_cagr_50 | base_year_ratio_15 | abs_cagr+ratio | null",
+    "original_cagr_3y": 3.34,
+    "base_year_ratio": 0.012,
+    "suggested_cagr": 0.25,
+    "suggestion_source": "playbook_ceiling | default_cap | operator_override | null",
+    "operator_confirmed": true,
+    "confidence_cap_applied": "MEDIUM | null"
+  }
+}
+```
+
+- `tripped` — `true` when `D1 OR D2` fired. When `false`, `tripwire`/`suggested_cagr`/`suggestion_source`/`operator_confirmed`/`confidence_cap_applied` are all `null`; `original_cagr_3y` and `base_year_ratio` are still populated so the audit trail records that the guard ran and concluded no-trip.
+- `original_cagr_3y` mirrors the raw trailing CAGR (`fcf_cagr_3y` / `rev_cagr_3y`, pre-anything). `base_year_ratio` is the D2 ratio (`years[oldest]/years[latest]` on the CAGR's own basis).
+- `tripwire` encodes which signal(s) fired and is path-tagged on D1 (`abs_cagr_40` ESTABLISHED, `abs_cagr_50` pre-profit); `base_year_ratio_15` for D2 alone; `abs_cagr+ratio` when both fired.
+- When `tripped == true` and `operator_confirmed == false` (operator declined or non-interactive run), the run **halted**: the report carries this flag but has **no** `stages.model.scenarios` and no `intrinsic_value_range`. `suggested_cagr`/`suggestion_source` are retained (they were computed) but `confidence_cap_applied` is `null` (no IV was produced to cap).
+- When `tripped == true` and `operator_confirmed == true`, `confidence_cap_applied == "MEDIUM"` and `meta.confidence` is `MEDIUM` (one-way cap).
+
+Each `scenarios.{bear,base,bull}` carries `y2_5_cagr_source` ∈ `{mechanical, operator_confirmed_cap, playbook_ceiling, operator_override}`. All three scenarios share the same value (they scale off a common base anchor): `mechanical` when the guard did not trip; `operator_confirmed_cap` / `playbook_ceiling` / `operator_override` per the confirmed resolution when it did. If the trip isn't in `meta.base_year_flag`, it didn't happen as far as the next agent reading the report is concerned.
 
 `intrinsic_value_range` is a flat extract of `scenarios.{bear,base,bull}.intrinsic_value_per_share` for UI convenience — must reconcile cell-for-cell with the scenarios block.
 
@@ -682,7 +752,7 @@ META — DCF bear/base/bull = $X / $Y / $Z (price $P, WITHIN BEAR–BASE)
 **Confidence rules (`meta.confidence`):**
 
 - HIGH: 4y of FCF history, SBC retrieved from MCP for every year used (no SBC paste-in), no manual inputs other than base WACC, scenario range check passed first time.
-- MEDIUM: 2–3y of FCF history, or any of net_debt / shares paste-in fired, **or SBC paste-in fired for any year used in the DCF base or CAGR (per ABA-110)**, or range integrity check required user re-input.
+- MEDIUM: 2–3y of FCF history, or any of net_debt / shares paste-in fired, **or SBC paste-in fired for any year used in the DCF base or CAGR (per ABA-110)**, or range integrity check required user re-input, **or the base-year-effect guard tripped and the operator confirmed a replacement CAGR (per ABA-134)**.
 - LOW: <2y FCF history (should not reach COMPUTE — VALIDATE refuses earlier), or `wacc > g` constraint required mid-scenario override.
 
 The SBC paste-in cap is one-way and unconditional: if `years[].stock_based_compensation` for any year used in `fcf_ttm` or `fcf_cagr_3y` was sourced via Manual Input Protocol (`source: "user_paste"`), `meta.confidence` caps at MEDIUM regardless of other inputs. SBC is methodologically load-bearing — Signal and Model both depend on the same TTM SBC figure for consistency (acceptance criterion 5 on ABA-110), and a pasted figure has weaker provenance than a structured MCP fetch.
@@ -720,10 +790,38 @@ If `get_financials` returns null `stock_based_compensation` for the latest year:
 
 Execute in order. The math anchors on revenue (not FCF) because pre-profit companies do not yet have a stable FCF base.
 
-**Step 1 — Revenue trajectory per scenario (sanity-capped per ABA-111).**
+**Step 1 — Revenue trajectory per scenario (base-year guard, then ABA-111 sanity cap).**
 
 - `rev_cagr_3y = (years[0].revenue / years[3].revenue) ^ (1/3) − 1` (use shorter history with the same degraded formulations as ESTABLISHED Step 1 if 4y is unavailable).
-- Apply the same growth-ceiling pattern as ESTABLISHED Step 3, with a higher fallback because pre-profit tech routinely grows revenue 30–40% sustainably:
+
+**Step 1a — Base-year-effect guard (ABA-134).** Identical mechanism to the ESTABLISHED Step 3a guard, on the **revenue** series, with revenue-tuned thresholds. Trips on **either** (OR-composite):
+
+- **D1 — absolute CAGR ceiling:** `rev_cagr_3y > 0.50` (revenue tolerates a higher ceiling than FCF — pre-profit tech routinely sustains 30–40% revenue growth).
+- **D2 — base-year ratio:** `base_year_ratio < 0.15`, where `base_year_ratio = revenue[oldest] / revenue[latest]` over the CAGR window (oldest = `years[3]` when 4y is available, else the oldest usable year — state which). Revenue carries no SBC adjustment, so the ratio is on the same reported series as the CAGR. The threshold is the same 0.15 as the FCF path, and is a published constant — do not retune inline (ABA-104 spike).
+
+`tripped = D1 OR D2`. Set `tripwire`: D1 only → `"abs_cagr_50"`; D2 only → `"base_year_ratio_15"`; both → `"abs_cagr+ratio"`.
+
+**Guard does NOT trip** → `meta.base_year_flag.tripped = false`, `scenarios.*.y2_5_cagr_source = "mechanical"`; proceed to the ABA-111 ceiling below unchanged.
+
+**Guard trips** → halt and surface the diagnostic, then confirm via the Manual Input Protocol before any IV is computed:
+
+```
+BASE-YEAR-EFFECT GUARD — TRIPPED. The trailing window is distorted; confirm before the DCF proceeds:
+  Ticker:                     NVDA
+  Path:                       EMERGING / pre-profit (revenue CAGR)
+  Trailing 3y CAGR:           100.0%   (mechanical — off a depressed FY23 pre-AI base)
+  Base-year ratio:            0.125    (revenue: oldest $27B / latest $216B; trips < 0.15)
+  Tripwire:                   abs_cagr+ratio  (CAGR 100.0% > 50%  AND  ratio 0.125 < 0.15)
+  YoY revenue (informative):  +126% / +114% / +66%  (1y growth below the 3y CAGR — deceleration-from-spike)
+  Suggested replacement CAGR: 30%  (default_cap; playbook ceiling 35% bounded by the 30% default)
+  Confidence:                 caps at MEDIUM on confirm (pre-profit already caps at MEDIUM)
+
+Confirm? (y = use 30%  /  paste an override, e.g. 0.25  /  n = abort, no IV emitted)
+```
+
+Resolve the suggested replacement CAGR: `suggested_cagr = min(default_cap, playbook.growth_ceiling)` when the playbook supplies `growth_ceiling` (else `default_cap`), with `default_cap = 0.30` on this path; `suggestion_source` = `"playbook_ceiling"` when the playbook value is strictly lower, else `"default_cap"`. Branch on the operator response exactly as on the ESTABLISHED path (`y` → `base_rev_cagr = suggested_cagr`, `y2_5_cagr_source` = `"playbook_ceiling"`/`"operator_confirmed_cap"`; paste → `operator_override`; `n` / non-interactive → **halt, no scenarios, no IV**, record the trip with `operator_confirmed = false`). A confirmed trip records `confidence_cap_applied = "MEDIUM"` (the pre-profit path already caps there). The confirmed `base_rev_cagr` **replaces** the ABA-111 ceiling: `growth_rate.applied_base_cagr = base_rev_cagr`, `growth_rate.cap_applied = true`, `growth_rate.cap_source = "base_year_guard"`.
+
+**Step 1b — ABA-111 sanity ceiling.** The `min(...)` ceiling computation below runs **only when the guard did not trip**; on a confirmed trip, `base_rev_cagr` is already the operator-confirmed value (Step 1a) and this `min(...)` is skipped. Either way, the resolved `base_rev_cagr` feeds the shared bear/base/bull projection that follows. Apply the same growth-ceiling pattern as ESTABLISHED Step 3b, with a higher fallback because pre-profit tech routinely grows revenue 30–40% sustainably:
 
   ```
   consensus_rev_growth = derived from get_estimates if available  # currently null on yf — placeholder for when an EDGAR/sell-side revenue-growth estimate lands
@@ -742,7 +840,7 @@ Execute in order. The math anchors on revenue (not FCF) because pre-profit compa
                          else None)
   ```
 
-- Year-1 revenue is anchored on NTM consensus, perturbed per scenario. Y2–Y5 CAGRs operate on the **capped** `base_rev_cagr`:
+- Year-1 revenue is anchored on NTM consensus, perturbed per scenario. Y2–Y5 CAGRs operate on the resolved `base_rev_cagr` (the Step-1b ceiling result, or the Step-1a operator-confirmed value on a trip):
 
 | Scenario | Y1 revenue | Y2–Y5 CAGR |
 |---|---|---|
@@ -833,6 +931,7 @@ MODEL OUTPUT
   Shares today:    XXX.X M (diluted)
   Net debt:        $X.X B (total_debt $X.X B − cash $X.X B, FY ending YYYY-MM-DD)
   Revenue (TTM):   $X.X B  |  3y CAGR: XX%  |  TTM clean FCF margin: -X% (cash-burning; reported margin: -X%; SBC: $X.X B)
+  Base-year guard: [TRIPPED — trailing 3y rev CAGR YY.Y% / base-year ratio 0.0XX (<tripwire>); Y2-5 base replaced by ZZ% (<source>, operator-confirmed) | not tripped (trailing 3y rev CAGR YY.Y%, ratio 0.XX)]
   NTM revenue:     $X.X B (consensus)
   Base WACC:       X.X% (source: runtime_flag | playbook | user_paste)
   Comp set:        [TICKER1: NTM EV/Rev X.Xx, TICKER2: X.Xx, ...]  →  base exit multiple: X.Xx (user-confirmed)
@@ -887,7 +986,7 @@ If any scenario's inflection year is `beyond Y5`, the line reads `FCF inflection
     "fallback_ceiling": 0.35,
     "applied_base_cagr": <number>,
     "cap_applied": <boolean>,
-    "cap_source": "consensus_rev_growth | playbook | fallback_ceiling | null"
+    "cap_source": "consensus_rev_growth | playbook | fallback_ceiling | base_year_guard | null"
   },
   "fcf_ttm_reported": <number>,
   "sbc_ttm": <number>,
@@ -906,7 +1005,9 @@ If any scenario's inflection year is `beyond Y5`, the line reads `FCF inflection
   "sbc_dilution_3y_trailing": <number>,
   "scenarios": {
     "bear": {
-      "y1_revenue": <number>, "y2_5_rev_cagr": <number>, "exit_multiple": <number>,
+      "y1_revenue": <number>, "y2_5_rev_cagr": <number>,
+      "y2_5_cagr_source": "mechanical | operator_confirmed_cap | playbook_ceiling | operator_override",
+      "exit_multiple": <number>,
       "terminal_margin": <number>, "dilution_rate": <number>,
       "fcf_inflection_year": <integer | "beyond Y5">,
       "shares_y5": <number>, "dilution_pct_5y": <number>,
@@ -944,7 +1045,9 @@ If any scenario's inflection year is `beyond Y5`, the line reads `FCF inflection
 }
 ```
 
-`growth_rate` on the pre-profit path is the **revenue** CAGR cap per ABA-111 (vs ESTABLISHED's FCF CAGR cap) — same five-field shape, but `trailing_3y_cagr` mirrors `rev_cagr_3y`, the `fallback_ceiling` is `0.35` (higher than ESTABLISHED's 0.18 because pre-profit tech routinely sustains 30–40% revenue growth), and `cap_source` reads `consensus_rev_growth` when an external revenue-growth estimate is available (currently always null on yf).
+`growth_rate` on the pre-profit path is the **revenue** CAGR cap per ABA-111 (vs ESTABLISHED's FCF CAGR cap) — same five-field shape, but `trailing_3y_cagr` mirrors `rev_cagr_3y`, the `fallback_ceiling` is `0.35` (higher than ESTABLISHED's 0.18 because pre-profit tech routinely sustains 30–40% revenue growth), and `cap_source` reads `consensus_rev_growth` when an external revenue-growth estimate is available (currently always null on yf), or `base_year_guard` when the base-year-effect guard tripped and the operator confirmed.
+
+The base-year-effect guard (COMPUTE Step 1a) writes the same top-level `meta.base_year_flag` block and per-scenario `y2_5_cagr_source` documented on the ESTABLISHED path — `tripwire` is `abs_cagr_50` for a revenue-CAGR-only trip (vs `abs_cagr_40` on ESTABLISHED), the default suggested cap is `0.30` (vs `0.25`), and `original_cagr_3y` mirrors `rev_cagr_3y`. The MEDIUM confidence cap is a no-op here (the pre-profit path already caps at MEDIUM) but `confidence_cap_applied` is still recorded on a confirmed trip.
 
 `fcf_margin_ttm` and the per-scenario `terminal_margin` values are **SBC-stripped (clean)** per ABA-110. `fcf_ttm_reported`, `fcf_margin_ttm_reported`, and `sbc_ttm` are audit-only fields exposing the pre-strip numbers; consumers reconciling against yfinance directly should expect `fcf_margin_ttm == (fcf_ttm_reported − sbc_ttm) / revenue_ttm`. The user-confirmed `terminal_margin_target` is a clean FCF margin target (the MIP prompt states this explicitly).
 
@@ -987,6 +1090,11 @@ RDDT — pre-profit DCF bear/base/bull = $X / $Y / $Z (price $P, WITHIN BEAR–B
 | "Trailing CAGR is what the data shows — capping it is fabrication." | Trailing CAGR off a depressed base year is mechanical extrapolation, not signal — META FY22 (Reality Labs cost reset) and NVDA FY23 (pre-AI-boom) both make the trailing window look explosive in ways no sell-side analyst would write down. The ABA-111 cap surfaces the disagreement explicitly via `growth_rate.cap_source` and the OUTPUT block's "capped from X% by Y" line. Trusting raw trailing CAGR without a ceiling and shipping the resulting four-times-FCF-in-five-years projection is the actual fabrication. |
 | "Consensus_5y_growth came back null, so I'll just use the trailing CAGR uncapped." | Forbidden. Null consensus does **not** unlock the cap — it switches the ceiling source from consensus to the 18% fallback (35% on pre-profit). The fallback ceiling exists precisely for this case (most yf tickers have null `eps_growth_5y`); skipping the cap because consensus is null defeats ABA-111. |
 | "The cap is reducing IV materially — let me raise the fallback to 25% so the number looks more familiar." | Forbidden. The fallback is a published constant (`0.18` for ESTABLISHED FCF CAGR, `0.35` for pre-profit revenue CAGR) and a change to it requires a spec edit and a written rationale, not an inline tweak to land on a particular IV. Per-ticker overrides land via the playbook layer (ABA-112), not by re-tuning the global fallback. |
+| "The ABA-111 cap already handles a runaway CAGR — I'll skip the base-year confirm and let the silent cap do its job." | Forbidden (ABA-134). The ABA-111 cap is a *silent central-case* correction; the base-year guard is a *stop-the-line* gate for the stronger failure mode where the base year itself is depressed (NVDA FY23 pre-AI: clean FCF base ~$1.1B → trailing CAGR 194%). Silently capping to a ceiling still ships a number off a distorted base with no human acknowledgement — exactly the path that produced the $7,492 NVDA IV that passed structural validation. The guard exists to make that impossible to ship silently. |
+| "The guard tripped but the operator isn't here to confirm — I'll just apply the suggested cap and proceed." | Forbidden. Non-interactive (or declined) → **halt, emit no IV**. Applying the suggested cap without confirmation is the R2-rejected silent-substitution path. Record `base_year_flag.tripped = true, operator_confirmed = false` and stop; the report carries the trip but no `scenarios` / `intrinsic_value_range`. |
+| "Only D1 tripped (high CAGR) but the base year looks fine to me — I'll treat it as a false positive and proceed uncapped." | The composite is OR by design: either tripwire alone is sufficient. D5 (AND-composite) was rejected precisely because the false-negative tail — a high CAGR off a moderately depressed base — is the catastrophic-cost direction. Surface the diagnostic and confirm; do not pre-judge the trip away. |
+| "The base-year ratio threshold (0.15) feels too tight / too loose for this sector — I'll nudge it." | Forbidden. 0.15 is a published constant calibrated in the ABA-104 spike against the false-trip table (sustained 50–60% CAGR must not fire). Changing it requires a spec edit + written rationale. Per-ticker conservatism lands via the playbook `growth_ceiling`, which tightens the *suggested replacement* — never by retuning the detection threshold inline. |
+| "The playbook ceiling is 0.35, so I'll suggest 0.35 even though the default cap is 0.25." | The suggested replacement is `min(default_cap, playbook.growth_ceiling)` — the playbook may tighten the suggestion below the conservative default but never raise it above. The operator can still override upward to the playbook ceiling at the confirm step (recording `operator_override`); the *pre-fill* stays conservative because the whole reason the guard tripped is that the trailing window is not trustworthy. |
 | "WACC > g failed in the bull scenario; I'll just use g = WACC − 0.001 to keep the formula valid." | Forbidden. If `wacc ≤ g`, narrow the WACC adjustment (e.g. reduce the bull WACC discount from −1.0 pp to −0.5 pp) and **state the override in the OUTPUT block** so the user can see why bull discount narrowed. Numerical tricks that hide a broken scenario from the reader are exactly what the rationalisations table exists to prevent. |
 | "The user just wants a number — I'll skip the sensitivity note." | The sensitivity note is required output. It tells the user which assumption their valuation is most fragile to; omitting it gives a confident-looking point estimate with no fragility disclosure. |
 | "Net debt is negative (net cash) so I'll set it to zero." | Forbidden. Net debt of −X means equity = EV + X; keep the sign. Net-cash tech companies are common and the equity bridge must reflect it. |
@@ -1124,3 +1232,17 @@ RDDT — pre-profit DCF bear/base/bull = $X / $Y / $Z (price $P, WITHIN BEAR–B
 73. **OUTPUT audit row present →** the ESTABLISHED MODEL OUTPUT block contains a `Historical clean FCF margin: y-3 X.X% / y-2 X.X% / y-1 X.X% / TTM X.X%` line directly after the `FCF (TTM):` summary. The four values read from `historical_fcf_margins[]` printed oldest→newest (array index 3 → 0); shorter window when fewer historical years are available. The line is omitted entirely when the array is empty (zero usable historical years).
 74. **Audit row reconciles cell-for-cell with JSON →** running `/stock-model META` (or any ESTABLISHED ticker with 4y of clean history) produces an audit-row percentage in each cell that matches the corresponding `historical_fcf_margins[]` entry's `fcf_margin_clean × 100`, rounded to the same precision (one decimal place). Disagreement is a stop-the-line gate — debug COMPUTE Step 1 or the OUTPUT print step before mass re-runs.
 75. **Pre-profit emits the same field for audit parity →** `/stock-model RDDT --pre-profit` (or any EMERGING run with a 3y SBC+revenue window) emits `historical_fcf_margins` in JSON with the same shape and the same `[0]`-equals-TTM reconciliation rule. The Model-tab UI does not render this on the pre-profit path in v1; the JSON field exists for audit-trail parity only.
+
+### v1.12 — ABA-134 (base-year-effect guard)
+
+76. **Detection composite (ESTABLISHED) →** the guard trips when `fcf_cagr_3y > 0.40` (D1) **OR** `base_year_ratio < 0.15` (D2), where `base_year_ratio = clean_fcf[oldest]/clean_fcf[latest]` on the same SBC-stripped basis as the CAGR. `tripwire` is `"abs_cagr_40"` (D1 only), `"base_year_ratio_15"` (D2 only), or `"abs_cagr+ratio"` (both). A negative/near-zero base-year clean FCF yields ratio ≤ 0.15 and trips.
+77. **Detection composite (pre-profit) →** the guard trips when `rev_cagr_3y > 0.50` (D1) **OR** `base_year_ratio < 0.15` (D2) on the revenue series; D1-only tripwire is `"abs_cagr_50"`.
+78. **NVDA ESTABLISHED trip →** re-running `/stock-model NVDA` (two-stage path) against the FY23–FY26 inputs in `reports/NVDA_20260514.json` produces `meta.base_year_flag.tripped == true`, `tripwire == "abs_cagr+ratio"`, and `suggested_cagr ≤ 0.25`. `original_cagr_3y` mirrors the skill's clean (SBC-stripped) `fcf_cagr_3y` — ~3.3 for NVDA per the playbook's "~330%+" clean figure, not the 1.94 the issue cites (1.94 is the reported-FCF basis: $3.8B→$96.7B; the clean base is far smaller because FY23 SBC was a large share of that year's tiny FCF). The trip and the ≤0.25 suggestion are unaffected by which basis the headline uses — both D1 and D2 fire comfortably on the clean series.
+79. **Confirmed trip → defensible IV + MEDIUM →** with operator confirmation the base IV falls into a defensible range (rough target $300–$800/share, anchored to the existing pre-profit bear IV ≈ $378) and `meta.confidence == "MEDIUM"`.
+80. **No confirmation → halt →** when the operator declines or the run is non-interactive, the model emits **no** `stages.model.scenarios` and **no** `intrinsic_value_range`; `meta.base_year_flag.tripped == true` with `operator_confirmed == false`. No numeric IV is emitted.
+81. **NVDA pre-profit trip →** `/stock-model NVDA --pre-profit` trips on revenue CAGR 100% > 50% **AND** ratio 0.125 < 0.15, suggests `0.30`, and (after confirm) produces a defensible base IV.
+82. **Suggested-CAGR resolution →** `suggested_cagr = min(default_cap, playbook.growth_ceiling)` (default `0.25` FCF / `0.30` revenue). For NVDA (playbook `growth_ceiling: 0.35` > both defaults), the suggestion is the default (0.25 / 0.30) and `suggestion_source == "default_cap"`; the playbook can only tighten the suggestion below the default, and the operator may override upward at the confirm step (`suggestion_source == "operator_override"`).
+83. **Artefact emitted every run →** `meta.base_year_flag` is present on every run. When `tripped == false`, `tripwire`/`suggested_cagr`/`suggestion_source`/`operator_confirmed`/`confidence_cap_applied` are `null` while `original_cagr_3y` and `base_year_ratio` are populated. Each `scenarios.{bear,base,bull}` carries `y2_5_cagr_source ∈ {mechanical, operator_confirmed_cap, playbook_ceiling, operator_override}`, identical across the three scenarios.
+84. **Composition with ABA-111 →** a confirmed `base_cagr` replaces the ABA-111 ceiling (`growth_rate.cap_source == "base_year_guard"`, `growth_rate.applied_base_cagr == base_cagr`). When the guard does **not** trip, the ABA-111 ceiling operates exactly as before and `y2_5_cagr_source == "mechanical"` (no regression to v1.8 behaviour).
+85. **Rationalisations table covers the guard →** the table rebuts skipping the confirm in favour of the silent ABA-111 cap, silently applying the suggestion when non-interactive, treating a D1-only trip as a false positive, retuning the 0.15 threshold inline, and raising the suggestion to the playbook ceiling above the default.
+86. **Schema contract test present →** `tests/schema/test_base_year_flag_contract.py` validates the `base_year_flag` block shape, the `tripwire` / `suggestion_source` / `y2_5_cagr_source` enums, and the tripped/confirmed invariants (confirmed ⇒ `confidence_cap_applied == "MEDIUM"`; declined ⇒ no IV).
