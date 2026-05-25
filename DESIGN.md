@@ -136,6 +136,7 @@ Authoritative source for: 10-K, 10-Q, 20-F filings, **revenue segments** (primar
 Tools to expose:
 - `search_filings(ticker, form_type)` → list of recent filings with accession numbers
 - `get_filing_facts(ticker, concept)` → specific XBRL fact (e.g. StockBasedCompensation)
+- `get_sbc(ticker, periods=4)` → multi-year stock-based compensation from XBRL facts; covers US filers (10-K, us-gaap:ShareBasedCompensation) and foreign private issuers (20-F, ifrs-full:ExpenseFromSharebasedPaymentTransactionsWithEmployees — e.g. KSPI in KZT). Fallback for `/stock-signal` when yfinance returns null SBC. Note: the IFRS employee-SBC-expense concept is a close *proxy* for the us-gaap cash-flow add-back, not a definitional equal (it excludes non-employee/capitalised awards). us-gaap is preferred when both are tagged.
 - `get_filing_text(accession_number, section)` → raw text of a filing section (MD&A, Risk Factors)
 
 **Scraping layer (no MCP — direct web search)**

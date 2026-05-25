@@ -5,7 +5,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 sys.path.insert(0, "/Users/anton/src/stock-review/mcp/edgar")
-from tools import EDGARNoDataError, get_filing_facts, get_filing_text, get_revenue_segments, search_filings
+from tools import EDGARNoDataError, get_filing_facts, get_filing_text, get_revenue_segments, get_sbc, search_filings
 
 
 # ---------------------------------------------------------------------------
@@ -519,3 +519,266 @@ class TestGetRevenueSegments:
         with patch("tools.requests.get", side_effect=_mock_get_segments):
             with pytest.raises(EDGARNoDataError, match="ticker"):
                 get_revenue_segments("ZZZZNOTREAL")
+
+
+# ---------------------------------------------------------------------------
+# get_sbc fixtures
+# ---------------------------------------------------------------------------
+
+_SBC_NVDA_CIK = 1045810
+_SBC_KSPI_CIK = 1985487
+_SBC_NONE_CIK = 9999999
+
+_SBC_DUAL_CIK = 7777777
+_SBC_QUARTERLY_ONLY_CIK = 8888888
+_SBC_MULTI_CCY_CIK = 6666666
+
+_SBC_TICKERS = {
+    "0": {"cik_str": _SBC_NVDA_CIK, "ticker": "NVDA", "title": "NVIDIA Corp."},
+    "1": {"cik_str": _SBC_KSPI_CIK, "ticker": "KSPI", "title": "Joint Stock Co Kaspi.kz"},
+    "2": {"cik_str": _SBC_NONE_CIK, "ticker": "NOSBC", "title": "No SBC Co."},
+    "3": {"cik_str": _SBC_DUAL_CIK, "ticker": "DUAL", "title": "Dual Tagged Co."},
+    "4": {"cik_str": _SBC_QUARTERLY_ONLY_CIK, "ticker": "QONLY", "title": "Quarterly Only Co."},
+    "5": {"cik_str": _SBC_MULTI_CCY_CIK, "ticker": "MULTICCY", "title": "Multi Currency Co."},
+}
+
+# US 10-K filer: us-gaap, USD. The 2024-01-28 period is reported in two filings
+# with different values (a restatement); the later-filed value must win. A 10-Q
+# entry is present and must be excluded.
+_SBC_NVDA_FACTS = {
+    "facts": {
+        "us-gaap": {
+            "ShareBasedCompensation": {
+                "units": {
+                    "USD": [
+                        {"start": "2022-01-31", "end": "2023-01-29", "val": 2_709_000_000, "form": "10-K", "filed": "2025-02-26"},
+                        {"start": "2023-01-30", "end": "2024-01-28", "val": 3_500_000_000, "form": "10-K", "filed": "2024-02-21"},
+                        {"start": "2023-01-30", "end": "2024-01-28", "val": 3_549_000_000, "form": "10-K", "filed": "2026-02-25"},
+                        {"start": "2024-01-29", "end": "2025-01-26", "val": 4_737_000_000, "form": "10-K", "filed": "2026-02-25"},
+                        {"start": "2025-01-27", "end": "2026-01-25", "val": 6_386_000_000, "form": "10-K", "filed": "2026-02-25"},
+                        {"start": "2025-01-27", "end": "2025-04-30", "val": 1_500_000_000, "form": "10-Q", "filed": "2025-05-28"},
+                    ]
+                }
+            }
+        }
+    }
+}
+
+# Foreign private issuer (20-F, IFRS, KZT). No us-gaap SBC concept — the lookup
+# must fall through to ifrs-full. Restating filings repeat prior years.
+_SBC_KSPI_FACTS = {
+    "facts": {
+        "dei": {"EntityCommonStockSharesOutstanding": {"units": {"shares": []}}},
+        "us-gaap": {},
+        "ifrs-full": {
+            "ExpenseFromSharebasedPaymentTransactionsWithEmployees": {
+                "units": {
+                    "KZT": [
+                        {"start": "2022-01-01", "end": "2022-12-31", "val": 19_984_000_000, "form": "20-F", "filed": "2024-04-29"},
+                        {"start": "2022-01-01", "end": "2022-12-31", "val": 19_984_000_000, "form": "20-F", "filed": "2025-03-10"},
+                        {"start": "2023-01-01", "end": "2023-12-31", "val": 20_859_000_000, "form": "20-F", "filed": "2025-03-10"},
+                        {"start": "2024-01-01", "end": "2024-12-31", "val": 16_963_000_000, "form": "20-F", "filed": "2025-03-10"},
+                        {"start": "2025-01-01", "end": "2025-12-31", "val": 15_476_000_000, "form": "20-F", "filed": "2026-03-16"},
+                    ]
+                }
+            }
+        },
+    }
+}
+
+# Filer with no SBC concept in any namespace.
+_SBC_NONE_FACTS = {
+    "facts": {
+        "us-gaap": {"Revenues": {"units": {"USD": [{"end": "2024-12-31", "val": 1_000, "form": "10-K", "filed": "2025-02-01"}]}}},
+        "ifrs-full": {},
+    }
+}
+
+# Dual-tagged filer: both namespaces carry annual SBC. us-gaap must win.
+_SBC_DUAL_FACTS = {
+    "facts": {
+        "us-gaap": {
+            "ShareBasedCompensation": {
+                "units": {"USD": [{"start": "2024-01-01", "end": "2024-12-31", "val": 500_000_000, "form": "10-K", "filed": "2025-02-01"}]}
+            }
+        },
+        "ifrs-full": {
+            "ExpenseFromSharebasedPaymentTransactionsWithEmployees": {
+                "units": {"EUR": [{"start": "2024-01-01", "end": "2024-12-31", "val": 460_000_000, "form": "20-F", "filed": "2025-02-01"}]}
+            }
+        },
+    }
+}
+
+# us-gaap SBC concept exists but carries only quarterly entries → must fall
+# through to the ifrs-full annual data rather than shadow it.
+_SBC_QUARTERLY_ONLY_FACTS = {
+    "facts": {
+        "us-gaap": {
+            "ShareBasedCompensation": {
+                "units": {"USD": [{"start": "2024-01-01", "end": "2024-03-31", "val": 100_000_000, "form": "10-Q", "filed": "2024-05-01"}]}
+            }
+        },
+        "ifrs-full": {
+            "ExpenseFromSharebasedPaymentTransactionsWithEmployees": {
+                "units": {"GBP": [{"start": "2023-01-01", "end": "2023-12-31", "val": 88_000_000, "form": "20-F", "filed": "2024-04-01"}]}
+            }
+        },
+    }
+}
+
+# No USD; two non-USD currencies. The one with more annual entries (CHF, 2)
+# must win over the single-entry EUR, deterministically.
+_SBC_MULTI_CCY_FACTS = {
+    "facts": {
+        "ifrs-full": {
+            "ExpenseFromSharebasedPaymentTransactionsWithEmployees": {
+                "units": {
+                    "EUR": [{"start": "2024-01-01", "end": "2024-12-31", "val": 10_000_000, "form": "20-F", "filed": "2025-02-01"}],
+                    "CHF": [
+                        {"start": "2023-01-01", "end": "2023-12-31", "val": 9_000_000, "form": "20-F", "filed": "2024-02-01"},
+                        {"start": "2024-01-01", "end": "2024-12-31", "val": 11_000_000, "form": "20-F", "filed": "2025-02-01"},
+                    ],
+                }
+            }
+        },
+    }
+}
+
+
+def _mock_get_sbc(url, **kwargs):
+    resp = MagicMock()
+    resp.raise_for_status = MagicMock()
+    if "company_tickers.json" in url:
+        resp.json.return_value = _SBC_TICKERS
+    elif f"CIK{str(_SBC_NVDA_CIK).zfill(10)}" in url:
+        resp.json.return_value = _SBC_NVDA_FACTS
+    elif f"CIK{str(_SBC_KSPI_CIK).zfill(10)}" in url:
+        resp.json.return_value = _SBC_KSPI_FACTS
+    elif f"CIK{str(_SBC_NONE_CIK).zfill(10)}" in url:
+        resp.json.return_value = _SBC_NONE_FACTS
+    elif f"CIK{str(_SBC_DUAL_CIK).zfill(10)}" in url:
+        resp.json.return_value = _SBC_DUAL_FACTS
+    elif f"CIK{str(_SBC_QUARTERLY_ONLY_CIK).zfill(10)}" in url:
+        resp.json.return_value = _SBC_QUARTERLY_ONLY_FACTS
+    elif f"CIK{str(_SBC_MULTI_CCY_CIK).zfill(10)}" in url:
+        resp.json.return_value = _SBC_MULTI_CCY_FACTS
+    else:
+        resp.json.return_value = {}
+    return resp
+
+
+# ---------------------------------------------------------------------------
+# get_sbc tests
+# ---------------------------------------------------------------------------
+
+
+class TestGetSBC:
+    def test_us_returns_required_keys(self):
+        with patch("tools.requests.get", side_effect=_mock_get_sbc):
+            result = get_sbc("NVDA", 4)
+        assert set(result.keys()) >= {"ticker", "filing_type", "currency", "periods"}
+
+    def test_us_filing_type_and_currency(self):
+        with patch("tools.requests.get", side_effect=_mock_get_sbc):
+            result = get_sbc("NVDA", 4)
+        assert result["filing_type"] == "10-K"
+        assert result["currency"] == "USD"
+
+    def test_us_returns_requested_period_count(self):
+        with patch("tools.requests.get", side_effect=_mock_get_sbc):
+            result = get_sbc("NVDA", 4)
+        assert len(result["periods"]) == 4
+
+    def test_us_periods_newest_first(self):
+        with patch("tools.requests.get", side_effect=_mock_get_sbc):
+            result = get_sbc("NVDA", 4)
+        ends = [p["fiscal_year"] for p in result["periods"]]
+        assert ends == sorted(ends, reverse=True)
+        assert result["periods"][0]["fiscal_year"] == "2026-01-25"
+        assert result["periods"][0]["sbc"] == 6_386_000_000
+
+    def test_us_dedupes_keeping_latest_filed(self):
+        """The restated 2024-01-28 value (filed 2026) must win over the 2024 one."""
+        with patch("tools.requests.get", side_effect=_mock_get_sbc):
+            result = get_sbc("NVDA", 4)
+        period = next(p for p in result["periods"] if p["fiscal_year"] == "2024-01-28")
+        assert period["sbc"] == 3_549_000_000
+
+    def test_us_excludes_quarterly_filings(self):
+        with patch("tools.requests.get", side_effect=_mock_get_sbc):
+            result = get_sbc("NVDA", 4)
+        ends = [p["fiscal_year"] for p in result["periods"]]
+        sbcs = [p["sbc"] for p in result["periods"]]
+        assert "2025-04-30" not in ends
+        assert 1_500_000_000 not in sbcs
+
+    def test_each_period_tagged_edgar_xbrl(self):
+        with patch("tools.requests.get", side_effect=_mock_get_sbc):
+            result = get_sbc("NVDA", 4)
+        assert all(p["source"] == "edgar_xbrl" for p in result["periods"])
+
+    def test_periods_argument_limits_results(self):
+        with patch("tools.requests.get", side_effect=_mock_get_sbc):
+            result = get_sbc("NVDA", 2)
+        assert len(result["periods"]) == 2
+        assert [p["fiscal_year"] for p in result["periods"]] == ["2026-01-25", "2025-01-26"]
+
+    def test_ifrs_foreign_filer_falls_through_to_ifrs_full(self):
+        """KSPI has no us-gaap SBC; must read ifrs-full and report 20-F / KZT."""
+        with patch("tools.requests.get", side_effect=_mock_get_sbc):
+            result = get_sbc("KSPI", 4)
+        assert result["filing_type"] == "20-F"
+        assert result["currency"] == "KZT"
+        assert len(result["periods"]) == 4
+
+    def test_ifrs_returns_non_null_sbc_values(self):
+        with patch("tools.requests.get", side_effect=_mock_get_sbc):
+            result = get_sbc("KSPI", 4)
+        assert all(isinstance(p["sbc"], int) and p["sbc"] > 0 for p in result["periods"])
+        assert result["periods"][0]["fiscal_year"] == "2025-12-31"
+        assert result["periods"][0]["sbc"] == 15_476_000_000
+
+    def test_raises_when_sbc_concept_absent(self):
+        with patch("tools.requests.get", side_effect=_mock_get_sbc):
+            with pytest.raises(EDGARNoDataError, match="not present in filing"):
+                get_sbc("NOSBC", 4)
+
+    def test_raises_on_unknown_ticker(self):
+        with patch("tools.requests.get", side_effect=_mock_get_sbc):
+            with pytest.raises(EDGARNoDataError, match="ticker"):
+                get_sbc("ZZZZNOTREAL", 4)
+
+    def test_rejects_non_positive_periods(self):
+        with patch("tools.requests.get", side_effect=_mock_get_sbc):
+            with pytest.raises(ValueError, match="periods"):
+                get_sbc("NVDA", 0)
+
+    def test_dual_tagged_filer_prefers_us_gaap(self):
+        """When both namespaces carry annual SBC, us-gaap wins (closest to yfinance)."""
+        with patch("tools.requests.get", side_effect=_mock_get_sbc):
+            result = get_sbc("DUAL", 4)
+        assert result["currency"] == "USD"
+        assert result["filing_type"] == "10-K"
+        assert result["periods"][0]["sbc"] == 500_000_000
+
+    def test_falls_through_when_us_gaap_has_only_quarterly(self):
+        """A us-gaap concept with no annual entries must not shadow ifrs-full."""
+        with patch("tools.requests.get", side_effect=_mock_get_sbc):
+            result = get_sbc("QONLY", 4)
+        assert result["currency"] == "GBP"
+        assert result["filing_type"] == "20-F"
+        assert result["periods"][0]["sbc"] == 88_000_000
+
+    def test_non_usd_unit_selection_is_deterministic(self):
+        """With no USD and multiple currencies, the one with most annual entries wins."""
+        with patch("tools.requests.get", side_effect=_mock_get_sbc):
+            result = get_sbc("MULTICCY", 4)
+        assert result["currency"] == "CHF"
+        assert len(result["periods"]) == 2
+        assert result["periods"][0]["sbc"] == 11_000_000
+
+    def test_periods_larger_than_available_returns_all(self):
+        with patch("tools.requests.get", side_effect=_mock_get_sbc):
+            result = get_sbc("KSPI", 99)
+        assert len(result["periods"]) == 4

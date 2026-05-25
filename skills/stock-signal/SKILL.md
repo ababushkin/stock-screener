@@ -43,7 +43,7 @@ Source references: Peter Lynch (One Up on Wall Street) for PEG; Brad Feld/Fred W
 | EV/EBITDA (TTM) | `get_ratios(ticker)` | Null → note as missing; not blocking |
 | P/FCF (TTM) | `get_ratios(ticker)` | Null → note as missing; not blocking |
 | EV/Revenue (TTM) | `get_ratios(ticker)` | Null → note as missing; not blocking |
-| SBC (TTM) — **required** | `get_financials(ticker)` — `Stock Based Compensation` row from cashflow | Null → `Clean EPS: N/A — SBC not returned by yfinance`; `SBC stripped: N/A` |
+| SBC (TTM) — **required** | `get_financials(ticker)` — `Stock Based Compensation` row from cashflow; fallback: EDGAR `get_sbc(ticker)` (esp. 20-F foreign filers) | Null → try EDGAR fallback (Step 5); only if that also fails → `Clean EPS: N/A`; `SBC stripped: N/A` |
 | Shares outstanding — **required for SBC stripping** | `get_ratios(ticker)` — `sharesOutstanding`; fallback: market cap ÷ current price | Null → same N/A treatment as missing SBC |
 | Diluted EPS (TTM) — **required for SBC stripping** | `get_ratios(ticker)` — `eps_ttm`; fallback: price ÷ `pe_ratio` | Null → same N/A treatment |
 | NTM EPS consensus | `get_estimates(ticker)` — `ntm_eps` field | Null → PEG = N/A — reason: no consensus; required for PEG computation |
@@ -78,7 +78,7 @@ Source references: Peter Lynch (One Up on Wall Street) for PEG; Brad Feld/Fred W
 ### VALIDATE
 
 - `ps_ratio` must be non-null and greater than 0. **If missing, fire the Manual Input Protocol** (see `skills/_shared/MANUAL_INPUT_PROTOCOL.md`) before stopping — ask the user to paste P/S, current price, EPS TTM, shares outstanding, and SBC TTM as a grouped paste-in. Only stop if the user replies `abort`.
-- The protocol also fires when `get_ratios` raised `YFNoDataError` (the common case for non-US filers), or when `get_financials` returned null for `stock_based_compensation` on the most recent year.
+- The protocol also fires when `get_ratios` raised `YFNoDataError` (the common case for non-US filers). When `get_financials` returned null for `stock_based_compensation` on the most recent year, **first attempt the EDGAR `get_sbc` fallback (Step 5)**; fire the manual-input protocol for SBC only if that fallback also fails (concept genuinely absent, or a currency mismatch that cannot be reconciled).
 - Any field accepted via paste-in is tagged `source: "user_paste"` and added to `meta.manual_inputs`; overall `meta.confidence` caps at MEDIUM (LOW if every required field came from paste-in).
 - State what was retrieved and what gaps exist before proceeding.
 
@@ -145,17 +145,27 @@ Steps:
 Example note: "AI optionality premium: 23% — AI capex implies a significant unverified optionality premium; buyer should verify AI monetisation path. (Assumption: ~60% of $38B TTM capex attributed to AI; 5× proxy multiple.)"
 
 **Step 5 — SBC stripping:**
-1. From `get_financials(ticker)` response, extract the TTM `Stock Based Compensation` value from the cashflow statement.
-2. Calculate shares outstanding: use `sharesOutstanding` from `get_ratios` response (or derive from market cap ÷ current price if not directly available).
-3. Per-share SBC = TTM SBC ÷ shares outstanding
-4. Reported diluted EPS (TTM) = from `get_ratios` response, field `eps_ttm` (or derive: price ÷ `pe_ratio` if `eps_ttm` not available)
-5. Clean EPS (TTM) = Reported diluted EPS − per-share SBC
-6. SBC stripped = YES; note the dollar adjustment: "SBC adjustment: $X.XX per share"
+1. From `get_financials(ticker)` response, extract the TTM `Stock Based Compensation` value from the cashflow statement. Record `sbc_source = "yfinance"`.
+2. **EDGAR fallback (only if step 1 returned null):** call the EDGAR MCP `get_sbc(ticker)` tool (server `edgar`).
+   - Returns `{ filing_type, currency, periods: [{fiscal_year, sbc, source}, ...] }`, newest first. Use `periods[0].sbc` as the SBC figure (most recent annual filing — an annual proxy for TTM; note this).
+   - If `get_sbc` raises `EDGARNoDataError` ("SBC line not present in filing"), the issuer genuinely has no SBC line: treat SBC as unavailable and fall to **Data gap handling** below (then the Manual Input Protocol). Do not assume $0.
+   - **Currency reconciliation — mandatory before use.** The EDGAR `currency` must match the currency of the EPS and shares used in steps 3–5. If they differ (foreign filer reporting in local currency, e.g. KSPI in KZT, while `eps_ttm`/price are USD):
+     - Call `get_fx_rate(edgar_currency, eps_currency)`. This returns `rate` = **units of `eps_currency` per one unit of `edgar_currency`** (the `{BASE}{QUOTE}=X` convention). So `get_fx_rate("KZT", "USD")` returns USD-per-KZT (≈ 0.0021).
+     - **Multiply** the EDGAR SBC by `rate` to express it in the EPS currency: `sbc_in_eps_ccy = sbc_edgar × rate`. Never divide.
+     - **Sanity-check the magnitude before proceeding:** KSPI SBC ≈ 15.5B KZT × ~0.0021 ≈ **~$32M USD** — not $7T (multiplied the wrong way) and not $32K. If the converted figure is off by orders of magnitude vs. the company's known scale, you have the rate inverted — stop and re-derive.
+     - Record the rate and date in `peg_note`/output.
+   - If the share basis is itself ambiguous (a US-listed ADR whose `sharesOutstanding` is ADR shares while EDGAR SBC is whole-company local-currency and the ADR ratio is unknown), do **not** silently mix units — flag it and treat SBC as unavailable (Data gap handling). Record `sbc_source = "edgar"`.
+   - Any run using the EDGAR-sourced SBC caps overall `meta.confidence` at MEDIUM (annual proxy, possibly FX-converted).
+3. Calculate shares outstanding: use `sharesOutstanding` from `get_ratios` response (or derive from market cap ÷ current price if not directly available).
+4. Per-share SBC = SBC ÷ shares outstanding (SBC already reconciled to the EPS currency per step 2).
+5. Reported diluted EPS (TTM) = from `get_ratios` response, field `eps_ttm` (or derive: price ÷ `pe_ratio` if `eps_ttm` not available)
+6. Clean EPS (TTM) = Reported diluted EPS − per-share SBC
+7. SBC stripped = YES; note the dollar adjustment and source: "SBC adjustment: $X.XX per share (source: [yfinance | edgar])". When source = edgar, the note must also state that the figure is the most recent **annual** SBC used as a TTM proxy (and the FX rate/date if converted), so the approximation is visible in the report — e.g. "(source: edgar — FY2025 annual SBC as TTM proxy, 20859M KZT × 0.0021 USD/KZT @ 2026-05-25)".
 
 **Data gap handling:**
-- If SBC line is missing from cashflow: output `Clean EPS (TTM): N/A — SBC not returned by yfinance`; `SBC stripped: N/A`
-- If shares outstanding cannot be determined: same N/A treatment
-- Never skip or estimate SBC — only two states: computed (YES) or not available (N/A with reason)
+- If SBC is unavailable from both yfinance and the EDGAR fallback (concept absent, or unreconcilable currency/share basis): output `Clean EPS (TTM): N/A — SBC unavailable from yfinance and EDGAR`; `SBC stripped: N/A` — then fire the Manual Input Protocol (per VALIDATE) before declaring final N/A.
+- If shares outstanding cannot be determined: same N/A treatment.
+- Never skip or estimate SBC — only three states: computed from yfinance (YES), computed from the EDGAR fallback (YES, source: edgar), or not available (N/A with reason).
 
 **Step 6 — PEG ratio computation:**
 
@@ -311,7 +321,7 @@ SIGNAL OUTPUT
   AI layer:        [INFRASTRUCTURE | APPLICATION | MODEL | INCUMBENT | N/A] — [one-line rationale]
 
   Clean EPS (TTM): [$X.XX | N/A — reason]
-  SBC stripped:    [YES — SBC adjustment: $X.XX/share | N/A — reason]
+  SBC stripped:    [YES — SBC adjustment: $X.XX/share (source: yfinance | edgar) | N/A — reason]
   PEG ratio:       [x.x (active lens) | N/A — reason (pre-profit / no consensus / negative growth / forward earnings negative)]
   P/S ratio:       [x.x]
   Rule of 40:      [N/A — not implemented]
@@ -362,6 +372,7 @@ Merge behaviour:
       "clean_eps_ttm": "[number or null]",
       "sbc_stripped": "[true | false | null]",
       "sbc_adjustment_per_share": "[number or null]",
+      "sbc_source": "[yfinance | edgar | user_paste | null]",
       "peg_ratio": "[number or null]",
       "ps_ratio": "[number]",
       "rule_of_40": null,
@@ -382,8 +393,8 @@ Merge behaviour:
 ```
 
 **Confidence rules:**
-- HIGH: SBC stripped successfully + PEG computed (not N/A) + qualitative = PASS
-- MEDIUM: any of SBC/PEG are N/A but P/S is available
+- HIGH: SBC stripped successfully from yfinance + PEG computed (not N/A) + qualitative = PASS
+- MEDIUM: any of SBC/PEG are N/A but P/S is available, OR SBC was sourced from the EDGAR fallback (`sbc_source = "edgar"` — annual proxy, possibly FX-converted)
 - LOW: P/S is the only reliable data point
 
 **Field mapping from SIGNAL OUTPUT block to JSON:**
@@ -395,6 +406,7 @@ Merge behaviour:
 - Clean EPS (TTM) → `clean_eps_ttm` (number; `null` if N/A)
 - SBC stripped → `sbc_stripped` (`true` if YES; `null` if N/A)
 - SBC adjustment dollar value → `sbc_adjustment_per_share` (number; `null` if N/A)
+- SBC source → `sbc_source` (`"yfinance"`, `"edgar"`, or `"user_paste"`; `null` if SBC is N/A)
 - PEG ratio → `peg_ratio` (number; `null` if N/A)
 - P/S ratio → `ps_ratio` (number)
 - Rule of 40 → `rule_of_40` (`null` — deferred)

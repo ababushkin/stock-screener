@@ -10,6 +10,20 @@ _TICKERS_URL = "https://www.sec.gov/files/company_tickers.json"
 _HEADERS = {"User-Agent": "stock-review babushkin.anton@gmail.com"}
 _ANNUAL_FORMS = {"10-K", "10-K/A"}
 
+# Annual forms including the 20-F foreign private issuer report. Used only by
+# get_sbc — the other tools stay 10-K-only to preserve their existing behaviour.
+_ANNUAL_FORMS_FPI = _ANNUAL_FORMS | {"20-F", "20-F/A"}
+
+# SBC concept candidates, tried in order. US filers tag the cash-flow add-back
+# under us-gaap; IFRS filers (20-F foreign private issuers like KSPI) tag the
+# employee share-based payment expense under ifrs-full. Only concepts verified
+# against live companyfacts are listed — adding unverified element names risks
+# silently matching the wrong fact.
+_SBC_CONCEPTS = [
+    ("us-gaap", "ShareBasedCompensation"),
+    ("ifrs-full", "ExpenseFromSharebasedPaymentTransactionsWithEmployees"),
+]
+
 
 class EDGARNoDataError(Exception):
     """EDGAR returned no usable data for this ticker or concept."""
@@ -111,6 +125,119 @@ def get_filing_facts(ticker: str, concept: str) -> dict:
         "form": best["form"],
         "filed": best["filed"],
     }
+
+
+def get_sbc(ticker: str, periods: int = 4) -> dict:
+    """Return up to `periods` years of stock-based compensation from XBRL facts.
+
+    Reads the SBC line straight from the companyfacts cash-flow / income facts,
+    covering both US filers (10-K, us-gaap:ShareBasedCompensation) and foreign
+    private issuers (20-F, ifrs-full:ExpenseFromSharebasedPaymentTransactions-
+    WithEmployees). This is the fallback /stock-signal uses when yfinance returns
+    null SBC — common for non-US filers whose 20-F cash-flow line Yahoo doesn't
+    normalise.
+
+    The two concepts are close but not definitionally identical: the us-gaap one
+    is the cash-flow-statement non-cash add-back; the ifrs-full one is the
+    income-statement employee share-based-payment expense (which excludes
+    non-employee/supplier awards and any capitalised amounts). For EPS stripping
+    they are a sound proxy for each other, but they are not a like-for-like
+    substitute — treat the ifrs-full figure as an approximation of the cash-flow
+    SBC, not an exact equal.
+
+    Candidates are tried us-gaap first, then ifrs-full: the us-gaap cash-flow
+    figure is the closest match to the yfinance value being replaced, so a filer
+    that tags both resolves to us-gaap. A namespace whose concept carries no
+    annual-form entries (only quarterly) is skipped, so an FPI lacking real
+    us-gaap annual data falls through to ifrs-full.
+
+    SBC is a flow (duration) fact, so the same fiscal year appears once per
+    filing that restates it; entries are deduplicated by period-end, keeping the
+    most recently filed value.
+
+    Returns:
+        {
+            "ticker": str,
+            "filing_type": str,       # "10-K" or "20-F" — the form the values came from
+            "currency": str,          # reporting currency, e.g. "USD" or "KZT"
+            "periods": [              # newest first, up to `periods` entries
+                {"fiscal_year": "YYYY-MM-DD", "sbc": int, "source": "edgar_xbrl"},
+                ...
+            ],
+        }
+
+    Raises:
+        EDGARNoDataError: ticker unknown, or no SBC concept present in any annual
+            filing — the caller should treat this as "SBC line not present in
+            filing" (some issuers genuinely report $0 / no SBC).
+    """
+    if periods < 1:
+        raise ValueError(f"periods must be >= 1, got {periods}")
+
+    cik = _get_cik(ticker)
+    url = f"{EDGAR_BASE}/api/xbrl/companyfacts/CIK{cik}.json"
+    resp = requests.get(url, headers=_HEADERS)
+    resp.raise_for_status()
+    facts = resp.json().get("facts", {})
+
+    for namespace, concept in _SBC_CONCEPTS:
+        concept_data = facts.get(namespace, {}).get(concept)
+        if not concept_data:
+            continue
+
+        units = concept_data.get("units", {})
+        # Group annual-form entries by reporting currency, dropping currencies
+        # with no annual data.
+        annual_by_unit = {
+            unit: annual
+            for unit, entries in units.items()
+            if (annual := [e for e in entries if e.get("form") in _ANNUAL_FORMS_FPI])
+        }
+        if not annual_by_unit:
+            continue
+
+        # Prefer USD; otherwise pick deterministically — the currency with the
+        # most annual entries (the filer's primary reporting currency), breaking
+        # ties on the currency code so the result never depends on dict ordering.
+        if "USD" in annual_by_unit:
+            unit_key = "USD"
+        else:
+            unit_key = sorted(
+                annual_by_unit, key=lambda u: (-len(annual_by_unit[u]), u)
+            )[0]
+        annual = annual_by_unit[unit_key]
+
+        # Dedupe by period-end; keep the most recently filed value on collision.
+        by_end: dict[str, dict] = {}
+        for e in annual:
+            end = e["end"]
+            if end not in by_end or e["filed"] > by_end[end]["filed"]:
+                by_end[end] = e
+
+        selected = sorted(by_end.values(), key=lambda e: e["end"], reverse=True)[
+            :periods
+        ]
+        filing_type = selected[0]["form"]
+
+        return {
+            "ticker": ticker,
+            "filing_type": filing_type,
+            "currency": unit_key,
+            "periods": [
+                {
+                    "fiscal_year": e["end"],
+                    "sbc": e["val"],
+                    "source": "edgar_xbrl",
+                }
+                for e in selected
+            ],
+        }
+
+    raise EDGARNoDataError(
+        f"no stock-based-compensation concept present in any annual filing for "
+        f"{ticker}; tried {', '.join(f'{ns}:{c}' for ns, c in _SBC_CONCEPTS)}. "
+        f"SBC line not present in filing (issuer may genuinely have $0 SBC)."
+    )
 
 
 # ---------------------------------------------------------------------------

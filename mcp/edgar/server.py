@@ -8,6 +8,7 @@ from tools import (
     get_filing_facts as _get_filing_facts,
     get_filing_text as _get_filing_text,
     get_revenue_segments as _get_revenue_segments,
+    get_sbc as _get_sbc,
     search_filings as _search_filings,
 )
 
@@ -27,6 +28,21 @@ def get_filing_facts(ticker: str, concept: str) -> dict:
     Example: get_filing_facts("CRM", "ShareBasedCompensation") returns SBC in USD.
     """
     return _get_filing_facts(ticker, concept)
+
+
+@mcp.tool()
+def get_sbc(ticker: str, periods: int = 4) -> dict:
+    """Multi-year stock-based compensation from EDGAR XBRL facts.
+
+    Fallback for /stock-signal when yfinance returns null SBC. Covers US filers
+    (10-K, us-gaap) and foreign private issuers (20-F, ifrs-full — e.g. KSPI).
+
+    Example: get_sbc("KSPI", 4) returns 4 years of SBC in KZT from the 20-F facts.
+    Returns {ticker, filing_type, currency, periods:[{fiscal_year, sbc, source}]}.
+    Raises EDGARNoDataError when no SBC concept is present in any annual filing
+    (treat as "SBC line not present" — the issuer may genuinely report $0 SBC).
+    """
+    return _get_sbc(ticker, periods)
 
 
 @mcp.tool()
