@@ -1,0 +1,54 @@
+Work on Linear issue ABA-75:
+
+<issue identifier="ABA-75">
+<title>EDGAR MCP: pull SBC from cash flow statement when yfinance returns null (esp. non-US filers)</title>
+<description>
+## Problem
+
+yfinance returns `stock_based_compensation: null` for some companies — observed on KSPI ([Kaspi.kz](<http://Kaspi.kz>), Nasdaq ADR) across all 4 fiscal years on 2026-05-13. This appears to be more common for non-US filers (20-F filings) where Yahoo's normalisation doesn't reliably surface the SBC line from the cash flow reconciliation.
+
+The /signal skill requires SBC for the Clean EPS calc. Today it falls back to "N/A — SBC not returned by yfinance," which is technically correct but means we can never produce a clean PEG for any company in this category.
+
+## Proposal
+
+Extend the EDGAR MCP (or its planned successor for foreign filers) to pull `StockBasedCompensation` from the XBRL cash-flow facts in 10-K / 20-F / 10-Q filings:
+
+```
+get_sbc(ticker: str, periods: int = 4) -> {
+  "ticker": "KSPI",
+  "filing_type": "20-F",
+  "currency": "KZT",
+  "periods": [
+    {"fiscal_year": "2025-12-31", "sbc": 12500000000, "source": "edgar_xbrl"},
+    ...
+  ]
+}
+```
+
+When yfinance returns null SBC, /signal should fall back to this tool before declaring N/A.
+
+## Foreign-filer caveat
+
+Many non-US issuers file 20-F with EDGAR (Kaspi does — they're a Nasdaq-listed FPI). Those will work with the existing EDGAR plumbing planned in <issue id="afcac464-a217-4668-a472-4f62a7c14b54">ABA-13</issue>/14. But truly foreign-listed-only tickers (LSE-only, HKEX-only) will need a separate data source — out of scope here.
+
+## Done when
+
+* `get_sbc("KSPI", 4)` returns 4 years of non-null SBC values pulled from the 20-F XBRL facts (or returns an explicit "SBC line not present in filing" if it's truly absent — some issuers genuinely have $0 SBC).
+* /signal calls this fallback automatically when yfinance returns null SBC, and the result is tagged `source: "edgar"` in the SIGNAL OUTPUT block.
+* Same for at least one US 10-K filer as a sanity check.
+
+## Dependencies
+
+* <issue id="afcac464-a217-4668-a472-4f62a7c14b54">ABA-13</issue> (EDGAR search_filings)
+* <issue id="b62908bf-1194-421b-a0e9-0048a3e62d42">ABA-14</issue> (EDGAR get_filing_facts)
+
+## Related
+
+* <issue id="a35f8c1b-fb10-4077-b7db-89a6309409ac">ABA-72</issue> (KSPI ratios gap)
+* Manual-input fallback issue (sibling — this and that issue are different lines of defence; this one is the automated path)
+</description>
+<team name="Personal"/>
+<label>model:sonnet</label>
+<label>repo:stock-screener</label>
+<project name="Ops - bugs, maintenance, emergent">Container for non-initiative work. Not an initiative; no Goal or Key Results. Bugs, KTLO, compliance, one-offs. Pulled into each cycle's ops slot at planning.</project>
+</issue>
