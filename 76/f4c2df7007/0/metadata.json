@@ -1,0 +1,203 @@
+{
+  "cli_version": "0.7.5",
+  "checkpoint_id": "76f4c2df7007",
+  "session_id": "0bda1bcc-9d3c-419b-b7ef-5d7ee680c8c0",
+  "strategy": "manual-commit",
+  "created_at": "2026-06-18T05:50:33.861653Z",
+  "branch": "main",
+  "checkpoints_count": 4,
+  "files_touched": [
+    ".claude-plugin/marketplace.json",
+    ".claude-plugin/plugin.json",
+    ".mcp.json",
+    "INSTALL.md",
+    "README.md",
+    "mcp/edgar/server.py",
+    "mcp/yf/server.py"
+  ],
+  "agent": "Claude Code",
+  "model": "claude-opus-4-8[1m]",
+  "turn_id": "063c066cee4a",
+  "token_usage": {
+    "input_tokens": 21744,
+    "cache_creation_tokens": 350092,
+    "cache_read_tokens": 12060797,
+    "output_tokens": 102196,
+    "api_call_count": 66
+  },
+  "skill_events_version": 1,
+  "skill_events": [
+    {
+      "id": "claude-skill-toolu_01EPcfHcUsg4XGfXjtaKrdFu",
+      "event_type": "tool_invocation",
+      "skill": {
+        "name": "stock-portfolio"
+      },
+      "source": {
+        "agent": "claude-code",
+        "signal": "skill_tool_use",
+        "confidence": "explicit"
+      },
+      "turn_id": "063c066cee4a",
+      "transcript_anchor": {
+        "unit": "line",
+        "start": 145,
+        "end": 146,
+        "entry_ids": [
+          "d0e59937-9ab8-4947-bd57-497e4567a7b7"
+        ],
+        "tool_use_id": "toolu_01EPcfHcUsg4XGfXjtaKrdFu"
+      },
+      "native": {
+        "tool_name": "Skill",
+        "tool_use_id": "toolu_01EPcfHcUsg4XGfXjtaKrdFu"
+      },
+      "collapse": {
+        "target": "tool_pair",
+        "label": "Skill: stock-portfolio",
+        "default_collapsed": true
+      }
+    },
+    {
+      "id": "claude-skill-toolu_014LL2CcBBCSKTHrHk1UZFEC",
+      "event_type": "tool_invocation",
+      "skill": {
+        "name": "stock-signal"
+      },
+      "source": {
+        "agent": "claude-code",
+        "signal": "skill_tool_use",
+        "confidence": "explicit"
+      },
+      "turn_id": "063c066cee4a",
+      "transcript_anchor": {
+        "unit": "line",
+        "start": 212,
+        "end": 213,
+        "entry_ids": [
+          "53cb4505-fa5c-4521-909f-c75e8d9eacab"
+        ],
+        "tool_use_id": "toolu_014LL2CcBBCSKTHrHk1UZFEC"
+      },
+      "native": {
+        "tool_name": "Skill",
+        "tool_use_id": "toolu_014LL2CcBBCSKTHrHk1UZFEC"
+      },
+      "collapse": {
+        "target": "tool_pair",
+        "label": "Skill: stock-signal",
+        "default_collapsed": true
+      }
+    },
+    {
+      "id": "claude-skill-toolu_01KnXY1Kh95zuM6GeoMbhMkA",
+      "event_type": "tool_invocation",
+      "skill": {
+        "name": "stock-model"
+      },
+      "source": {
+        "agent": "claude-code",
+        "signal": "skill_tool_use",
+        "confidence": "explicit"
+      },
+      "turn_id": "063c066cee4a",
+      "transcript_anchor": {
+        "unit": "line",
+        "start": 288,
+        "end": 289,
+        "entry_ids": [
+          "bf1bf2ad-c4b0-4a58-88e3-99d05c179a17"
+        ],
+        "tool_use_id": "toolu_01KnXY1Kh95zuM6GeoMbhMkA"
+      },
+      "native": {
+        "tool_name": "Skill",
+        "tool_use_id": "toolu_01KnXY1Kh95zuM6GeoMbhMkA"
+      },
+      "collapse": {
+        "target": "tool_pair",
+        "label": "Skill: stock-model",
+        "default_collapsed": true
+      }
+    }
+  ],
+  "session_metrics": {
+    "turn_count": 9
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-06-18T05:50:33.83689Z",
+    "agent_lines": 177,
+    "agent_removed": 8,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 177,
+    "total_lines_changed": 185,
+    "agent_percentage": 100,
+    "metric_version": 2
+  },
+  "prompt_attributions": [
+    {
+      "checkpoint_number": 1,
+      "user_lines_added": 113,
+      "user_lines_removed": 0,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0,
+      "user_added_per_file": {
+        ".claude/settings.local.json": 113
+      }
+    },
+    {
+      "checkpoint_number": 2,
+      "user_lines_added": 113,
+      "user_lines_removed": 0,
+      "agent_lines_added": 261,
+      "agent_lines_removed": 0,
+      "user_added_per_file": {
+        ".claude/settings.local.json": 113
+      }
+    },
+    {
+      "checkpoint_number": 3,
+      "user_lines_added": 151,
+      "user_lines_removed": 120,
+      "agent_lines_added": 648,
+      "agent_lines_removed": 0,
+      "user_added_per_file": {
+        ".claude/settings.local.json": 113,
+        "reports/PORTFOLIO_20260618.json": 38
+      },
+      "user_removed_per_file": {
+        "reports/PORTFOLIO_20260618.json": 120
+      }
+    },
+    {
+      "checkpoint_number": 4,
+      "user_lines_added": 151,
+      "user_lines_removed": 120,
+      "agent_lines_added": 782,
+      "agent_lines_removed": 4,
+      "user_added_per_file": {
+        ".claude/settings.local.json": 113,
+        "reports/PORTFOLIO_20260618.json": 38
+      },
+      "user_removed_per_file": {
+        "reports/PORTFOLIO_20260618.json": 120
+      }
+    },
+    {
+      "checkpoint_number": 5,
+      "user_lines_added": 151,
+      "user_lines_removed": 120,
+      "agent_lines_added": 825,
+      "agent_lines_removed": 8,
+      "user_added_per_file": {
+        ".claude/settings.local.json": 113,
+        "reports/PORTFOLIO_20260618.json": 38
+      },
+      "user_removed_per_file": {
+        "reports/PORTFOLIO_20260618.json": 120
+      }
+    }
+  ]
+}
