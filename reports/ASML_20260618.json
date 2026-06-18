@@ -1,0 +1,31 @@
+{
+  "ticker": "ASML",
+  "company": "ASML Holding N.V.",
+  "date": "2026-06-18",
+  "stages": {
+    "signal": {
+      "verdict": "CAUTION",
+      "profit_stage": "ESTABLISHED",
+      "track": "GROWTH",
+      "ai_layer": "INFRASTRUCTURE",
+      "clean_eps_ttm": 29.415,
+      "sbc_stripped": true,
+      "sbc_adjustment_per_share": 0.525,
+      "sbc_source": "yfinance",
+      "peg_ratio": 5.69,
+      "ps_ratio": 21.37,
+      "rule_of_40": null,
+      "qualitative": "FLAG",
+      "qualitative_note": "INFRASTRUCTURE PEG 5.69 (CAUTION>4.0) driven by clean fwd P/E 45.5 and 8% CAGR floor (raw NTM/TTM 7.2%; eps_growth_5y unavailable \u2014 floor understates ASML's true ~20%+ EUV/High-NA consensus CAGR). PEG reliability MEDIUM-LOW.",
+      "signal": "CAUTION",
+      "model_ready": "NO",
+      "condition": null
+    }
+  },
+  "meta": {
+    "profit_stage": "ESTABLISHED",
+    "track": "GROWTH",
+    "ai_layer": "INFRASTRUCTURE",
+    "confidence": "MEDIUM"
+  }
+}

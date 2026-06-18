@@ -1,0 +1,179 @@
+{
+  "type": "portfolio_snapshot",
+  "date": "2026-06-18",
+  "universe": [
+    "GOOG",
+    "META",
+    "AMZN",
+    "NVDA",
+    "ASML",
+    "NFLX",
+    "ADYEN.AS"
+  ],
+  "tickers": [
+    {
+      "ticker": "NVDA",
+      "company": "NVIDIA Corporation",
+      "current_price": 220.09,
+      "iv_base": 351.65,
+      "mos_pct": 59.8,
+      "range_vs_price": "WITHIN BEAR-BASE (STALE)",
+      "implied_annualised_return": 0.098,
+      "vs_spy_bps": -395,
+      "vs_qqq_bps": -698,
+      "vs_better_bps": -698,
+      "better_benchmark": "QQQ",
+      "verdict": "BUY INDEX INSTEAD",
+      "model_date": "2026-05-20",
+      "days_stale": 29,
+      "stale": true,
+      "gaps": []
+    },
+    {
+      "ticker": "META",
+      "company": "Meta Platforms, Inc.",
+      "current_price": 611.21,
+      "iv_base": 810.76,
+      "mos_pct": 32.6,
+      "range_vs_price": "WITHIN BEAR-BASE (STALE)",
+      "implied_annualised_return": 0.058,
+      "vs_spy_bps": -796,
+      "vs_qqq_bps": -1099,
+      "vs_better_bps": -1099,
+      "better_benchmark": "QQQ",
+      "verdict": "BUY INDEX INSTEAD",
+      "model_date": "2026-05-19",
+      "days_stale": 30,
+      "stale": true,
+      "gaps": []
+    },
+    {
+      "ticker": "NFLX",
+      "company": "Netflix, Inc.",
+      "current_price": 76.96,
+      "iv_base": 81.62,
+      "mos_pct": 6.1,
+      "range_vs_price": "WITHIN BEAR-BASE",
+      "implied_annualised_return": 0.012,
+      "vs_spy_bps": -1259,
+      "vs_qqq_bps": -1562,
+      "vs_better_bps": -1562,
+      "better_benchmark": "QQQ",
+      "verdict": "BUY INDEX INSTEAD",
+      "model_date": "2026-06-18",
+      "days_stale": 0,
+      "stale": false,
+      "gaps": []
+    },
+    {
+      "ticker": "AMZN",
+      "company": "Amazon.com, Inc.",
+      "current_price": 264.86,
+      "iv_base": 176.7,
+      "mos_pct": -33.3,
+      "range_vs_price": "WITHIN BASE-BULL (STALE)",
+      "implied_annualised_return": -0.078,
+      "vs_spy_bps": -2155,
+      "vs_qqq_bps": -2458,
+      "vs_better_bps": -2458,
+      "better_benchmark": "QQQ",
+      "verdict": "BUY INDEX INSTEAD",
+      "model_date": "2026-05-19",
+      "days_stale": 30,
+      "stale": true,
+      "gaps": []
+    },
+    {
+      "ticker": "GOOG",
+      "company": "Alphabet Inc.",
+      "current_price": 362.1,
+      "iv_base": 95.53,
+      "mos_pct": -73.6,
+      "range_vs_price": "WITHIN BASE-BULL",
+      "implied_annualised_return": -0.234,
+      "vs_spy_bps": -3717,
+      "vs_qqq_bps": -4020,
+      "vs_better_bps": -4020,
+      "better_benchmark": "QQQ",
+      "verdict": "BUY INDEX INSTEAD",
+      "model_date": "2026-06-18",
+      "days_stale": 0,
+      "stale": false,
+      "gaps": []
+    },
+    {
+      "ticker": "ADYEN.AS",
+      "company": "Adyen N.V.",
+      "current_price": null,
+      "iv_base": null,
+      "mos_pct": null,
+      "range_vs_price": null,
+      "implied_annualised_return": null,
+      "vs_spy_bps": null,
+      "vs_qqq_bps": null,
+      "vs_better_bps": null,
+      "better_benchmark": "QQQ",
+      "verdict": "NO_MODEL",
+      "model_date": null,
+      "days_stale": null,
+      "stale": null,
+      "gaps": [
+        "no model on file \u2014 run /stock-model ADYEN.AS"
+      ]
+    },
+    {
+      "ticker": "ASML",
+      "company": "ASML Holding N.V.",
+      "current_price": null,
+      "iv_base": null,
+      "mos_pct": null,
+      "range_vs_price": null,
+      "implied_annualised_return": null,
+      "vs_spy_bps": null,
+      "vs_qqq_bps": null,
+      "vs_better_bps": null,
+      "better_benchmark": "QQQ",
+      "verdict": "NO_MODEL",
+      "model_date": null,
+      "days_stale": null,
+      "stale": null,
+      "gaps": [
+        "no model on file \u2014 run /stock-model ASML (signal CAUTION/NO)"
+      ]
+    }
+  ],
+  "benchmark_overlay": {
+    "horizon_years": 5,
+    "benchmarks": [
+      {
+        "ticker": "SPY",
+        "trailing_cagr": 0.13777,
+        "start_date": "2021-06-18",
+        "end_date": "2026-06-17",
+        "start_close": 388.8,
+        "end_close": 740.96,
+        "years_actual": 4.997,
+        "source": "yfinance"
+      },
+      {
+        "ticker": "QQQ",
+        "trailing_cagr": 0.16804,
+        "start_date": "2021-06-18",
+        "end_date": "2026-06-17",
+        "start_close": 332.5,
+        "end_close": 722.51,
+        "years_actual": 4.997,
+        "source": "yfinance"
+      }
+    ],
+    "better_benchmark": "QQQ",
+    "better_benchmark_cagr": 0.16804,
+    "computed_at": "2026-06-18"
+  },
+  "meta": {
+    "skill": "stock-portfolio",
+    "skill_version": "v1.1",
+    "coverage_source": "COVERAGE.md",
+    "generated_at": "2026-06-18"
+  }
+}

@@ -1,0 +1,178 @@
+{
+  "ticker": "NFLX",
+  "company": "Netflix, Inc.",
+  "date": "2026-06-18",
+  "stages": {
+    "signal": {
+      "verdict": "WATCH",
+      "profit_stage": "ESTABLISHED",
+      "track": "GROWTH",
+      "ai_layer": "APPLICATION",
+      "clean_eps_ttm": 3.012,
+      "sbc_stripped": true,
+      "sbc_adjustment_per_share": 0.088,
+      "sbc_source": "yfinance",
+      "peg_ratio": 2.57,
+      "ps_ratio": 6.91,
+      "rule_of_40": null,
+      "qualitative": "PASS",
+      "qualitative_note": "APPLICATION PEG 2.57 (WATCH<=3.0); AI materially embedded (recommendation/retention). CAGR floored at 8% (raw NTM/TTM 4.9%; eps_growth_5y unavailable) \u2014 PEG reliability MEDIUM-LOW.",
+      "signal": "WATCH",
+      "model_ready": "YES",
+      "condition": null
+    },
+    "model": {
+      "method": "two-stage DCF",
+      "profit_stage": "ESTABLISHED",
+      "current_price": 76.96,
+      "shares_diluted": 4343.863,
+      "net_debt": 5429.154999999999,
+      "fcf_ttm": 9093,
+      "fcf_ttm_reported": 9461,
+      "sbc_ttm": 368,
+      "fcf_margin_ttm": 0.2012,
+      "fcf_margin_ttm_reported": 0.2094,
+      "fcf_cagr_3y": 1.0581,
+      "growth_rate": {
+        "trailing_3y_cagr": 1.0581,
+        "consensus_5y_growth": null,
+        "fallback_ceiling": 0.18,
+        "applied_base_cagr": 0.25,
+        "cap_applied": true,
+        "cap_source": "base_year_guard"
+      },
+      "ntm_revenue": 57394.77456,
+      "base_wacc": 0.09,
+      "base_wacc_source": "user_paste",
+      "scenarios": {
+        "bear": {
+          "y1_fcf": 9818,
+          "y2_5_cagr": 0.125,
+          "y2_5_cagr_source": "operator_confirmed_cap",
+          "terminal_growth": 0.015,
+          "wacc": 0.1,
+          "intrinsic_value_per_share": 36.34,
+          "upside_pct": -52.8
+        },
+        "base": {
+          "y1_fcf": 11550,
+          "y2_5_cagr": 0.25,
+          "y2_5_cagr_source": "operator_confirmed_cap",
+          "terminal_growth": 0.025,
+          "wacc": 0.09,
+          "intrinsic_value_per_share": 81.62,
+          "upside_pct": 6.1
+        },
+        "bull": {
+          "y1_fcf": 12705,
+          "y2_5_cagr": 0.32,
+          "y2_5_cagr_source": "operator_confirmed_cap",
+          "terminal_growth": 0.035,
+          "wacc": 0.08,
+          "intrinsic_value_per_share": 158.8,
+          "upside_pct": 106.3
+        }
+      },
+      "intrinsic_value_range": {
+        "bear": 36.34,
+        "base": 81.62,
+        "bull": 158.8
+      },
+      "range_vs_price": "WITHIN BEAR-BASE",
+      "sensitivity": {
+        "dominant_driver": "y2_5_cagr",
+        "note": "Y2-5 CAGR dominates base IV swing"
+      },
+      "sensitivity_table": {
+        "wacc_axis": [
+          0.08,
+          0.085,
+          0.09,
+          0.095,
+          0.1
+        ],
+        "terminal_growth_axis": [
+          0.015,
+          0.02,
+          0.025,
+          0.03,
+          0.035
+        ],
+        "intrinsic_value_per_share": [
+          [
+            84.6,
+            90.7,
+            97.9,
+            106.6,
+            117.2
+          ],
+          [
+            77.9,
+            83.1,
+            89.1,
+            96.2,
+            104.7
+          ],
+          [
+            72.2,
+            76.6,
+            81.6,
+            87.5,
+            94.5
+          ],
+          [
+            67.2,
+            70.9,
+            75.2,
+            80.2,
+            86.0
+          ],
+          [
+            62.7,
+            66.0,
+            69.7,
+            73.9,
+            78.8
+          ]
+        ],
+        "base_cell": {
+          "row": 2,
+          "col": 2
+        }
+      },
+      "position_sizing": {
+        "band": "2\u20133% of portfolio",
+        "lower_pct": 2,
+        "upper_pct": 3,
+        "signal_verdict": "WATCH",
+        "range_vs_price": "WITHIN BEAR-BASE",
+        "margin_of_safety_pct": 6.1,
+        "confidence_cap_applied": true,
+        "rationale": "WATCH \u00d7 WITHIN BEAR-BASE (price $76.96 vs base IV $81.62, MoS +6.1%) \u2192 2\u20133% of portfolio (capped at MEDIUM confidence)."
+      },
+      "playbook": {
+        "loaded": false,
+        "path": null,
+        "last_updated": null,
+        "overrides_applied": [],
+        "failure_modes": []
+      }
+    }
+  },
+  "meta": {
+    "profit_stage": "ESTABLISHED",
+    "track": "GROWTH",
+    "ai_layer": "APPLICATION",
+    "confidence": "MEDIUM",
+    "base_year_flag": {
+      "tripped": true,
+      "tripwire": "abs_cagr+ratio",
+      "original_cagr_3y": 1.058,
+      "base_year_ratio": 0.115,
+      "suggested_cagr": 0.25,
+      "suggestion_source": "default_cap",
+      "operator_confirmed": true,
+      "confidence_cap_applied": "MEDIUM"
+    }
+  }
+}

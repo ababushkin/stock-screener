@@ -1,0 +1,178 @@
+{
+  "ticker": "GOOG",
+  "company": "Alphabet Inc.",
+  "date": "2026-06-18",
+  "stages": {
+    "signal": {
+      "verdict": "WATCH",
+      "profit_stage": "ESTABLISHED",
+      "track": "GROWTH",
+      "ai_layer": "INCUMBENT",
+      "clean_eps_ttm": 11.06,
+      "sbc_stripped": true,
+      "sbc_adjustment_per_share": 2.04,
+      "sbc_source": "yfinance",
+      "peg_ratio": 3.63,
+      "ps_ratio": 10.46,
+      "rule_of_40": null,
+      "qualitative": "PASS",
+      "qualitative_note": "INCUMBENT PEG 3.63 (WATCH<=4.0); AI optionality premium 7.2% \u2014 proportionate to core business value. CAGR floored at 8% (raw NTM/TTM 5.6%; eps_growth_5y unavailable) \u2014 PEG reliability MEDIUM-LOW.",
+      "signal": "WATCH",
+      "model_ready": "YES",
+      "condition": null
+    },
+    "model": {
+      "method": "two-stage DCF",
+      "profit_stage": "ESTABLISHED",
+      "current_price": 362.1,
+      "shares_diluted": 12230,
+      "net_debt": 28583,
+      "fcf_ttm": 48313,
+      "fcf_ttm_reported": 73266,
+      "sbc_ttm": 24953,
+      "fcf_margin_ttm": 0.1199,
+      "fcf_margin_ttm_reported": 0.1819,
+      "fcf_cagr_3y": 0.0593,
+      "growth_rate": {
+        "trailing_3y_cagr": 0.0593,
+        "consensus_5y_growth": null,
+        "fallback_ceiling": 0.18,
+        "applied_base_cagr": 0.0593,
+        "cap_applied": false,
+        "cap_source": null
+      },
+      "ntm_revenue": 578906.98887,
+      "base_wacc": 0.09,
+      "base_wacc_source": "user_paste",
+      "scenarios": {
+        "bear": {
+          "y1_fcf": 59015,
+          "y2_5_cagr": 0.0296,
+          "y2_5_cagr_source": "mechanical",
+          "terminal_growth": 0.015,
+          "wacc": 0.1,
+          "intrinsic_value_per_share": 57.18,
+          "upside_pct": -84.2
+        },
+        "base": {
+          "y1_fcf": 69430,
+          "y2_5_cagr": 0.0593,
+          "y2_5_cagr_source": "mechanical",
+          "terminal_growth": 0.025,
+          "wacc": 0.09,
+          "intrinsic_value_per_share": 95.53,
+          "upside_pct": -73.6
+        },
+        "bull": {
+          "y1_fcf": 76373,
+          "y2_5_cagr": 0.0911,
+          "y2_5_cagr_source": "mechanical",
+          "terminal_growth": 0.035,
+          "wacc": 0.08,
+          "intrinsic_value_per_share": 165.73,
+          "upside_pct": -54.2
+        }
+      },
+      "intrinsic_value_range": {
+        "bear": 57.18,
+        "base": 95.53,
+        "bull": 165.73
+      },
+      "range_vs_price": "PRICE EXCEEDS RANGE",
+      "sensitivity": {
+        "dominant_driver": "y2_5_cagr",
+        "note": "Y2-5 CAGR dominates base IV swing"
+      },
+      "sensitivity_table": {
+        "wacc_axis": [
+          0.08,
+          0.085,
+          0.09,
+          0.095,
+          0.1
+        ],
+        "terminal_growth_axis": [
+          0.015,
+          0.02,
+          0.025,
+          0.03,
+          0.035
+        ],
+        "intrinsic_value_per_share": [
+          [
+            98.9,
+            105.7,
+            113.6,
+            123.2,
+            134.8
+          ],
+          [
+            91.5,
+            97.2,
+            103.8,
+            111.6,
+            121.0
+          ],
+          [
+            85.1,
+            90.0,
+            95.5,
+            102.0,
+            109.7
+          ],
+          [
+            79.6,
+            83.7,
+            88.4,
+            93.9,
+            100.3
+          ],
+          [
+            74.6,
+            78.2,
+            82.3,
+            86.9,
+            92.3
+          ]
+        ],
+        "base_cell": {
+          "row": 2,
+          "col": 2
+        }
+      },
+      "position_sizing": {
+        "band": "0% of portfolio (no entry)",
+        "lower_pct": 0,
+        "upper_pct": 0,
+        "signal_verdict": "WATCH",
+        "range_vs_price": "PRICE EXCEEDS RANGE",
+        "margin_of_safety_pct": -73.6,
+        "confidence_cap_applied": true,
+        "rationale": "WATCH \u00d7 PRICE EXCEEDS RANGE (price $362.1 vs base IV $95.53, MoS -73.6%) \u2192 0% of portfolio (no entry) (capped at MEDIUM confidence)."
+      },
+      "playbook": {
+        "loaded": false,
+        "path": null,
+        "last_updated": null,
+        "overrides_applied": [],
+        "failure_modes": []
+      }
+    }
+  },
+  "meta": {
+    "profit_stage": "ESTABLISHED",
+    "track": "GROWTH",
+    "ai_layer": "INCUMBENT",
+    "confidence": "MEDIUM",
+    "base_year_flag": {
+      "tripped": false,
+      "tripwire": null,
+      "original_cagr_3y": 0.059,
+      "base_year_ratio": 0.841,
+      "suggested_cagr": null,
+      "suggestion_source": null,
+      "operator_confirmed": null,
+      "confidence_cap_applied": null
+    }
+  }
+}
