@@ -1,0 +1,37 @@
+are all the skills that this repo manages installed correcrly? i recently shipped aba-125 and want to test it
+
+---
+
+lets test stock-portfolio
+
+---
+
+yes create a model for all of those - ignore adyen for now
+
+---
+
+i have a couple of linear issues in both the ops project and also in the equity project - do any of these address this gap?
+
+---
+
+yes
+
+---
+
+file the issue in linear
+
+---
+
+leave as is
+
+---
+
+we should build an install script or have it installed via the claude marketplace
+
+---
+
+update the README to include the dependencies needed and installation instructions
+
+---
+
+commit and push
