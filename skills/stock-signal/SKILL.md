@@ -177,11 +177,19 @@ Steps:
 1. Clean forward P/E = current price ÷ (NTM EPS − per-share SBC)
    - current price: derive as `pe_ratio × reported_diluted_eps` from ratios if not directly available
    - If NTM EPS ≤ 0 or unavailable: PEG = N/A — forward earnings negative or unavailable
-2. 5-year EPS growth rate (g):
-   a. Use yfinance 5-year growth estimate from `get_estimates` if present (field: `eps_growth_5y` or similar)
-   b. Fallback: derive `g = (ntm_eps / clean_ttm_eps)^(1/5) − 1` (1-year bridge × compounding approximation)
-   c. If g ≤ 0: PEG = N/A — negative/zero growth makes PEG undefined
-   d. **CAGR floor (ESTABLISHED only):** If `eps_growth_5y` was unavailable AND the fallback g < 8%, floor g at 8%. State in `peg_note`: "eps_growth_5y unavailable; NTM/TTM fallback CAGR [raw]% floored at 8% minimum for ESTABLISHED GARP analysis — raw fallback likely understates true 5-year consensus. PEG reliability: MEDIUM-LOW." This floor does not apply when `eps_growth_5y` is present, even if the value is < 8%.
+2. 5-year EPS growth rate (g) — resolution order, evaluated top to bottom; the first source that yields a value wins, and `peg_note` records which source was used:
+   a. **Consensus (primary):** Use yfinance 5-year growth estimate from `get_estimates` if present (field: `eps_growth_5y`). When this fires, no floor and no playbook override apply — the consensus is trusted as-is, even if < 8%.
+   b. **Playbook `growth_ceiling` override (ABA-404):** If `eps_growth_5y` is null AND a `playbooks/TICKER.md` file exists with `growth_ceiling` in its frontmatter, set `g = growth_ceiling` (decimal — e.g. `0.15` → 15%). Note: `growth_ceiling` is the playbook's calibrated central growth anchor (see playbook frontmatter docstring) — for INFRASTRUCTURE / high-multiple names this is a far better PEG denominator than the NTM/TTM bridge, which compresses 5-year visibility into a 1-year ratio. State in `peg_note`: "eps_growth_5y unavailable; using playbook growth_ceiling [X]% as PEG denominator. PEG reliability: MEDIUM."
+   c. **Derived NTM/TTM bridge (fallback):** Otherwise derive `g = (ntm_eps / clean_ttm_eps)^(1/5) − 1` (1-year bridge × compounding approximation).
+   d. **g ≤ 0 check:** If after a–c the resolved g is ≤ 0, PEG = N/A — negative/zero growth makes PEG undefined.
+   e. **Profile-keyed CAGR floor (ESTABLISHED only; fires ONLY when (c) was the resolved source):** If g was derived via the NTM/TTM bridge AND falls below the floor for the company's `ai_layer` profile, floor g at the profile minimum. The floor does not apply when (a) or (b) was the resolved source.
+
+      | AI layer | CAGR floor | Rationale |
+      |---|---|---|
+      | INFRASTRUCTURE | 15% | Capital-equipment / data-centre monopolists (ASML EUV, NVDA GPU) trade on multi-year backlog visibility that the 1-year NTM/TTM bridge cannot see; their consensus 5Y CAGR is structurally > 15%. An 8% floor against the typically high P/E of this profile mechanically yields CAUTION on names that are not actually overvalued — see ABA-404 regression note below. |
+      | APPLICATION / MODEL / INCUMBENT / N/A / Unknown | 8% | The original ABA-132 floor — correct for depressed-fallback cases on quality compounders without an INFRASTRUCTURE backlog signal. |
+
+      State in `peg_note`: "eps_growth_5y unavailable and no playbook growth_ceiling; NTM/TTM fallback CAGR [raw]% floored at [floor]% minimum for [ai_layer] ESTABLISHED GARP analysis — raw fallback likely understates true 5-year consensus. PEG reliability: MEDIUM-LOW."
 3. PEG ratio = clean forward P/E ÷ (g × 100)  [g expressed as whole number, e.g. 15 not 0.15]
 4. State the computation: "PEG = [clean fwd P/E] ÷ [g]% = [result]" (if g was floored, note the floor)
 
@@ -537,6 +545,20 @@ All four active override rules and the qualitative overrides from TAM/optionalit
 
 ---
 
+## Regression notes
+
+**ABA-132 (2026-05-17) → ABA-404 (2026-06-18) — PEG CAGR floor evolution**
+
+- **ABA-132** introduced a flat 8% CAGR floor on the derived NTM/TTM bridge path, after observing that for high-multiple quality compounders (NFLX, etc.) the 1-year bridge systematically understated the true 5-year consensus by ~50–100%. The floor restored a defensible PEG for the depressed-fallback case.
+- **ABA-404** caught the floor's blind spot: high-multiple **INFRASTRUCTURE** names with no `eps_growth_5y` on yfinance (ASML — clean fwd P/E ~45, no long-term consensus exposed by Yahoo). Against ASML's clean fwd P/E ~45, an 8% denominator yields PEG ~5.7 → CAUTION → MODEL_READY: NO — mechanically, not informationally. ASML's structural consensus 5Y CAGR (driven by the EUV / High-NA backlog) is ~15%+.
+- **ABA-404 fix** introduced two surgical changes to Step 6.2 — **before** the floor fires:
+  1. **Playbook `growth_ceiling` override** — when `eps_growth_5y` is null and a `playbooks/TICKER.md` exists with `growth_ceiling`, use it as the PEG denominator. The playbook ceiling is the calibrated, narrative-anchored growth view; for ASML it's 0.15.
+  2. **Profile-keyed floor** — when the playbook override does not fire, the derived-fallback floor is keyed by `ai_layer`: INFRASTRUCTURE 15%, all other profiles 8%. The 8% floor remains for APPLICATION / MODEL / INCUMBENT / N/A / Unknown — the original ABA-132 calibration is unchanged for those profiles.
+- The floor still does **not** fire when consensus `eps_growth_5y` is present (a < 8% consensus value is trusted as-is) or when the playbook override fires — same rule as ABA-132, applied to the new resolution order.
+- Do not re-introduce a flat per-ESTABLISHED floor without first looking at the high-multiple INFRASTRUCTURE-without-consensus case — that's the regression this note exists to prevent.
+
+---
+
 ## Common Rationalisations
 
 | Rationalisation | Rebuttal |
@@ -566,6 +588,8 @@ All four active override rules and the qualitative overrides from TAM/optionalit
 | "Clean EPS is negative so Qualitative must be FAIL and MODEL_READY = NO" | Not when SBC is the sole cause and the company is GAAP-profitable + FCF-positive. Override 2.5 routes this case to Qualitative = FLAG and MODEL_READY = CONDITIONAL so the pre-profit `/stock-model` variant can value the company via revenue/FCF multiple with explicit dilution scheduling. Reserve FAIL for governance / accounting / going-concern issues where price-cheapness doesn't fix the thesis. |
 | "Adding Override 2.5 just lets users bypass SBC discipline" | The opposite. The pre-profit variant is the *only* DCF lens that explicitly schedules SBC dilution into year-5 share count. The current NO refusal lets users argue away the dilution by retreating to reported EPS; Override 2.5 channels them into a model that confronts dilution head-on. The verdict cap at WATCH also prevents the threshold lens from producing a BUY signal while clean economics are underwater. |
 | "I'll use the universal PEG ≤ 2.0 threshold for all ESTABLISHED companies" | The THRESHOLD section now uses profile-keyed bands per `ai_layer`. INFRASTRUCTURE and INCUMBENT tickers have WATCH ≤ 4.0; APPLICATION WATCH ≤ 3.0; N/A WATCH ≤ 2.5. The universal 2.0 threshold is only the fallback for unclassified profiles. Always state which profile was applied and the corresponding WATCH threshold. |
-| "The ai_layer is APPLICATION but NFLX has PEG 4.7 so it's CAUTION" | Check whether the PEG was computed using a floored CAGR. If `eps_growth_5y` is unavailable and the NTM/TTM fallback CAGR < 8%, the CAGR should be floored at 8%. For NFLX at clean fwd P/E ~23, floored PEG = 23/8 = 2.9 → WATCH under APPLICATION threshold of 3.0. |
+| "The ai_layer is APPLICATION but NFLX has PEG 4.7 so it's CAUTION" | Check whether the PEG was computed using a floored CAGR. If `eps_growth_5y` is unavailable and the NTM/TTM fallback CAGR < 8% (APPLICATION floor), the CAGR should be floored. For NFLX at clean fwd P/E ~23, floored PEG = 23/8 = 2.9 → WATCH under APPLICATION threshold of 3.0. |
 | "I'll skip the CAGR floor because the methodology says to use the fallback formula" | The fallback formula is methodologically correct but systematically low for ESTABLISHED quality companies when NTM consensus barely exceeds TTM EPS. The floor prevents a data-gap artefact from overriding a valid GARP read. State the raw fallback value and the floored value so the user can audit both. |
+| "ASML is INFRASTRUCTURE, eps_growth_5y is null, the NTM/TTM bridge gives 7.2%, the 8% floor gives PEG 5.69 → CAUTION → MODEL_READY: NO" | This is the ABA-404 regression: an 8% floor against ASML's clean fwd P/E ~45 mechanically produces CAUTION on a name with structural ~15%+ consensus 5Y CAGR. Step 6.2 now resolves g in this order — (a) consensus, (b) playbook `growth_ceiling` if present, (c) derived NTM/TTM bridge, (e) profile-keyed floor on the derived-fallback path only. ASML has `growth_ceiling: 0.15` in `playbooks/ASML.md`, so g = 15% → PEG = 45.5 / 15 = 3.03 → INFRASTRUCTURE WATCH (≤ 4.0) → MODEL_READY: YES. The flat 8% floor must not be applied to INFRASTRUCTURE names. |
+| "ASML doesn't have eps_growth_5y from yfinance so I'll go straight to the NTM/TTM bridge + floor" | Forbidden — the playbook `growth_ceiling` sits between consensus and the derived bridge for exactly this case. Step 6.2 (b) is mandatory whenever a `playbooks/TICKER.md` file exists with the field. The bridge + profile-keyed floor (e) is the final fallback for off-coverage names where neither consensus nor a playbook ceiling is available. |
 | "NFLX is N/A because AI recommendations are just a feature, not a product" | NFLX is APPLICATION. AI recommendation drives subscriber retention and content spend efficiency — it is materially embedded in the product, not merely a polish layer. The decision tree distinguishes optionality/defence (INCUMBENT) from AI-embedded SaaS/subscription (APPLICATION). Netflix is the latter. |
