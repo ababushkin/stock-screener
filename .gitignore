@@ -20,3 +20,5 @@ exec-state.json
 
 # Skill-creator eval workspaces — dev artifacts, not part of the skill
 skills/*-workspace/
+
+.worktrees
