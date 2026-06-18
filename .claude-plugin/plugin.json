@@ -1,0 +1,30 @@
+{
+  "name": "stock-screener",
+  "version": "0.1.0",
+  "description": "Personal equity-research skill-pack for tech investing: /stock-screen, /stock-signal, /stock-model, /stock-timing, /stock-portfolio, and /stock-explain, backed by yfinance and EDGAR MCP servers.",
+  "author": {
+    "name": "Anton Babushkin"
+  },
+  "repository": "https://github.com/ababushkin/stock-screener",
+  "license": "MIT",
+  "keywords": [
+    "equity",
+    "valuation",
+    "dcf",
+    "garp",
+    "stocks",
+    "yfinance",
+    "edgar",
+    "investing"
+  ],
+  "mcpServers": {
+    "yf": {
+      "command": "uv",
+      "args": ["run", "--script", "${CLAUDE_PLUGIN_ROOT}/mcp/yf/server.py"]
+    },
+    "edgar": {
+      "command": "uv",
+      "args": ["run", "--script", "${CLAUDE_PLUGIN_ROOT}/mcp/edgar/server.py"]
+    }
+  }
+}

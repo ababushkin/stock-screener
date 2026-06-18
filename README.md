@@ -1,8 +1,47 @@
-# stock-review
+# stock-screener
 
 Personal equity research skill-pack for a **tech-focused investor**. A structured pipeline of Claude Code skills that classify, value, and time entries on technology equities.
 
 See `CHARTER.md` for what this pack is for and which boundaries are locked, and `DESIGN.md` for the architectural reference.
+
+---
+
+## Dependencies
+
+| Dependency | Required for | Notes |
+|---|---|---|
+| [Claude Code](https://claude.com/claude-code) | Everything | The runtime that loads the skills and MCP servers. |
+| [`uv`](https://docs.astral.sh/uv/) | `yf` + `edgar` MCP servers | Must be on `PATH`. The servers run via `uv run --script`, which resolves their Python deps from the inline [PEP 723](https://peps.python.org/pep-0723/) block at the top of each `mcp/*/server.py` — **no virtualenv to build or maintain**. |
+| Python ≥ 3.11 | MCP servers | Provisioned automatically by `uv`. |
+| Node.js + npm | Report UI only (`ui/`) | Vite + React dev server / build. Not needed for the skills. |
+
+The per-server Python packages are declared inline and installed on demand by `uv` — you never `pip install` them manually:
+
+- **`yf`** — `mcp[cli]`, `yfinance`, `beautifulsoup4`, `curl_cffi`
+- **`edgar`** — `mcp[cli]`, `requests`
+
+> GUI-launched Claude Code (desktop app) must have `uv` on its inherited `PATH`
+> (e.g. symlinked into `/usr/local/bin`), or the MCP servers won't spawn.
+
+---
+
+## Installation
+
+This repo is a self-contained Claude Code plugin (6 skills + the `yf`/`edgar`
+MCP servers). Recommended install, from inside Claude Code:
+
+```
+/plugin marketplace add ababushkin/stock-screener     # or a local path to this repo
+/plugin install stock-screener@stock-screener
+/mcp                                                  # verify yf + edgar are ✓ Connected
+```
+
+Then confirm a skill is live, e.g. `/stock-portfolio`.
+
+To run straight from the repo without installing (development), the repo-root
+`.mcp.json` registers the MCP servers automatically; symlink the skills into
+`~/.claude/skills/`. Full instructions and the migration note for the old
+symlink-only install are in [`INSTALL.md`](INSTALL.md).
 
 ---
 
@@ -101,9 +140,9 @@ Model is a valuation calculator that estimates "what is one share actually worth
 cd ui && npm run dev        # localhost:5173
 cd ui && npm run build
 
-# MCP servers
-cd mcp/yf && python server.py
-cd mcp/edgar && python server.py
+# MCP servers (standalone, for debugging — normally launched by Claude Code via .mcp.json)
+uv run --script mcp/yf/server.py
+uv run --script mcp/edgar/server.py
 ```
 
 Tasks and milestones live in Linear: https://linear.app/ababushkin/project/ai-equity-research-skill-pack-b8446cbaab6b/overview

@@ -1,12 +1,12 @@
 {
   "mcpServers": {
     "yf": {
-      "command": "mcp/yf/.venv/bin/python",
-      "args": ["mcp/yf/server.py"]
+      "command": "uv",
+      "args": ["run", "--script", "mcp/yf/server.py"]
     },
     "edgar": {
-      "command": "mcp/edgar/.venv/bin/python",
-      "args": ["mcp/edgar/server.py"]
+      "command": "uv",
+      "args": ["run", "--script", "mcp/edgar/server.py"]
     }
   }
 }

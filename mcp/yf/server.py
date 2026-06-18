@@ -1,3 +1,12 @@
+# /// script
+# requires-python = ">=3.11"
+# dependencies = [
+#     "mcp[cli]>=1.0.0",
+#     "yfinance>=0.2.50",
+#     "beautifulsoup4>=4.12",
+#     "curl_cffi>=0.7",
+# ]
+# ///
 import sys
 
 print("[yf] yfinance MCP server ready", file=sys.stderr)

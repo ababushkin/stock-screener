@@ -1,3 +1,10 @@
+# /// script
+# requires-python = ">=3.11"
+# dependencies = [
+#     "mcp[cli]>=1.0.0",
+#     "requests>=2.31.0",
+# ]
+# ///
 import sys
 
 print("[edgar] EDGAR MCP server ready", file=sys.stderr)

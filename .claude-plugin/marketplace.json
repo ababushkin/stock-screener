@@ -1,0 +1,17 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "stock-screener",
+  "description": "Personal equity-research skill-pack for tech investing — go/no-go screen, GARP signal, DCF model, entry timing, portfolio overlay, and plain-English explainer.",
+  "owner": {
+    "name": "Anton Babushkin",
+    "url": "https://github.com/ababushkin"
+  },
+  "plugins": [
+    {
+      "name": "stock-screener",
+      "source": "./",
+      "description": "/stock-screen, /stock-signal, /stock-model, /stock-timing, /stock-portfolio, /stock-explain + yfinance & EDGAR MCP servers (run via uv, no prebuilt venv).",
+      "category": "research"
+    }
+  ]
+}
