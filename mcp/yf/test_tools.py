@@ -7,7 +7,7 @@ import pandas as pd
 import pytest
 
 sys.path.insert(0, "/Users/anton/src/stock-review/mcp/yf")
-from tools import FXNoDataError, YFNoDataError, _ScrapeError, _fetch_with_retry, get_analyst_targets, get_earnings_history, get_estimates, get_financials, get_fx_rate, get_ratios
+from tools import FXNoDataError, YFNoDataError, _ScrapeError, _fetch_with_retry, get_analyst_targets, get_earnings_history, get_estimates, get_financials, get_fx_rate, get_ratios, get_total_return_cagr
 
 
 def _make_earnings_estimate(avg, analysts):
@@ -727,3 +727,100 @@ class TestGetRatiosHtmlFallback:
              patch("tools._ratios_from_html") as scrape:
             get_ratios("AAPL")
         scrape.assert_not_called()
+
+
+# ---------------------------------------------------------------------------
+# get_total_return_cagr — benchmark CAGR for SPY/QQQ overlay (ABA-125)
+# ---------------------------------------------------------------------------
+
+def _hist_two_closes(start_close, end_close, start_ts, end_ts):
+    """Two-row Close series; auto-adjusted (yfinance default) folds in dividends + splits."""
+    return pd.DataFrame(
+        {"Close": [float(start_close), float(end_close)]},
+        index=pd.to_datetime([start_ts, end_ts]),
+    )
+
+
+class TestGetTotalReturnCagr:
+    def test_returns_required_keys(self):
+        m = MagicMock()
+        m.history.return_value = _hist_two_closes(100.0, 200.0, "2021-06-18", "2026-06-18")
+        with patch("tools.yf.Ticker", return_value=m):
+            result = get_total_return_cagr("SPY", years=5)
+        assert set(result.keys()) >= {
+            "ticker", "years_requested", "years_actual",
+            "start_date", "end_date", "start_close", "end_close",
+            "cagr", "source",
+        }
+        assert result["ticker"] == "SPY"
+        assert result["source"] == "yfinance"
+
+    def test_cagr_computed_from_endpoint_ratio(self):
+        # 100 → 200 over exactly 5 years (365.25 cal years × 5 = 1826.25 days)
+        # 1826 calendar days ≈ 1826/365.25 = 4.9993y → CAGR ≈ 14.873%
+        m = MagicMock()
+        m.history.return_value = _hist_two_closes(100.0, 200.0, "2021-06-19", "2026-06-19")
+        with patch("tools.yf.Ticker", return_value=m):
+            result = get_total_return_cagr("QQQ", years=5)
+        expected = 2.0 ** (1 / (1826 / 365.25)) - 1
+        assert result["cagr"] == pytest.approx(expected, rel=1e-6)
+        assert result["start_close"] == pytest.approx(100.0)
+        assert result["end_close"] == pytest.approx(200.0)
+
+    def test_dates_and_actual_span_recorded(self):
+        m = MagicMock()
+        m.history.return_value = _hist_two_closes(50.0, 75.0, "2021-01-04", "2026-01-02")
+        with patch("tools.yf.Ticker", return_value=m):
+            result = get_total_return_cagr("SPY", years=5)
+        assert result["start_date"] == "2021-01-04"
+        assert result["end_date"] == "2026-01-02"
+        # ~5 calendar years span
+        assert 4.9 < result["years_actual"] < 5.1
+
+    def test_period_argument_passed_through(self):
+        m = MagicMock()
+        m.history.return_value = _hist_two_closes(100.0, 110.0, "2025-06-18", "2026-06-18")
+        with patch("tools.yf.Ticker", return_value=m) as patched:
+            get_total_return_cagr("SPY", years=1)
+        m.history.assert_called_once_with(period="1y", auto_adjust=True)
+        patched.assert_called_once_with("SPY")
+
+    def test_invalid_years_raises(self):
+        with pytest.raises(YFNoDataError):
+            get_total_return_cagr("SPY", years=0)
+        with pytest.raises(YFNoDataError):
+            get_total_return_cagr("SPY", years=-1)
+
+    def test_empty_history_raises(self):
+        m = MagicMock()
+        m.history.return_value = pd.DataFrame()
+        with patch("tools.yf.Ticker", return_value=m):
+            with pytest.raises(YFNoDataError):
+                get_total_return_cagr("FAKE", years=5)
+
+    def test_single_row_history_raises(self):
+        m = MagicMock()
+        m.history.return_value = pd.DataFrame(
+            {"Close": [100.0]}, index=pd.to_datetime(["2026-06-18"])
+        )
+        with patch("tools.yf.Ticker", return_value=m):
+            with pytest.raises(YFNoDataError):
+                get_total_return_cagr("FAKE", years=5)
+
+    def test_all_nan_closes_raises(self):
+        m = MagicMock()
+        m.history.return_value = pd.DataFrame(
+            {"Close": [float("nan"), float("nan")]},
+            index=pd.to_datetime(["2021-06-18", "2026-06-18"]),
+        )
+        with patch("tools.yf.Ticker", return_value=m):
+            with pytest.raises(YFNoDataError):
+                get_total_return_cagr("FAKE", years=5)
+
+    def test_negative_total_return_handled(self):
+        # Stock loses value over the window → CAGR is negative.
+        m = MagicMock()
+        m.history.return_value = _hist_two_closes(100.0, 60.0, "2021-06-18", "2026-06-18")
+        with patch("tools.yf.Ticker", return_value=m):
+            result = get_total_return_cagr("XYZ", years=5)
+        assert result["cagr"] < 0

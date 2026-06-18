@@ -66,6 +66,83 @@ def get_fx_rate(base: str, quote: str) -> dict:
     }
 
 
+def get_total_return_cagr(ticker: str, years: int = 5) -> dict:
+    """Return trailing total-return CAGR over `years` for a ticker.
+
+    Uses yfinance's auto-adjusted Close (default), which folds dividends and
+    splits into the price series — so the start/end ratio is the total return,
+    not just price appreciation. Intended for benchmark comparators (SPY / QQQ)
+    and any "what did this actually return over N years" question.
+
+    Args:
+        ticker: Symbol — equity or ETF (e.g. SPY, QQQ).
+        years: Lookback window in whole years. Must be ≥ 1.
+
+    Returns:
+        {
+            "ticker": str,
+            "years_requested": int,
+            "years_actual": float,        # actual span end−start in years (365.25-day calendar)
+            "start_date": "YYYY-MM-DD",
+            "end_date":   "YYYY-MM-DD",
+            "start_close": float,
+            "end_close":   float,
+            "cagr": float,                # e.g. 0.143 → 14.3 % annualised total return
+            "source": "yfinance",
+        }
+    """
+    if not isinstance(years, int) or years < 1:
+        raise YFNoDataError(
+            f"Invalid years {years!r}. Must be a positive integer ≥ 1."
+        )
+
+    start = time.monotonic()
+    # Request a slightly wider window than `years` so the trimming below
+    # always has full years of data to work with even if the very oldest
+    # row is a partial day or a holiday cluster.
+    period = f"{years}y"
+    hist = yf.Ticker(ticker).history(period=period, auto_adjust=True)
+    print(f"[yf] get_total_return_cagr({ticker},{years}) → {time.monotonic() - start:.2f}s", file=sys.stderr)
+
+    if hist is None or hist.empty or "Close" not in hist.columns:
+        raise YFNoDataError(
+            f"yfinance returned no price history for {ticker} over {years}y. "
+            "Ticker may be delisted, mistyped, or younger than the window."
+        )
+
+    closes = hist["Close"].dropna()
+    if len(closes) < 2:
+        raise YFNoDataError(
+            f"yfinance returned fewer than 2 valid closes for {ticker} over {years}y. "
+            "Cannot compute CAGR."
+        )
+
+    start_ts = closes.index[0]
+    end_ts = closes.index[-1]
+    start_close = float(closes.iloc[0])
+    end_close = float(closes.iloc[-1])
+
+    span_days = (end_ts - start_ts).days
+    if span_days <= 0:
+        raise YFNoDataError(
+            f"yfinance returned a zero-or-negative span for {ticker} over {years}y."
+        )
+    years_actual = span_days / 365.25
+    cagr = (end_close / start_close) ** (1 / years_actual) - 1
+
+    return {
+        "ticker": ticker,
+        "years_requested": years,
+        "years_actual": round(years_actual, 3),
+        "start_date": start_ts.strftime("%Y-%m-%d") if hasattr(start_ts, "strftime") else str(start_ts)[:10],
+        "end_date": end_ts.strftime("%Y-%m-%d") if hasattr(end_ts, "strftime") else str(end_ts)[:10],
+        "start_close": start_close,
+        "end_close": end_close,
+        "cagr": cagr,
+        "source": "yfinance",
+    }
+
+
 def get_estimates(ticker: str) -> dict:
     """Return NTM consensus EPS, revenue, and analyst count for a ticker.
 

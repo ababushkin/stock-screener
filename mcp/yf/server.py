@@ -3,7 +3,7 @@ import sys
 print("[yf] yfinance MCP server ready", file=sys.stderr)
 
 from mcp.server.fastmcp import FastMCP
-from tools import YFNoDataError, FXNoDataError, get_analyst_targets as _get_analyst_targets, get_earnings_history as _get_earnings_history, get_estimates as _get_estimates, get_financials as _get_financials, get_fx_rate as _get_fx_rate, get_ratios as _get_ratios
+from tools import YFNoDataError, FXNoDataError, get_analyst_targets as _get_analyst_targets, get_earnings_history as _get_earnings_history, get_estimates as _get_estimates, get_financials as _get_financials, get_fx_rate as _get_fx_rate, get_ratios as _get_ratios, get_total_return_cagr as _get_total_return_cagr
 
 mcp = FastMCP("yf")
 
@@ -42,6 +42,12 @@ def get_fx_rate(base: str, quote: str) -> dict:
 def get_financials(ticker: str, period: str = "annual") -> dict:
     """Multi-year financials: revenue, operating_income, net_income, free_cash_flow, stock_based_compensation, total_debt, cash."""
     return _get_financials(ticker, period)
+
+
+@mcp.tool()
+def get_total_return_cagr(ticker: str, years: int = 5) -> dict:
+    """Trailing total-return CAGR (auto-adjusted Close folds in dividends + splits) over N years. Use for SPY/QQQ benchmark comparators."""
+    return _get_total_return_cagr(ticker, years)
 
 
 if __name__ == "__main__":

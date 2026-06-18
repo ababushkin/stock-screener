@@ -80,7 +80,7 @@ Customer specials: N/A — single-operator pack. The mix above is intentionally 
 | `/stock-portfolio` skill | diff | 6 | Now — shipped 2026-05-17, pending QA |
 | ABA-115 Glidepath + scenario fan visuals | diff | 7 | Now |
 | Write playbooks: META, NVDA, AMZN, NFLX, ADYEN | diff | 7 | Next |
-| Benchmark overlay (SPY/QQQ on portfolio view) | diff | 6 | Next |
+| Benchmark overlay (SPY/QQQ on portfolio view) | diff | 6 | Done (2026-06-18) — ABA-125 |
 | ABA-67 Bookings/backlog fetch | ts | 7 | Next |
 | ABA-68 EPS revisions tool | ts | 7 | Next |
 | ABA-69 Next-earnings-date tool | ts | 7 | Next |
@@ -156,10 +156,10 @@ Customer specials: N/A — single-operator pack. The mix above is intentionally 
 **Problem:** Five of the seven covered tickers still run on generic defaults. The whole depth-over-breadth thesis is unrealised until all seven have playbooks.
 **Theme:** differentiator
 
-### Benchmark overlay (SPY / QQQ comparator)
+### Benchmark overlay (SPY / QQQ comparator) — DONE 2026-06-18 (ABA-125)
 **Problem:** For the operator, we believe per-ticker IVs don't answer the actual question — "should I buy this or just buy the index?" Without a benchmark layer, the pack can't help with opportunity-cost decisions, which is the second-most-common reason it's used.
+**Outcome:** Landed as an addition to `/stock-portfolio`. New columns: implied annualised return (5y, from base IV vs current price), vs SPY (5y trailing total-return CAGR), vs QQQ. Chat-table `Verdict` reframed as opportunity-cost against the better of the two benchmarks (`BEATS INDEX` / `MATCHES INDEX` / `BUY INDEX INSTEAD`). New `mcp__yf__get_total_return_cagr` tool added so the benchmark CAGRs are fetched live, single yfinance call each.
 **Theme:** differentiator (portfolio)
-**Notes:** Likely lives as an addition to `/stock-portfolio` rather than a separate skill — column for "implied annualised return vs QQQ over [horizon]."
 
 ### M2.5 data gaps — ABA-67, ABA-68, ABA-69, ABA-75
 **Problem:** Bookings/backlog (capital-equipment cos), EPS revisions, next-earnings-date, and EDGAR SBC fallback (for non-US filers like ADYEN) are missing. `/stock-timing` and `/stock-model` quality is capped until these land.
