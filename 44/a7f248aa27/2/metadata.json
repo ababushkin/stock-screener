@@ -1,0 +1,65 @@
+{
+  "cli_version": "0.7.5",
+  "checkpoint_id": "44a7f248aa27",
+  "session_id": "469b1286-7d98-4212-8764-4ec32120bc2a",
+  "strategy": "manual-commit",
+  "created_at": "2026-06-23T06:32:43.218182Z",
+  "branch": "main",
+  "checkpoints_count": 2,
+  "files_touched": [
+    "reports/PORTFOLIO_20260618.json"
+  ],
+  "agent": "Claude Code",
+  "model": "claude-opus-4-8[1m]",
+  "turn_id": "8093f00b1668",
+  "token_usage": {
+    "input_tokens": 22,
+    "cache_creation_tokens": 27112,
+    "cache_read_tokens": 365960,
+    "output_tokens": 3555,
+    "api_call_count": 10
+  },
+  "session_metrics": {
+    "turn_count": 2
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-06-23T06:32:43.214114Z",
+    "agent_lines": 0,
+    "agent_removed": 0,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 2,
+    "total_committed": 0,
+    "total_lines_changed": 2,
+    "agent_percentage": 0,
+    "metric_version": 2
+  },
+  "prompt_attributions": [
+    {
+      "checkpoint_number": 1,
+      "user_lines_added": 179,
+      "user_lines_removed": 2,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0,
+      "user_added_per_file": {
+        ".claude/scheduled_tasks.lock": 1,
+        ".claude/settings.local.json": 113,
+        "docs/idea-bank/true-fcf-reconstruction.md": 62,
+        "reports/PORTFOLIO_20260618.json": 3
+      },
+      "user_removed_per_file": {
+        "reports/PORTFOLIO_20260618.json": 2
+      }
+    },
+    {
+      "checkpoint_number": 2,
+      "user_lines_added": 113,
+      "user_lines_removed": 0,
+      "agent_lines_added": 65,
+      "agent_lines_removed": 2,
+      "user_added_per_file": {
+        ".claude/settings.local.json": 113
+      }
+    }
+  ]
+}

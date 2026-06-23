@@ -1,0 +1,5 @@
+file this idea into linear docs/idea-bank/true-fcf-reconstruction.md into the idea backlog project
+
+---
+
+you did that wrong, it should be a new issue not a document
