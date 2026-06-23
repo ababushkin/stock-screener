@@ -1,0 +1,5 @@
+ok remove the symlinks so the skills don't load twice
+
+---
+
+/stock-screener:stock-portfolio
