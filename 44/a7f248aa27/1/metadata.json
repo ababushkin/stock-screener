@@ -1,0 +1,160 @@
+{
+  "cli_version": "0.7.5",
+  "checkpoint_id": "44a7f248aa27",
+  "session_id": "13acda3f-1d0b-4eae-bebe-8dcafbe81b59",
+  "strategy": "manual-commit",
+  "created_at": "2026-06-23T06:32:43.122075Z",
+  "branch": "main",
+  "checkpoints_count": 9,
+  "files_touched": [
+    "reports/PORTFOLIO_20260618.json"
+  ],
+  "agent": "Claude Code",
+  "model": "claude-opus-4-8[1m]",
+  "turn_id": "a371c4541159",
+  "token_usage": {
+    "input_tokens": 25395,
+    "cache_creation_tokens": 263835,
+    "cache_read_tokens": 2126274,
+    "output_tokens": 32375,
+    "api_call_count": 30
+  },
+  "skill_events_version": 1,
+  "skill_events": [
+    {
+      "id": "prompt-skill-claude-code-idea-2026-06-22T05:27:07.471432Z",
+      "event_type": "prompt_invocation",
+      "skill": {
+        "name": "idea"
+      },
+      "source": {
+        "agent": "claude-code",
+        "signal": "prompt_slash_command",
+        "confidence": "explicit"
+      },
+      "turn_id": "8bbef4db65a3",
+      "timestamp": "2026-06-22T05:27:07.471432Z",
+      "native": {
+        "command": "/idea"
+      },
+      "collapse": {
+        "target": "user_message",
+        "label": "/idea",
+        "default_collapsed": true
+      }
+    }
+  ],
+  "session_metrics": {
+    "turn_count": 9
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-06-23T06:32:43.113102Z",
+    "agent_lines": 0,
+    "agent_removed": 0,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 2,
+    "total_committed": 0,
+    "total_lines_changed": 2,
+    "agent_percentage": 0,
+    "metric_version": 2
+  },
+  "prompt_attributions": [
+    {
+      "checkpoint_number": 1,
+      "user_lines_added": 116,
+      "user_lines_removed": 2,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0,
+      "user_added_per_file": {
+        ".claude/settings.local.json": 113,
+        "reports/PORTFOLIO_20260618.json": 3
+      },
+      "user_removed_per_file": {
+        "reports/PORTFOLIO_20260618.json": 2
+      }
+    },
+    {
+      "checkpoint_number": 2,
+      "user_lines_added": 113,
+      "user_lines_removed": 0,
+      "agent_lines_added": 3,
+      "agent_lines_removed": 2,
+      "user_added_per_file": {
+        ".claude/settings.local.json": 113
+      }
+    },
+    {
+      "checkpoint_number": 3,
+      "user_lines_added": 113,
+      "user_lines_removed": 0,
+      "agent_lines_added": 3,
+      "agent_lines_removed": 2,
+      "user_added_per_file": {
+        ".claude/settings.local.json": 113
+      }
+    },
+    {
+      "checkpoint_number": 4,
+      "user_lines_added": 113,
+      "user_lines_removed": 0,
+      "agent_lines_added": 3,
+      "agent_lines_removed": 2,
+      "user_added_per_file": {
+        ".claude/settings.local.json": 113
+      }
+    },
+    {
+      "checkpoint_number": 5,
+      "user_lines_added": 113,
+      "user_lines_removed": 0,
+      "agent_lines_added": 65,
+      "agent_lines_removed": 2,
+      "user_added_per_file": {
+        ".claude/settings.local.json": 113
+      }
+    },
+    {
+      "checkpoint_number": 6,
+      "user_lines_added": 113,
+      "user_lines_removed": 0,
+      "agent_lines_added": 65,
+      "agent_lines_removed": 2,
+      "user_added_per_file": {
+        ".claude/settings.local.json": 113
+      }
+    },
+    {
+      "checkpoint_number": 7,
+      "user_lines_added": 113,
+      "user_lines_removed": 0,
+      "agent_lines_added": 65,
+      "agent_lines_removed": 2,
+      "user_added_per_file": {
+        ".claude/settings.local.json": 113
+      }
+    },
+    {
+      "checkpoint_number": 8,
+      "user_lines_added": 114,
+      "user_lines_removed": 0,
+      "agent_lines_added": 65,
+      "agent_lines_removed": 2,
+      "user_added_per_file": {
+        ".claude/scheduled_tasks.lock": 1,
+        ".claude/settings.local.json": 113
+      }
+    },
+    {
+      "checkpoint_number": 9,
+      "user_lines_added": 114,
+      "user_lines_removed": 0,
+      "agent_lines_added": 65,
+      "agent_lines_removed": 2,
+      "user_added_per_file": {
+        ".claude/scheduled_tasks.lock": 1,
+        ".claude/settings.local.json": 113
+      }
+    }
+  ]
+}

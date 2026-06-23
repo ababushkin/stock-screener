@@ -1,0 +1,50 @@
+/idea i want to see if i can apply the following things to one of the stock skills in this pack
+
+explore the codebase, if this is already implemented tell me and then stop. if its not implemented then flesh out this idea properly
+
+1. Recalculate free cash flow yourself. Don't use the company's reported figure. Start with cash from operating activities, subtract CapEx, then subtract:
+
+Tax withholding payments on RSU vesting (disclosed in the cash flow statement or equity section)
+The portion of buybacks that are dilution-offset (look at the Statement of Stockholders' Equity for granularity — Meta's is apparently better than most)
+
+2. Look at the equity statement, not just the income statement. The Statement of Stockholders' Equity shows share issuances, buybacks, and RSU-related activity in more detail than the headline numbers.
+3. Ask: what would I pay if I owned 100% of this business? If you removed SBC and had to pay engineers in cash salary instead, how much would earnings drop? That's the economic reality.
+4. Be sceptical of analyst out-year projections. 2029–2030 free cash flow estimates for hyperscalers are doing a lot of work in current valuations, and those estimates may be based on an optimistic assumption that CapEx tapers sharply and unit economics improve dramatically.
+5. Watch debt levels carefully. If a company's true free cash flow is much lower than reported, but CapEx is still rising, they have to fund the gap somewhere. Rising debt in this context is a yellow flag, not normal corporate finance.
+6. SBC isn't a non-cash expense in the way it sounds. The cash does leave the building — just through buybacks and tax withholding rather than payroll. Treat it as an operating cost.
+
+---
+
+what is XBRL?
+
+---
+
+yes
+
+---
+
+yes
+
+---
+
+put this idea into linear into the ops project
+
+---
+
+put this idea into linear into the idea backlog project
+
+---
+
+retry
+
+---
+
+yes create a loop that checks every 5 minutes
+
+---
+
+Retry creating the Linear issue in the "Idea backlog" project (Personal/ABA team) for the true-FCF-reconstruction idea. Use the exact payload drafted earlier (title "True free-cash-flow reconstruction for /stock-model", priority 3 Medium, description mirroring docs/idea-bank/true-fcf-reconstruction.md). If the safety classifier is still unavailable, schedule another 5-minute retry. If it succeeds, report the issue URL and stop the loop.
+
+---
+
+cancel the loop something is wrong because my other sessions are working fine
