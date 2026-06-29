@@ -1,6 +1,5 @@
 {
   "name": "stock-screener",
-  "version": "0.1.0",
   "description": "Personal equity-research skill-pack for tech investing: /stock-screen, /stock-signal, /stock-model, /stock-timing, /stock-portfolio, and /stock-explain, backed by yfinance and EDGAR MCP servers.",
   "author": {
     "name": "Anton Babushkin"
