@@ -1,0 +1,98 @@
+(backgrounded)
+
+---
+
+are all the skills in this repo installed correctly and are up to date
+
+---
+
+its sayings that stock-screener is already at the latest version (0.1.0)
+
+---
+
+<task-notification>
+<task-id>aeb44ef547f1f62ef</task-id>
+<tool-use-id>REDACTED</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-anton-src-stock-screener/1fa395ff-32f0-4124-a163-885c5d08c36f/tasks/aeb44ef547f1f62ef.output</output-file>
+<status>completed</status>
+<summary>Agent "Confirm plugin version/update behavior" finished</summary>
+<note>A task-notification fires each time this agent stops with no live background children of its own. The user can send it another message and resume it, so the same task-id may notify more than once.</note>
+<result>I found the authoritative documentation on plugin versioning and update behavior. Here are precise answers to your questions:
+
+## 1. **How Claude Code decides if an update is available when `version` field is missing**
+
+From the [Plugins reference - Version management](https://code.claude.com/docs/en/plugins-reference.md#version-management):
+
+&gt; The version is resolved from the first of these that is set:
+&gt; 1. The `version` field in the plugin's `plugin.json`
+&gt; 2. The `version` field in the plugin's marketplace entry in `marketplace.json`
+&gt; 3. **The git commit SHA of the plugin's source, for `github`, `url`, `git-subdir`, and relative-path sources in a git-hosted marketplace**
+&gt; 4. `unknown`, for `npm` sources or local directories not inside a git repository
+
+**When the `version` field is omitted**, Claude Code uses the **git commit SHA** as the version. This means every commit that updates the marketplace clone will be treated as a new version, and `/plugin update` will re-fetch and re-copy the latest commits.
+
+## 2. **Will removing the `version` field force re-fetch?**
+
+Yes, exactly. The documentation states:
+
+&gt; | **Commit-SHA version** | Omit `version` from both `plugin.json` and the marketplace entry | Users get updates on every new commit to the plugin's git source |
+
+**Removing `"version": "0.1.0"` from your plugin.json will immediately change the versioning strategy** to commit-SHA mode, and the next `/plugin update` will detect that the commit SHA has advanced and re-fetch the latest.
+
+## 3. **Do updates happen automatically or only manually?**
+
+Both. From [Discover and install prebuilt plugins - Configure auto-updates](https://code.claude.com/docs/en/discover-plugins.md#configure-auto-updates):
+
+&gt; Claude Code can automatically update marketplaces and their installed plugins **at startup**. When auto-update is enabled for a marketplace, Claude Code refreshes the marketplace data and updates installed plugins to their latest versions.
+
+**Auto-update behavior**:
+- **Official Anthropic marketplaces** have auto-update **enabled by default**
+- **Third-party and local development marketplaces** have auto-update **disabled by default**
+- You can toggle it per marketplace via `/plugin` → **Marketplaces** tab, or set `"autoUpdate": true` in `.claude/settings.json`
+- If auto-update finds new versions, you'll see a notification prompting `/reload-plugins`
+
+Note: This auto-update fires **at session start**, not continuously during a session.
+
+## 4. **Recommended workflow to force refresh**
+
+**One-time fix** (immediate):
+```bash
+/plugin update &lt;plugin-name&gt;@&lt;marketplace-name&gt;
+```
+This will re-fetch because the commit SHA has advanced past the cached version. If the plugin is installed locally without a marketplace, use just `/plugin update &lt;plugin-name&gt;`.
+
+**Durable "always latest" config** (lasting):
+
+Remove the `version` field from `.claude-plugin/plugin.json`:
+```json
+{
+  "name": "my-plugin",
+  "description": "...",
+  // DELETE: "version": "0.1.0"
+}
+```
+
+Commit this change to your marketplace repository. From now on:
+- Every commit becomes a new version (via git commit SHA)
+- `/plugin update` will always fetch the latest
+- If the marketplace has auto-update enabled, Claude Code will refresh automatically at session start
+
+**Important distinction**:
+- **Marketplace clone update** = `/plugin marketplace update &lt;marketplace-name&gt;` (pulls latest marketplace.json catalog)
+- **Plugin cache update** = `/plugin update &lt;plugin-name&gt;` (re-copies plugin files from marketplace clone into ~/.claude/plugins/cache)
+
+Both may be needed: first update the marketplace to discover new commits, then update the plugin to use them.
+
+---
+
+**Critical warning** from the docs:
+&gt; If you set `version` in `plugin.json`, you must bump it every time you want users to receive changes. Pushing new commits alone is not enough, because Claude Code sees the same version string and keeps the cached copy.
+
+Your current situation (version stuck at 0.1.0 with advanced commits) is exactly the scenario this warning describes. Removing the version field is the cleanest fix for active-development plugins.
+
+Sources:
+- [Plugins reference - Version management](https://code.claude.com/docs/en/plugins-reference.md#version-management)
+- [Plugins reference - Plugin manifest schema](https://code.claude.com/docs/en/plugins-reference.md#version-field-table)
+- [Discover and install plugins - Configure auto-updates](https://code.claude.com/docs/en/discover-plugins.md#configure-auto-updates)</result>
+<usage><subagent_tokens>50294</subagent_tokens><tool_uses>16</tool_uses><duration_ms>71834</duration_ms></usage>
+</task-notification>
