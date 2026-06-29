@@ -1,0 +1,70 @@
+{
+  "cli_version": "0.7.5",
+  "checkpoint_id": "653be174df79",
+  "session_id": "206064ad-cefc-44c1-a534-2d4b62a310da",
+  "strategy": "manual-commit",
+  "created_at": "2026-06-29T18:00:09.337599Z",
+  "branch": "main",
+  "checkpoints_count": 1,
+  "files_touched": [],
+  "agent": "Claude Code",
+  "model": "claude-opus-4-8[1m]",
+  "turn_id": "3af3c086100a",
+  "token_usage": {
+    "input_tokens": 22579,
+    "cache_creation_tokens": 126855,
+    "cache_read_tokens": 657470,
+    "output_tokens": 12796,
+    "api_call_count": 12
+  },
+  "skill_events_version": 1,
+  "skill_events": [
+    {
+      "id": "prompt-skill-claude-code-stock-screener:stock-screen-2026-06-29T17:51:40.925918Z",
+      "event_type": "prompt_invocation",
+      "skill": {
+        "name": "stock-screener:stock-screen"
+      },
+      "source": {
+        "agent": "claude-code",
+        "signal": "prompt_slash_command",
+        "confidence": "explicit"
+      },
+      "turn_id": "c7bc00c0d7bc",
+      "timestamp": "2026-06-29T17:51:40.925918Z",
+      "native": {
+        "command": "/stock-screener:stock-screen"
+      },
+      "collapse": {
+        "target": "user_message",
+        "label": "/stock-screener:stock-screen",
+        "default_collapsed": true
+      }
+    }
+  ],
+  "session_metrics": {
+    "turn_count": 1
+  },
+  "prompt_attributions": [
+    {
+      "checkpoint_number": 1,
+      "user_lines_added": 113,
+      "user_lines_removed": 0,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0,
+      "user_added_per_file": {
+        ".claude/settings.local.json": 113
+      }
+    },
+    {
+      "checkpoint_number": 2,
+      "user_lines_added": 113,
+      "user_lines_removed": 0,
+      "agent_lines_added": 59,
+      "agent_lines_removed": 0,
+      "user_added_per_file": {
+        ".claude/settings.local.json": 113
+      }
+    }
+  ]
+}
